@@ -24,6 +24,7 @@ class AuthController extends Controller
             'email' => ['required', 'email', 'max:255'],
             'password' => ['required', 'string', 'max:255'],
             'device_name' => ['nullable', 'string', 'max:100'],
+            'device_token' => ['nullable', 'string', 'max:100'],
         ]);
 
         $user = User::where('email', strtolower($data['email']))->first();
@@ -35,7 +36,7 @@ class AuthController extends Controller
         }
 
         // Second step required: hand back a short-lived challenge instead of a token.
-        if ($this->twoFactor->enabled($user)) {
+        if ($this->twoFactor->enabled($user) && ! $this->twoFactor->isTrusted($user, $data['device_token'] ?? null)) {
             return response()->json(['two_factor' => true, 'challenge' => $this->twoFactor->challengeFor($user)]);
         }
 
@@ -50,6 +51,7 @@ class AuthController extends Controller
             'code' => ['nullable', 'string', 'max:10'],
             'recovery_code' => ['nullable', 'string', 'max:30'],
             'device_name' => ['nullable', 'string', 'max:100'],
+            'remember' => ['sometimes', 'boolean'],
         ]);
         $user = $this->twoFactor->userForChallenge($data['challenge']);
         if (! $user) {
@@ -59,7 +61,12 @@ class AuthController extends Controller
             throw ValidationException::withMessages(['code' => 'Invalid code.']);
         }
 
-        return $this->issueToken($user, $data['device_name'] ?? 'web');
+        $response = $this->issueToken($user, $data['device_name'] ?? 'web');
+        if ($request->boolean('remember')) {
+            $response->setData($response->getData(true) + ['device_token' => $this->twoFactor->trustDevice($user, $data['device_name'] ?? null)]);
+        }
+
+        return $response;
     }
 
     /** Start enabling 2FA (needs the current password). */
@@ -171,6 +178,7 @@ class AuthController extends Controller
         $user = $request->user();
         $user->forceFill(['password' => $request->input('password')])->save();
         $this->revokeOthers($request);
+        $this->twoFactor->forgetDevices($user);
 
         return response()->json(['ok' => true]);
     }
@@ -178,6 +186,8 @@ class AuthController extends Controller
     /** Sign out everywhere except this device. */
     public function logoutOthers(Request $request): JsonResponse
     {
+        $this->twoFactor->forgetDevices($request->user());
+
         return response()->json(['revoked' => $this->revokeOthers($request)]);
     }
 

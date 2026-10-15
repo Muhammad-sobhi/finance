@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use PragmaRX\Google2FA\Google2FA;
@@ -16,6 +17,8 @@ use PragmaRX\Google2FA\Google2FA;
 class TwoFactor
 {
     private const CHALLENGE_MINUTES = 5;
+
+    public const TRUST_DAYS = 30;
 
     public function __construct(private readonly Google2FA $totp) {}
 
@@ -45,6 +48,7 @@ class TwoFactor
 
     public function disable(User $user): void
     {
+        $this->forgetDevices($user);
         $user->forceFill(['two_factor_secret' => null, 'two_factor_recovery_codes' => null, 'two_factor_confirmed_at' => null, 'two_factor_last_step' => null])->save();
     }
 
@@ -78,6 +82,38 @@ class TwoFactor
     public function recoveryCodesLeft(User $user): int
     {
         return $user->two_factor_recovery_codes ? count(json_decode(Crypt::decryptString($user->two_factor_recovery_codes), true)) : 0;
+    }
+
+    /** Remember this device: returns a random token for the device; only its hash is stored. */
+    public function trustDevice(User $user, ?string $name): string
+    {
+        $token = Str::random(64);
+        DB::table('trusted_devices')->insert([
+            'user_id' => $user->id, 'token_hash' => hash('sha256', $token), 'name' => $name ? mb_substr($name, 0, 120) : null,
+            'expires_at' => now()->addDays(self::TRUST_DAYS), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        return $token;
+    }
+
+    public function isTrusted(User $user, ?string $token): bool
+    {
+        if (! $token) {
+            return false;
+        }
+        $row = DB::table('trusted_devices')->where('user_id', $user->id)->where('token_hash', hash('sha256', $token))
+            ->where('expires_at', '>', now())->first();
+        if ($row) {
+            DB::table('trusted_devices')->where('id', $row->id)->update(['last_used_at' => now()]);
+        }
+
+        return $row !== null;
+    }
+
+    /** Forget every trusted device (password change, sign out others, 2FA off). */
+    public function forgetDevices(User $user): void
+    {
+        DB::table('trusted_devices')->where('user_id', $user->id)->delete();
     }
 
     /** Short-lived, encrypted proof that the password step passed. */

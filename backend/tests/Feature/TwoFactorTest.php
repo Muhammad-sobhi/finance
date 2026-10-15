@@ -121,4 +121,35 @@ class TwoFactorTest extends TestCase
         $this->postJson('/api/v1/auth/two-factor', ['challenge' => $challenge, 'recovery_code' => $old[0]])->assertJsonValidationErrors('code');
         $this->postJson('/api/v1/auth/two-factor', ['challenge' => $challenge, 'recovery_code' => $new[0]])->assertOk();
     }
+
+    public function test_trusted_device_skips_the_code_for_30_days(): void
+    {
+        [$secret] = $this->enable();
+        $challenge = $this->postJson('/api/v1/auth/login', ['email' => 'me@example.com', 'password' => 'secret-pass-1'])->json('challenge');
+        $device = $this->postJson('/api/v1/auth/two-factor', ['challenge' => $challenge, 'code' => $this->codeAt($secret), 'remember' => true])
+            ->assertOk()->json('device_token');
+        $this->assertNotEmpty($device);
+        $this->assertDatabaseMissing('trusted_devices', ['token_hash' => $device]); // only the hash is stored
+
+        $login = fn (?string $d) => $this->postJson('/api/v1/auth/login', ['email' => 'me@example.com', 'password' => 'secret-pass-1', 'device_token' => $d]);
+        $login($device)->assertJsonStructure(['token'])->assertJsonMissingPath('two_factor');
+        $login('someone-elses-token')->assertJsonPath('two_factor', true);
+        $login(null)->assertJsonPath('two_factor', true);
+        // Still needs the password.
+        $this->travel(61)->seconds(); // stay under the 5/min login limit
+        $this->postJson('/api/v1/auth/login', ['email' => 'me@example.com', 'password' => 'nope', 'device_token' => $device])->assertStatus(422);
+
+        $this->travel(31)->days();
+        $login($device)->assertJsonPath('two_factor', true);
+    }
+
+    public function test_trusted_devices_are_forgotten_on_sign_out_others(): void
+    {
+        [$secret, , $token] = $this->enable();
+        $challenge = $this->postJson('/api/v1/auth/login', ['email' => 'me@example.com', 'password' => 'secret-pass-1'])->json('challenge');
+        $device = $this->postJson('/api/v1/auth/two-factor', ['challenge' => $challenge, 'code' => $this->codeAt($secret), 'remember' => true])->json('device_token');
+        $this->app['auth']->forgetGuards();
+        $this->withToken($token)->postJson('/api/v1/auth/logout-others')->assertOk();
+        $this->postJson('/api/v1/auth/login', ['email' => 'me@example.com', 'password' => 'secret-pass-1', 'device_token' => $device])->assertJsonPath('two_factor', true);
+    }
 }

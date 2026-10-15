@@ -12,6 +12,7 @@ export function Login() {
   const [challenge, setChallenge] = useState<string | null>(null)
   const [code, setCode] = useState('')
   const [recovery, setRecovery] = useState(false)
+  const [remember, setRemember] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -27,7 +28,7 @@ export function Login() {
     setBusy(true)
     setError(null)
     try {
-      if (challenge) await completeTwoFactor(challenge, recovery ? { recovery_code: code.trim() } : { code: code.trim() })
+      if (challenge) await completeTwoFactor(challenge, recovery ? { recovery_code: code.trim() } : { code: code.trim() }, remember)
       else setChallenge(await login(email.trim(), password))
     } catch (err) {
       fail(err)
@@ -54,6 +55,10 @@ export function Login() {
               <input id="login-code" className="inp num code-inp" dir="ltr" required autoFocus value={code} onChange={(e) => setCode(e.target.value)}
                 autoComplete="one-time-code" inputMode={recovery ? 'text' : 'numeric'} maxLength={recovery ? 30 : 6} />
             </div>
+            <label className="check small-check" htmlFor="login-remember">
+              <input id="login-remember" type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+              {t('trustDevice')}
+            </label>
             {error && <span className="err" role="alert">{error}</span>}
             <button type="submit" className="btn" disabled={busy}>{t('verify')}</button>
             <div className="auth-links">

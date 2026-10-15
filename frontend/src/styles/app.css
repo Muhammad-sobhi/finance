@@ -276,3 +276,4 @@ a.icon-btn.active { border-color: var(--accent); color: var(--accent); }
 .codes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 16px; padding-inline-start: 22px; font-size: 14px; }
 .codes code { font-family: 'IBM Plex Mono', monospace; }
 .auth-links .more { font-family: inherit; }
+.small-check { font-size: 13px; color: var(--muted); }
