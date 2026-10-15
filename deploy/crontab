@@ -1,0 +1,3 @@
+# sudo crontab -u www-data /var/www/finance/deploy/crontab
+# Laravel scheduler: alerts (hourly), heir check (hourly), auto-pay (06:00), rates (07:00), net-worth snapshot (23:50).
+* * * * * cd /var/www/finance/backend && php artisan schedule:run >> /dev/null 2>&1
