@@ -64,6 +64,8 @@ export interface Transaction {
   base_amount?: number
   date: string
   note: string | null
+  source_type?: string | null
+  has_receipt?: boolean
 }
 
 export interface TxMonth {
@@ -216,6 +218,8 @@ export interface Listed<T, M = Record<string, never>> { data: T[]; meta: M }
 export interface Report {
   period: 'month' | 'year'
   value: string
+  from: string
+  to: string
   base_currency: string
   totals: { income: number; expense: number; savings: number; savings_rate: number | null }
   previous: { income: number; expense: number; savings: number; savings_rate: number | null }

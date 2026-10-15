@@ -3,6 +3,7 @@
 use App\Enums\UserRole;
 use App\Models\User;
 use App\Services\AlertScanner;
+use App\Services\BackupService;
 use App\Services\HeirService;
 use App\Services\MetalPriceFetcher;
 use App\Services\NetWorth;
@@ -24,6 +25,29 @@ Artisan::command('finance:owner {email} {name}', function (string $email, string
     User::create(['email' => $email, 'name' => $name, 'password' => $pass, 'role' => UserRole::Owner, 'last_activity_at' => now()]);
     $this->info("Owner {$email} created with default categories.");
 })->purpose('Create the owner account');
+
+Artisan::command('finance:restore {file} {email}', function (BackupService $backups, string $file, string $email) {
+    $owner = User::where('email', strtolower($email))->where('role', UserRole::Owner)->first();
+    if (! $owner) {
+        $this->error('Create the owner first: php artisan finance:owner '.$email.' "Name"');
+
+        return 1;
+    }
+    if (! is_readable($file)) {
+        $this->error("Can't read {$file}.");
+
+        return 1;
+    }
+    try {
+        $counts = $backups->restore($owner, $backups->open(file_get_contents($file), password('Backup passphrase', required: true)));
+    } catch (RuntimeException $e) {
+        $this->error($e->getMessage());
+
+        return 1;
+    }
+    $this->table(['Table', 'Rows'], collect($counts)->filter()->map(fn ($n, $t) => [$t, $n])->values()->all());
+    $this->info("Restored into {$owner->email}.");
+})->purpose('Restore an encrypted backup into a new, empty owner account');
 
 Artisan::command('finance:auto-pay', function (RecurringService $service) {
     $this->info('Paid '.$service->runAutoPay().' due auto-pay item(s).');

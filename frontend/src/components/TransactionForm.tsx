@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { useI18n } from '../i18n'
 import { useApi } from '../hooks/useApi'
-import { ApiError, del, patch, post } from '../lib/api'
+import { ApiError, del, fetchBlob, patch, post, upload } from '../lib/api'
+import { shrinkImage } from '../lib/image'
 import { isoDate } from '../lib/dates'
 import { catName } from '../lib/labels'
 import { useSession } from '../lib/session'
 import type { Account, Category, Transaction, TxType } from '../lib/types'
+import { DetailModal } from './DetailModal'
 import { DeleteButton, FormModal, type Field } from './Modal'
 
 export function TransactionForm({ tx, onClose }: { tx?: Transaction | null; onClose: () => void }) {
@@ -26,6 +28,39 @@ export function TransactionForm({ tx, onClose }: { tx?: Transaction | null; onCl
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState(false)
+  const [hasReceipt, setHasReceipt] = useState(!!tx?.has_receipt)
+  const [receiptUrl, setReceiptUrl] = useState<string | null>(null)
+
+  const attach = async (file: File | undefined) => {
+    if (!file || !tx) return
+    setBusy(true)
+    try {
+      const blob = await shrinkImage(file)
+      await upload(`/transactions/${tx.id}/receipt`, blob, blob === file ? file.name : 'receipt.jpg')
+      setHasReceipt(true)
+      toast(t('saved'))
+      refresh()
+    } catch (err) {
+      toast(err instanceof ApiError && err.data.errors?.file ? err.data.errors.file[0] : t('error'))
+    } finally {
+      setBusy(false)
+    }
+  }
+  const viewReceipt = async () => {
+    if (!tx) return
+    try {
+      const blob = await fetchBlob(`/transactions/${tx.id}/receipt`)
+      const url = URL.createObjectURL(blob)
+      if (blob.type === 'application/pdf') window.open(url, '_blank', 'noopener')
+      else setReceiptUrl(url)
+    } catch {
+      toast(t('error'))
+    }
+  }
+  const removeReceipt = async () => {
+    if (!tx) return
+    await del(`/transactions/${tx.id}/receipt`).then(() => { setHasReceipt(false); toast(t('saved')); refresh() }).catch(() => toast(t('error')))
+  }
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value })
 
   const acc = accounts.data ?? []
@@ -104,13 +139,32 @@ export function TransactionForm({ tx, onClose }: { tx?: Transaction | null; onCl
       ),
     },
     { name: 'note', label: t('note'), full: true, control: <input id="f-note" className="inp" value={f.note} onChange={set('note')} maxLength={500} /> },
+    {
+      name: 'receipt', label: t('receipt'), full: true, hidden: !tx || (readOnly && !hasReceipt),
+      control: hasReceipt ? (
+        <div className="receipt-ctl" id="f-receipt">
+          <button type="button" className="btn ghost sm" onClick={viewReceipt}>{t('viewReceipt')}</button>
+          {!readOnly && <button type="button" className="btn ghost sm" onClick={removeReceipt}>{t('removeReceipt')}</button>}
+        </div>
+      ) : (
+        <input id="f-receipt" className="inp" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" disabled={busy}
+          onChange={(e) => attach(e.target.files?.[0])} />
+      ),
+    },
   ]
 
   return (
-    <FormModal
-      title={tx ? t('editTransaction') : t('newTransaction')}
-      fields={fields} errors={errors} busy={busy || readOnly} onClose={onClose} onSubmit={submit}
-      extra={tx && !readOnly ? <DeleteButton busy={busy} onConfirm={() => run(() => del(`/transactions/${tx.id}`))} /> : undefined}
-    />
+    <>
+      <FormModal
+        title={tx ? t('editTransaction') : t('newTransaction')}
+        fields={fields} errors={errors} busy={busy || readOnly} onClose={onClose} onSubmit={submit}
+        extra={tx && !readOnly ? <DeleteButton busy={busy} onConfirm={() => run(() => del(`/transactions/${tx.id}`))} /> : undefined}
+      />
+      {receiptUrl && (
+        <DetailModal title={t('receipt')} onClose={() => { URL.revokeObjectURL(receiptUrl); setReceiptUrl(null) }}>
+          <img className="receipt-img" src={receiptUrl} alt={t('receipt')} />
+        </DetailModal>
+      )}
+    </>
   )
 }

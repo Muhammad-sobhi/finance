@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Facades\Storage;
 
 class Transaction extends Model
 {
@@ -29,6 +30,16 @@ class Transaction extends Model
             'to_amount' => 'decimal:2',
             'date' => 'date:Y-m-d',
         ];
+    }
+
+    /** A deleted transaction takes its receipt file with it. */
+    protected static function booted(): void
+    {
+        static::deleted(function (Transaction $tx) {
+            if ($tx->receipt_path) {
+                Storage::disk('local')->delete($tx->receipt_path);
+            }
+        });
     }
 
     /** Morph names of sources whose money is a loan (or gameya savings), not income or spending. */

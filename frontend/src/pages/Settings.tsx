@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { currency, money, text } from '../components/fields'
+import { DataTools } from '../components/DataTools'
 import { Icon } from '../components/Icon'
 import { TwoFactorRow } from '../components/TwoFactorSettings'
 import { DeleteButton, FormModal } from '../components/Modal'
@@ -18,7 +19,7 @@ export function Settings() {
   const { t, num: n, date: fmtDate } = useI18n()
   const { readOnly, refresh, toast } = useSession()
   const { data } = useApi<S>('/settings')
-  const [tab, setTab] = useState<'general' | 'rates'>('general')
+  const [tab, setTab] = useState<'general' | 'rates' | 'data'>('general')
   const [f, setF] = useState<Record<string, string | boolean>>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [rate, setRate] = useState<Rate | null | undefined>(undefined)
@@ -69,8 +70,8 @@ export function Settings() {
     <div className="list">
       <div className="list-head show-sm">
         <div className="seg" role="radiogroup">
-          {(['general', 'rates'] as const).map((k) => (
-            <button type="button" key={k} role="radio" aria-checked={tab === k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{t(k)}</button>
+          {(['general', 'rates', 'data'] as const).map((k) => (
+            <button type="button" key={k} role="radio" aria-checked={tab === k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{t(k === 'data' ? 'dataTab' : k)}</button>
           ))}
         </div>
       </div>
@@ -93,7 +94,8 @@ export function Settings() {
           <AccountRows />
           {!readOnly && <div className="actions"><button type="submit" className="btn">{t('save')}</button></div>}
         </form>
-        <div className={`card${tab !== 'rates' ? ' off-sm' : ''}`}>
+        <div className="col">
+        <div className={`card rates-card${tab !== 'rates' ? ' off-sm' : ''}`}>
           <h3>{t('rates')}<small>1 X = ? {data?.base_currency}</small></h3>
           <Paged items={rates}
             empty={<p className="muted none">{t('empty')}</p>}
@@ -113,6 +115,8 @@ export function Settings() {
               onChange={(e) => patch('/settings', { auto_fetch_rates: e.target.checked }).then(() => { toast(t('saved')); refresh() }).catch(() => toast(t('error')))} />
           </div>
           {!readOnly && <div className="actions"><button type="button" className="btn" onClick={() => setRate(null)}><Icon name="plus" />{t('addRate')}</button></div>}
+        </div>
+        <DataTools className={tab !== 'data' ? 'off-sm' : ''} />
         </div>
       </div>
       {rate !== undefined && <RateForm rate={rate} onClose={() => setRate(undefined)} />}

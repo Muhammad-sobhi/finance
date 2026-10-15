@@ -25,6 +25,7 @@ class TransactionResource extends JsonResource
             'note' => $this->note,
             'source_type' => $this->source_type,
             'source_id' => $this->source_id,
+            'has_receipt' => $this->receipt_path !== null,
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

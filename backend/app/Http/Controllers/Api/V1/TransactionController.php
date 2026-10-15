@@ -15,6 +15,8 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class TransactionController extends Controller
 {
@@ -116,6 +118,44 @@ class TransactionController extends Controller
         $this->service->delete($transaction);
 
         return response()->json(null, 204);
+    }
+
+    /** Attach (or replace) a receipt photo / PDF. Stored on the private disk, never public. */
+    public function storeReceipt(Request $request, Transaction $transaction): TransactionResource
+    {
+        Gate::authorize('update', $transaction);
+        $request->validate(['file' => ['required', 'file', 'max:5120', 'mimetypes:image/jpeg,image/png,image/webp,application/pdf']]);
+        $file = $request->file('file');
+        $path = $file->storeAs("receipts/{$transaction->user_id}", Str::uuid().'.'.$file->guessExtension(), 'local');
+        $old = $transaction->receipt_path;
+        $transaction->forceFill(['receipt_path' => $path, 'receipt_mime' => $file->getMimeType()])->save();
+        if ($old) {
+            Storage::disk('local')->delete($old);
+        }
+
+        return new TransactionResource($transaction);
+    }
+
+    public function showReceipt(Transaction $transaction)
+    {
+        Gate::authorize('view', $transaction);
+        abort_unless($transaction->receipt_path && Storage::disk('local')->exists($transaction->receipt_path), 404);
+
+        return Storage::disk('local')->response($transaction->receipt_path, null, [
+            'Content-Type' => $transaction->receipt_mime, 'Cache-Control' => 'private, no-store', 'X-Content-Type-Options' => 'nosniff',
+            'Content-Disposition' => 'inline',
+        ]);
+    }
+
+    public function destroyReceipt(Transaction $transaction): TransactionResource
+    {
+        Gate::authorize('update', $transaction);
+        if ($transaction->receipt_path) {
+            Storage::disk('local')->delete($transaction->receipt_path);
+            $transaction->forceFill(['receipt_path' => null, 'receipt_mime' => null])->save();
+        }
+
+        return new TransactionResource($transaction);
     }
 
     /** Loan/repayment and project-payment transactions are owned by their record; edit them there. */

@@ -52,3 +52,42 @@ export const post = <T>(path: string, body: unknown) => api<T>(path, { method: '
 export const patch = <T>(path: string, body: unknown) => api<T>(path, { method: 'PATCH', body })
 export const put = <T>(path: string, body: unknown) => api<T>(path, { method: 'PUT', body })
 export const del = (path: string) => api<void>(path, { method: 'DELETE' })
+
+/** Authorized request whose answer is a file (CSV, backup, receipt). */
+export async function fetchBlob(path: string, opts: { method?: string; body?: unknown; form?: FormData } = {}): Promise<Blob> {
+  const headers: Record<string, string> = { Accept: 'application/json, */*' }
+  const t = token.get()
+  if (t) headers.Authorization = `Bearer ${t}`
+  if (opts.body !== undefined) headers['Content-Type'] = 'application/json'
+  const res = await fetch(BASE + path, {
+    method: opts.method ?? 'GET', headers,
+    body: opts.form ?? (opts.body !== undefined ? JSON.stringify(opts.body) : undefined),
+  })
+  if (!res.ok) throw new ApiError(res.status, await res.json().catch(() => ({})))
+  return res.blob()
+}
+
+/** Multipart upload (receipts); answers JSON like `api`. */
+export async function upload<T = unknown>(path: string, file: Blob, name: string): Promise<T> {
+  const form = new FormData()
+  form.append('file', file, name)
+  const headers: Record<string, string> = { Accept: 'application/json' }
+  const t = token.get()
+  if (t) headers.Authorization = `Bearer ${t}`
+  const res = await fetch(BASE + path, { method: 'POST', headers, body: form })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new ApiError(res.status, data)
+  return data as T
+}
+
+/** Hand a Blob to the browser as a download. */
+export function saveBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 30000)
+}

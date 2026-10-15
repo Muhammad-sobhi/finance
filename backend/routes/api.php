@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\BillController;
 use App\Http\Controllers\Api\V1\BudgetController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\DataController;
 use App\Http\Controllers\Api\V1\DebtController;
 use App\Http\Controllers\Api\V1\GameyaController;
 use App\Http\Controllers\Api\V1\GoalController;
@@ -61,6 +62,12 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('accounts', AccountController::class);
         Route::apiResource('categories', CategoryController::class);
         Route::apiResource('transactions', TransactionController::class);
+        Route::post('transactions/{transaction}/receipt', [TransactionController::class, 'storeReceipt'])->name('transactions.receipt.store');
+        Route::get('transactions/{transaction}/receipt', [TransactionController::class, 'showReceipt'])->name('transactions.receipt.show');
+        Route::delete('transactions/{transaction}/receipt', [TransactionController::class, 'destroyReceipt'])->name('transactions.receipt.destroy');
+        Route::get('export/transactions', [DataController::class, 'exportTransactions'])->name('export.transactions');
+        Route::post('backup', [DataController::class, 'backup'])->middleware('throttle:account-security')->name('backup');
+        Route::post('import/transactions', [DataController::class, 'import'])->middleware('throttle:30,1')->name('import.transactions');
 
         Route::apiResource('debts', DebtController::class);
         Route::post('debts/{debt}/payments', [DebtController::class, 'addPayment'])->name('debts.payments.store');

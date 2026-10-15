@@ -149,6 +149,16 @@ td.acts { width: 1%; }
 .mini-chart { height: 130px; flex: none; display: flex; flex-direction: column; }
 .split { height: 100%; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--gap); }
 .split > .card { min-height: 0; }
+.split > .col { min-height: 0; display: flex; flex-direction: column; gap: var(--gap); }
+.split > .col > .card { min-height: 0; }
+.split > .col > .rates-card { flex: 1; }
+.data-card { flex: none; gap: 8px; }
+.data-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.data-card .hint { font-size: 12px; margin: 0; }
+.receipt-ctl { display: flex; gap: 8px; flex-wrap: wrap; }
+.receipt-img { flex: 1; min-height: 0; width: 100%; object-fit: contain; }
+.import-sum { margin: 0; padding-inline-start: 18px; display: flex; flex-direction: column; gap: 2px; }
+p.hint { margin: 0; font-size: 13px; }
 .setting-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: var(--row-line); font-size: 14px; }
 .setting-row label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .setting-row .inp { width: 140px; flex: none; padding: 6px 8px; }
@@ -156,7 +166,10 @@ td.acts { width: 1%; }
 @media (max-width: 720px) {
   .split { display: flex; flex-direction: column; }
   .split > .card { flex: 1; }
-  .split > .card.off-sm { display: none; }
+  .split > .card.off-sm, .split > .col > .card.off-sm { display: none; }
+  .split > .col { flex: 1; }
+  .split > .col:not(:has(> .card:not(.off-sm))) { display: none; }
+  .split > .col > .card { flex: 1; }
   .modal.detail { height: 92%; }
   .detail-b { padding: 12px 14px; }
 }

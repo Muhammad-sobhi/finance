@@ -8,6 +8,7 @@ import { useApi } from '../hooks/useApi'
 import { useSwipe } from '../hooks/useSwipe'
 import { useI18n } from '../i18n'
 import { monthIndex, shiftMonth, thisMonth } from '../lib/dates'
+import { printReport } from '../lib/print'
 import type { Report } from '../lib/types'
 
 const PANELS = 5
@@ -71,6 +72,7 @@ export function Reports() {
           <button type="button" className="icon-btn" onClick={() => shift(1)} disabled={isCurrent} aria-label={t('nextPeriod')}><Icon name="next" className="flip" /></button>
         </div>
         <span className="grow" />
+        {r && <button type="button" className="icon-btn" onClick={() => printReport(r, i, label, catLabel)} aria-label={t('printReport')} title={t('printReport')}><Icon name="print" /></button>}
         {r && (
           <span className={`tag ${r.growth.growing ? 'quiet grow-tag' : 'late'}`}>
             {r.growth.growing ? t('growing') : t('notGrowing')}{r.growth.pct !== null ? ` ${r.growth.pct >= 0 ? '▲' : '▼'} ${num(Math.abs(r.growth.pct), 1)}%` : ''}

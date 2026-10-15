@@ -48,6 +48,10 @@ const DIALOGS = [
   ['/planning', ['.planning > .list-head .seg button:nth-child(3)', '.z-due .acts .btn:not(.ghost)'], 'zakat-pay'],
   ['/planning', ['.planning > .list-head .seg button:nth-child(3)', '.z-due .acts .btn.ghost'], 'zakat-settings'],
   ['/planning', ['.planning > .list-head .seg button:nth-child(3)', '.z-parts h3 .more'], 'zakat-history'],
+  ['/settings', ['.show-sm .seg button:nth-child(3)'], 'settings-data'],
+  ['/settings', ['.show-sm .seg button:nth-child(3)', '.data-acts .btn:nth-child(3)'], 'backup-form'],
+  ['/settings', ['.show-sm .seg button:nth-child(3)', '.data-acts .btn:nth-child(2)'], 'import-form'],
+  ['/transactions', ['.list-body .row-link, .list-body .card.tx'], 'transaction-edit-form'],
   ['/debts', ['.debts-page > .list-head .seg button:nth-child(2)'], 'installments'],
   ['/debts', ['.debts-page > .list-head .seg button:nth-child(2)', '.tab-body .list-head .btn'], 'plan-form'],
   ['/debts', ['.debts-page > .list-head .seg button:nth-child(2)', '.tab-body .list-body [data-fi]'], 'plan-detail'],
@@ -140,7 +144,7 @@ if (process.env.HEIR_EMAIL) {
     const ctx = await browser.newContext({ viewport: { width: w, height: h } })
     await ctx.addInitScript((t) => localStorage.setItem('fin.token', t), heirToken)
     const page = await ctx.newPage()
-    for (const route of ROUTES.slice(0, 14)) {
+    for (const route of ROUTES.filter((r) => !r.startsWith('/heir-request') && !r.startsWith('/link'))) {
       await page.goto(BASE + route)
       await page.waitForSelector('.readonly-bar', { timeout: 10000 })
       await page.waitForLoadState('networkidle')
