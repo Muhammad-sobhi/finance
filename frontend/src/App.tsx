@@ -16,7 +16,7 @@ import { Notifications } from './pages/Notifications'
 import { HeirPage } from './pages/Heir'
 import { Income } from './pages/Income'
 import { Planning } from './pages/Planning'
-import { HeirRequestPage, LinkPage } from './pages/Public'
+import { ForgotPasswordPage, HeirRequestPage, LinkPage, ResetPasswordPage } from './pages/Public'
 import { Transactions } from './pages/Transactions'
 
 export default function App() {
@@ -31,6 +31,8 @@ export default function App() {
         {/* Public: emailed signed actions and the heir access request. */}
         <Route path="link" element={<LinkPage />} />
         <Route path="heir-request" element={<HeirRequestPage />} />
+        <Route path="forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="reset-password" element={<ResetPasswordPage />} />
         {!user && <Route path="*" element={<Login />} />}
         {user && <Route element={<Shell />}>
           <Route index element={<Dashboard />} />

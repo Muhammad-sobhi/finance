@@ -78,7 +78,10 @@ export function Login() {
             </div>
             {error && <span className="err" role="alert">{error}</span>}
             <button type="submit" className="btn" disabled={busy}>{t('login')}</button>
-            <Link to="/heir-request" className="more">{t('heirRequest')}</Link>
+            <div className="auth-links">
+              <Link to="/forgot-password" className="more">{t('forgotPassword')}</Link>
+              <Link to="/heir-request" className="more">{t('heirRequest')}</Link>
+            </div>
           </>
         )}
       </form>

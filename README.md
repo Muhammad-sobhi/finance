@@ -102,6 +102,7 @@ All under `/api/v1`, JSON, `Authorization: Bearer <token>` unless marked public.
 | --- | --- | --- |
 | POST | `/auth/login` | public, rate-limited → `{token, user}` |
 | POST | `/auth/logout` · GET/PATCH `/auth/me` | PATCH saves `theme`, `locale`, `list_mode` |
+| POST | `/auth/forgot-password` · `/auth/reset-password` | **public**, rate-limited; same answer for any email; the reset signs out every device and emails a notice |
 | POST | `/auth/two-factor` | **public**, login step 2: `{challenge, code \| recovery_code}` → `{token, user}` |
 | PATCH/PUT/POST | `/auth/profile`, `/auth/password`, `/auth/logout-others` | name/email, password (signs out other devices), other devices |
 | GET/POST | `/auth/two-factor`, `/auth/two-factor/{setup,confirm,disable,recovery-codes}` | 2FA status and management |
@@ -305,6 +306,7 @@ What protects the app (each item is covered by feature tests unless noted):
 - **Browser** (deploy/nginx.conf) — HTTPS only with HSTS; a strict Content-Security-Policy (only our own scripts, no inline scripts, no third-party hosts, no framing); `X-Frame-Options`, `nosniff`, `Referrer-Policy`, `COOP`; `X-Powered-By` hidden. CORS allows only `FRONTEND_URL`. Verified locally through nginx: no CSP violations, service worker and fonts load.
 - **Dependencies** — `composer audit` and `npm audit` report no known vulnerabilities (re-run them on each update).
 - **Secrets** — none in the repo; only `.env.example`. Set `APP_DEBUG=false` in production and `expose_php = Off` in `/etc/php/8.3/fpm/php.ini`. For receipts set `upload_max_filesize = 8M` and `post_max_size = 8M` there too (nginx allows 8 MB).
+- **Forgot password** — the emailed link (`FRONTEND_URL/reset-password?token=…`) works once and for 60 minutes; requests are limited to 5/hour per email and 20/hour per IP; the response never reveals whether an email is registered. A reset signs out every device, forgets trusted 2FA devices and emails the owner. Two-step verification is still asked at the next login.
 - **Sign-in activity** — every sign-in and every failed password / code on a real account is logged (method, browser + OS, IP; last 200 kept) and listed in *Settings → Account & security*. A sign-in from a browser/device not seen in 180 days notifies the owner in-app, by push and always by email.
 - **Receipts** — stored outside the web root on the private disk with random names, served only through the authorized API (never a public URL), `no-store`, `nosniff`; deleted with their transaction. Photos are shrunk to ≤ 1600 px in the browser before upload.
 - **Exports** — CSV cells starting with `= + - @` are prefixed so spreadsheets don't run them as formulas.

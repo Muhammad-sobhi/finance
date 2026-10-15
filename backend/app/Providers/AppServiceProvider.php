@@ -55,6 +55,13 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('two-factor', fn (Request $request) => Limit::perMinute(5)->by('2fa|'.$request->ip()));
 
         // Heir requests: few per hour per IP and per email (and the response never reveals a match).
+        // Reset emails: a few per hour per address and per IP, so nobody can flood an inbox.
+        RateLimiter::for('password-reset', fn (Request $request) => [
+            Limit::perHour(5)->by('email|'.strtolower((string) $request->input('email'))),
+            Limit::perHour(20)->by('ip|'.$request->ip()),
+            Limit::perMinute(5)->by('min|'.$request->ip()),
+        ]);
+
         RateLimiter::for('heir-request', fn (Request $request) => [
             Limit::perHour(5)->by('ip|'.$request->ip()),
             Limit::perHour(3)->by('email|'.strtolower((string) $request->input('email'))),

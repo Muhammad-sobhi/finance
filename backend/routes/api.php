@@ -30,6 +30,8 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function () {
     Route::post('auth/login', [AuthController::class, 'login'])->middleware('throttle:login')->name('auth.login');
     Route::post('auth/two-factor', [AuthController::class, 'twoFactorChallenge'])->middleware('throttle:two-factor')->name('auth.two-factor');
+    Route::post('auth/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:password-reset')->name('auth.forgot');
+    Route::post('auth/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:two-factor')->name('auth.reset');
 
     // Public: an heir asks for access (generic response, rate-limited).
     Route::post('heir-requests', [HeirRequestController::class, 'store'])->middleware('throttle:heir-request')->name('heir-requests.store');

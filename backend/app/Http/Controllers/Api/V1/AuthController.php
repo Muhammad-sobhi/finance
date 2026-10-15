@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateProfileRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Notifications\InfoAlert;
 use App\Services\SignInLog;
 use App\Services\TwoFactor;
 use Illuminate\Http\JsonResponse;
@@ -13,8 +14,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\Rules\Password as PasswordRule;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -49,6 +51,40 @@ class AuthController extends Controller
         $this->log->success($user, $request, $twoFactor ? 'trusted_device' : 'password');
 
         return $this->issueToken($user, $data['device_name'] ?? 'web');
+    }
+
+    /** Email a reset link. Same answer whether or not the address is registered. */
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $request->validate(['email' => ['required', 'email', 'max:255']]);
+        // Status (sent / throttled / unknown user) is deliberately not revealed.
+        Password::broker()->sendResetLink(['email' => strtolower($request->input('email'))]);
+
+        return response()->json(['message' => __('passwords.sent')]);
+    }
+
+    /** Set a new password from the emailed token; signs out every device and forgets trusted ones. */
+    public function resetPassword(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'token' => ['required', 'string', 'max:200'],
+            'email' => ['required', 'email', 'max:255'],
+            'password' => ['required', 'confirmed', PasswordRule::min(10)],
+        ]);
+        $status = Password::broker()->reset(
+            ['email' => strtolower($data['email']), 'token' => $data['token'], 'password' => $data['password'], 'password_confirmation' => $request->input('password_confirmation')],
+            function (User $user, string $password) {
+                $user->forceFill(['password' => $password, 'remember_token' => null])->save();
+                $user->tokens()->delete();
+                $this->twoFactor->forgetDevices($user);
+                $user->notify(new InfoAlert('password_reset', [], '/settings', always: true));
+            },
+        );
+        if ($status !== Password::PASSWORD_RESET) {
+            throw ValidationException::withMessages(['token' => __('passwords.token')]);
+        }
+
+        return response()->json(['message' => __('passwords.reset')]);
     }
 
     /** Login step 2: authenticator code (or a recovery code) for the challenge from step 1. */
@@ -195,7 +231,7 @@ class AuthController extends Controller
     {
         $request->validate([
             'current_password' => ['required', 'current_password:sanctum'],
-            'password' => ['required', 'confirmed', Password::min(10), 'different:current_password'],
+            'password' => ['required', 'confirmed', PasswordRule::min(10), 'different:current_password'],
         ]);
         $user = $request->user();
         $user->forceFill(['password' => $request->input('password')])->save();

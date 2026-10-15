@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\UserRole;
+use App\Notifications\ResetPasswordMail;
 use App\Services\DefaultCategories;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -85,6 +86,12 @@ class User extends Authenticatable
             'password' => 'hashed',
             'role' => UserRole::class,
         ];
+    }
+
+    /** Laravel's password broker calls this; we send our own bilingual mail pointing at the SPA. */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new ResetPasswordMail($token));
     }
 
     public function isOwner(): bool

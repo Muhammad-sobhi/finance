@@ -14,7 +14,7 @@ const PASSWORD = process.env.PASSWORD ?? 'password'
 const SHOTS = process.env.SHOTS
 const VIEWPORTS = [[390, 780], [900, 700], [1440, 900]]
 const ROUTES = ['/', '/notifications', '/reports', '/income', '/planning', '/accounts', '/transactions', '/categories', '/debts', '/bills', '/subscriptions', '/investments', '/assets', '/heir', '/settings',
-  '/heir-request', '/link?to=%2Fapi%2Fv1%2Flinks%2Fcheck-in%2F1%3Fexpires%3D1%26signature%3Dx']
+  '/heir-request', '/forgot-password', '/reset-password?token=x&email=a%40b.c', '/link?to=%2Fapi%2Fv1%2Flinks%2Fcheck-in%2F1%3Fexpires%3D1%26signature%3Dx']
 const COMBOS = [['ledger', 'ar'], ['swiss', 'ar'], ['geo', 'ar'], ['vault', 'ar'], ['ledger', 'en'], ['vault', 'en']]
 // Dialogs: [route, selector(s) to click, label]
 const DIALOGS = [
@@ -145,7 +145,7 @@ if (process.env.HEIR_EMAIL) {
     const ctx = await browser.newContext({ viewport: { width: w, height: h } })
     await ctx.addInitScript((t) => localStorage.setItem('fin.token', t), heirToken)
     const page = await ctx.newPage()
-    for (const route of ROUTES.filter((r) => !r.startsWith('/heir-request') && !r.startsWith('/link'))) {
+    for (const route of ROUTES.filter((r) => !['/heir-request', '/link', '/forgot-password', '/reset-password'].some((p) => r.startsWith(p)))) {
       await page.goto(BASE + route)
       await page.waitForSelector('.readonly-bar', { timeout: 10000 })
       await page.waitForLoadState('networkidle')
@@ -167,4 +167,4 @@ if (failures.length) {
 }
 const views = process.env.ONLY ? `${process.env.ONLY.split(',').length} selected` : ROUTES.length + DIALOGS.length
 console.log(`✓ no scrolling: ${views} views × ${VIEWPORTS.length} viewports × ${COMBOS.length} theme/lang combos`
-  + (process.env.HEIR_EMAIL ? ` + read-only heir view (${ROUTES.filter((r) => !r.startsWith('/heir-request') && !r.startsWith('/link')).length} pages × ${VIEWPORTS.length} viewports)` : ''))
+  + (process.env.HEIR_EMAIL ? ` + read-only heir view (${ROUTES.filter((r) => !['/heir-request', '/link', '/forgot-password', '/reset-password'].some((p) => r.startsWith(p))).length} pages × ${VIEWPORTS.length} viewports)` : ''))

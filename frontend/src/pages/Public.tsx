@@ -136,3 +136,89 @@ export function LinkPage() {
     </AuthCard>
   )
 }
+
+/** "Forgot password?": always the same answer, whether or not the email is registered. */
+export function ForgotPasswordPage() {
+  const { t } = useI18n()
+  const [email, setEmail] = useState('')
+  const [state, setState] = useState<'idle' | 'busy' | 'sent' | 'error'>('idle')
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    setState('busy')
+    try {
+      await post('/auth/forgot-password', { email: email.trim() })
+      setState('sent')
+    } catch (err) {
+      setState(err instanceof ApiError && err.status === 429 ? 'sent' : 'error')
+    }
+  }
+  return (
+    <AuthCard title={t('forgotPassword')}>
+      {state === 'sent' ? <p role="status">{t('resetSent')}</p> : (
+        <form className="auth-form" onSubmit={submit}>
+          <p className="muted">{t('forgotHint')}</p>
+          <div className="field">
+            <label htmlFor="fp-email">{t('email')}</label>
+            <input id="fp-email" className="inp" type="email" dir="ltr" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
+          </div>
+          {state === 'error' && <span className="err" role="alert">{t('error')}</span>}
+          <button type="submit" className="btn" disabled={state === 'busy'}>{t('sendResetLink')}</button>
+        </form>
+      )}
+      <Link to="/" className="more">{t('backToLogin')}</Link>
+    </AuthCard>
+  )
+}
+
+/** The page the emailed reset link opens: choose a new password. */
+export function ResetPasswordPage() {
+  const { t } = useI18n()
+  const [params] = useSearchParams()
+  const token = params.get('token') ?? ''
+  const email = params.get('email') ?? ''
+  const [pw, setPw] = useState({ password: '', password_confirmation: '' })
+  const [state, setState] = useState<'idle' | 'busy' | 'done'>('idle')
+  const [err, setErr] = useState<string | null>(null)
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    if (pw.password !== pw.password_confirmation) { setErr(t('passMismatch')); return }
+    setState('busy')
+    setErr(null)
+    try {
+      await post('/auth/reset-password', { token, email, ...pw })
+      setState('done')
+    } catch (e) {
+      setState('idle')
+      const f = e instanceof ApiError ? e.fieldErrors : {}
+      setErr(f.token ? t('resetLinkInvalid') : f.password ?? (e instanceof ApiError && e.status === 429 ? e.message : t('error')))
+    }
+  }
+  if (!token || !email) {
+    return <AuthCard title={t('resetPassword')}><p role="alert">{t('resetLinkInvalid')}</p><Link to="/forgot-password" className="more">{t('sendResetLink')}</Link></AuthCard>
+  }
+  return (
+    <AuthCard title={t('resetPassword')}>
+      {state === 'done' ? (
+        <>
+          <p role="status">{t('resetDone')}</p>
+          <Link to="/" className="btn">{t('login')}</Link>
+        </>
+      ) : (
+        <form className="auth-form" onSubmit={submit}>
+          <p className="muted" dir="ltr">{email}</p>
+          <div className="field">
+            <label htmlFor="rp-password">{t('newPassword')}</label>
+            <input id="rp-password" className="inp" type="password" dir="ltr" autoComplete="new-password" minLength={10} required value={pw.password} onChange={(e) => setPw({ ...pw, password: e.target.value })} />
+          </div>
+          <div className="field">
+            <label htmlFor="rp-confirm">{t('passwordConfirm')}</label>
+            <input id="rp-confirm" className="inp" type="password" dir="ltr" autoComplete="new-password" minLength={10} required value={pw.password_confirmation} onChange={(e) => setPw({ ...pw, password_confirmation: e.target.value })} />
+          </div>
+          {err && <span className="err" role="alert">{err}</span>}
+          <button type="submit" className="btn" disabled={state === 'busy'}>{t('save')}</button>
+        </form>
+      )}
+      {state !== 'done' && <Link to="/" className="more">{t('backToLogin')}</Link>}
+    </AuthCard>
+  )
+}

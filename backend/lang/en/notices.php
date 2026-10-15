@@ -10,6 +10,10 @@ return [
         'title' => 'New sign-in to your account',
         'body' => 'Someone signed in from :device (IP :ip) at :time. If this wasn\'t you, change your password now and sign out other devices.',
     ],
+    'password_reset' => [
+        'title' => 'Your password was changed',
+        'body' => "The password of your account was just reset and every device was signed out. If this wasn't you, reset it again right away and turn on two-step verification.",
+    ],
     'budget_near' => [
         'title' => 'Budget almost used: :category',
         'body' => 'You have spent :spent of your :limit :currency budget for :category this month (:pct%).',
