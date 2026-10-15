@@ -22,6 +22,7 @@ class UserResource extends JsonResource
             'list_mode' => $this->list_mode,
             'base_currency' => $this->dataOwner()->base_currency,
             'last_activity_at' => $this->last_activity_at?->toIso8601String(),
+            'two_factor' => $this->two_factor_confirmed_at !== null,
         ];
     }
 }

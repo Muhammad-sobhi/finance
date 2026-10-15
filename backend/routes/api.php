@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     Route::post('auth/login', [AuthController::class, 'login'])->middleware('throttle:login')->name('auth.login');
+    Route::post('auth/two-factor', [AuthController::class, 'twoFactorChallenge'])->middleware('throttle:two-factor')->name('auth.two-factor');
 
     // Public: an heir asks for access (generic response, rate-limited).
     Route::post('heir-requests', [HeirRequestController::class, 'store'])->middleware('throttle:heir-request')->name('heir-requests.store');
@@ -40,8 +41,13 @@ Route::prefix('v1')->group(function () {
         Route::get('auth/me', [AuthController::class, 'me'])->name('auth.me');
         Route::patch('auth/me', [AuthController::class, 'update'])->name('auth.me.update');
         Route::patch('auth/profile', [AuthController::class, 'updateProfile'])->name('auth.profile');
-        Route::put('auth/password', [AuthController::class, 'updatePassword'])->middleware('throttle:6,1')->name('auth.password');
+        Route::put('auth/password', [AuthController::class, 'updatePassword'])->middleware('throttle:account-security')->name('auth.password');
         Route::post('auth/logout-others', [AuthController::class, 'logoutOthers'])->name('auth.logout-others');
+        Route::get('auth/two-factor', [AuthController::class, 'twoFactorStatus'])->name('auth.2fa.status');
+        Route::post('auth/two-factor/setup', [AuthController::class, 'twoFactorSetup'])->middleware('throttle:account-security')->name('auth.2fa.setup');
+        Route::post('auth/two-factor/confirm', [AuthController::class, 'twoFactorConfirm'])->middleware('throttle:account-security')->name('auth.2fa.confirm');
+        Route::post('auth/two-factor/disable', [AuthController::class, 'twoFactorDisable'])->middleware('throttle:account-security')->name('auth.2fa.disable');
+        Route::post('auth/two-factor/recovery-codes', [AuthController::class, 'twoFactorRecoveryCodes'])->middleware('throttle:account-security')->name('auth.2fa.recovery');
 
         Route::get('dashboard', DashboardController::class)->name('dashboard');
         Route::get('reports', ReportController::class)->name('reports');

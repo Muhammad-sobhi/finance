@@ -12,7 +12,8 @@ use Symfony\Component\HttpFoundation\Response;
 class ReadOnlyForHeirs
 {
     /** Routes an heir may still call with a write method: their own session, display prefs and password. */
-    private const ALLOWED = ['auth.logout', 'auth.me.update', 'auth.password', 'auth.logout-others'];
+    private const ALLOWED = ['auth.logout', 'auth.me.update', 'auth.password', 'auth.logout-others',
+        'auth.2fa.setup', 'auth.2fa.confirm', 'auth.2fa.disable', 'auth.2fa.recovery'];
 
     public function handle(Request $request, Closure $next): Response
     {

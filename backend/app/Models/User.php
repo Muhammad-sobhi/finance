@@ -29,7 +29,7 @@ class User extends Authenticatable
         'heir_enabled', 'heir_inactivity_days', 'heir_grace_days',
     ];
 
-    protected $hidden = ['password', 'remember_token'];
+    protected $hidden = ['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'];
 
     protected $attributes = [
         'role' => 'owner',
@@ -72,6 +72,7 @@ class User extends Authenticatable
             'heir_grace_days' => 'integer',
             'heir_warning_started_at' => 'datetime',
             'heir_last_reminder_at' => 'datetime',
+            'two_factor_confirmed_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
         ];

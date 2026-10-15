@@ -52,7 +52,7 @@ Locally `MAIL_MAILER=log` writes emails (alerts, heir links) to `backend/storage
 ## Checks
 
 ```bash
-cd backend && php artisan test                         # 84 feature tests, SQLite in memory
+cd backend && php artisan test                         # 99 feature tests, SQLite in memory
 # same suite on MySQL (uses a separate database):
 DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_DATABASE=finance_test DB_USERNAME=finance DB_PASSWORD=secret php artisan test
 
@@ -87,6 +87,9 @@ All under `/api/v1`, JSON, `Authorization: Bearer <token>` unless marked public.
 | --- | --- | --- |
 | POST | `/auth/login` | public, rate-limited → `{token, user}` |
 | POST | `/auth/logout` · GET/PATCH `/auth/me` | PATCH saves `theme`, `locale`, `list_mode` |
+| POST | `/auth/two-factor` | **public**, login step 2: `{challenge, code \| recovery_code}` → `{token, user}` |
+| PATCH/PUT/POST | `/auth/profile`, `/auth/password`, `/auth/logout-others` | name/email, password (signs out other devices), other devices |
+| GET/POST | `/auth/two-factor`, `/auth/two-factor/{setup,confirm,disable,recovery-codes}` | 2FA status and management |
 | GET | `/dashboard` | net worth (+ change vs last month), liquid, debts, balances, 6-month spending, upcoming |
 | GET | `/reports?period=month&month=YYYY-MM` · `?period=year&year=YYYY` | totals, comparison, growth, categories, series, trend, advice |
 | CRUD | `/accounts`, `/categories`, `/transactions` | `?month=YYYY-MM&account_id&category_id&type`; `GET /transactions/quick-meta` |
@@ -249,4 +252,4 @@ What protects the app (each item is covered by feature tests unless noted):
 - **Dependencies** — `composer audit` and `npm audit` report no known vulnerabilities (re-run them on each update).
 - **Secrets** — none in the repo; only `.env.example`. Set `APP_DEBUG=false` in production and `expose_php = Off` in `/etc/php/8.3/fpm/php.ini`.
 
-Not included yet: two-factor authentication (TOTP) for the owner login — recommended as a next step.
+- **Two-factor authentication** — optional TOTP (Google/Microsoft Authenticator, 1Password) from *Settings → Account & security*: the secret is encrypted, the QR is drawn in the browser (never sent elsewhere), each code works once (no replay), 8 single-use recovery codes are stored hashed, the second login step expires after 5 minutes and is limited to 5 tries/min. Turning it off needs the password and a code.

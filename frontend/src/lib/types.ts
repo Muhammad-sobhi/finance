@@ -12,6 +12,7 @@ export interface User {
   list_mode: ListMode
   base_currency: string
   last_activity_at: string | null
+  two_factor: boolean
 }
 
 export const ACCOUNT_TYPES = [

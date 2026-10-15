@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { currency, money, text } from '../components/fields'
 import { Icon } from '../components/Icon'
+import { TwoFactorRow } from '../components/TwoFactorSettings'
 import { DeleteButton, FormModal } from '../components/Modal'
 import { Paged } from '../components/Paged'
 import { useApi } from '../hooks/useApi'
@@ -117,6 +118,7 @@ function AccountRows() {
         <button type="button" className="btn sm ghost" onClick={() => setOpen('password')}>{t('changePassword')}</button>
         <button type="button" className="btn sm ghost" onClick={others}>{t('logoutOthers')}</button>
       </div>
+      <TwoFactorRow />
       {open === 'profile' && <ProfileForm onClose={() => setOpen(null)} />}
       {open === 'password' && <PasswordForm onClose={() => setOpen(null)} />}
     </>

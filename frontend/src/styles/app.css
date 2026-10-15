@@ -264,3 +264,15 @@ a.icon-btn.active { border-color: var(--accent); color: var(--accent); }
 .breakdown span { display: flex; align-items: center; gap: 6px; }
 .breakdown b { margin-inline-start: auto; font-family: var(--font-num); }
 .acct-actions { justify-content: flex-start; flex-wrap: wrap; gap: 6px; }
+
+/* ---------- two-factor ---------- */
+.tfa { display: flex; flex-direction: column; gap: 10px; align-items: stretch; min-height: 0; }
+.tfa > p { font-size: 13px; line-height: 1.6; }
+.tfa .small { font-size: 12px; }
+.qr { align-self: center; width: 168px; height: 168px; background: #fff; border-radius: 6px; padding: 4px; flex: none; }
+.qr svg { width: 100%; height: 100%; display: block; fill: initial; stroke: none; stroke-width: 1; stroke-linecap: butt; stroke-linejoin: miter; } /* QR modules need exact 1-unit strokes */
+.secret { font-family: 'IBM Plex Mono', monospace; font-size: 12px; text-align: center; word-break: break-all; color: var(--ink); }
+.code-inp { font-size: 22px; letter-spacing: 6px; text-align: center; }
+.codes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 16px; padding-inline-start: 22px; font-size: 14px; }
+.codes code { font-family: 'IBM Plex Mono', monospace; }
+.auth-links .more { font-family: inherit; }

@@ -25,7 +25,9 @@ interface Session {
   setTheme: (t: Theme) => void
   setLang: (l: Lang) => void
   setListMode: (m: ListMode) => void
-  login: (email: string, password: string) => Promise<void>
+  /** Resolves to a challenge string when a second (2FA) step is needed. */
+  login: (email: string, password: string) => Promise<string | null>
+  completeTwoFactor: (challenge: string, code: { code?: string; recovery_code?: string }) => Promise<void>
   /** Re-read the signed-in user (after profile changes). */
   reloadUser: () => Promise<void>
   logout: () => Promise<void>
@@ -101,7 +103,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setLang: (l) => { setLangState(l); store('fin.lang', l); savePref({ locale: l }) },
     setListMode: (m) => { setListModeState(m); store('fin.list', m); savePref({ list_mode: m }) },
     login: async (email, password) => {
-      const res = await post<{ token: string; user: User }>('/auth/login', { email, password, device_name: navigator.userAgent.slice(0, 90) })
+      const res = await post<{ token?: string; user?: User; two_factor?: boolean; challenge?: string }>('/auth/login', { email, password, device_name: navigator.userAgent.slice(0, 90) })
+      if (res.two_factor && res.challenge) return res.challenge
+      token.set(res.token!)
+      applyUser(res.user!)
+      return null
+    },
+    completeTwoFactor: async (challenge, code) => {
+      const res = await post<{ token: string; user: User }>('/auth/two-factor', { challenge, ...code, device_name: navigator.userAgent.slice(0, 90) })
       token.set(res.token)
       applyUser(res.user)
     },

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateProfileRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Services\TwoFactor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -15,6 +16,8 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    public function __construct(private readonly TwoFactor $twoFactor) {}
+
     public function login(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -31,8 +34,87 @@ class AuthController extends Controller
             throw ValidationException::withMessages(['email' => __('auth.failed')]);
         }
 
+        // Second step required: hand back a short-lived challenge instead of a token.
+        if ($this->twoFactor->enabled($user)) {
+            return response()->json(['two_factor' => true, 'challenge' => $this->twoFactor->challengeFor($user)]);
+        }
+
+        return $this->issueToken($user, $data['device_name'] ?? 'web');
+    }
+
+    /** Login step 2: authenticator code (or a recovery code) for the challenge from step 1. */
+    public function twoFactorChallenge(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'challenge' => ['required', 'string', 'max:2000'],
+            'code' => ['nullable', 'string', 'max:10'],
+            'recovery_code' => ['nullable', 'string', 'max:30'],
+            'device_name' => ['nullable', 'string', 'max:100'],
+        ]);
+        $user = $this->twoFactor->userForChallenge($data['challenge']);
+        if (! $user) {
+            throw ValidationException::withMessages(['challenge' => 'Sign-in expired. Enter your password again.']);
+        }
+        if (! $this->twoFactor->verify($user, $data['code'] ?? null, $data['recovery_code'] ?? null)) {
+            throw ValidationException::withMessages(['code' => 'Invalid code.']);
+        }
+
+        return $this->issueToken($user, $data['device_name'] ?? 'web');
+    }
+
+    /** Start enabling 2FA (needs the current password). */
+    public function twoFactorSetup(Request $request): JsonResponse
+    {
+        $request->validate(['current_password' => ['required', 'current_password:sanctum']]);
+        abort_if($this->twoFactor->enabled($request->user()), 409, 'Two-factor is already enabled.');
+
+        return response()->json($this->twoFactor->begin($request->user()));
+    }
+
+    public function twoFactorConfirm(Request $request): JsonResponse
+    {
+        $request->validate(['code' => ['required', 'string', 'max:10']]);
+        $codes = $this->twoFactor->confirm($request->user(), $request->input('code'));
+        if ($codes === null) {
+            throw ValidationException::withMessages(['code' => 'Invalid code.']);
+        }
+
+        return response()->json(['recovery_codes' => $codes]);
+    }
+
+    public function twoFactorDisable(Request $request): JsonResponse
+    {
+        $request->validate(['current_password' => ['required', 'current_password:sanctum'], 'code' => ['required', 'string', 'max:30']]);
+        $user = $request->user();
+        $code = $request->input('code');
+        if (! $this->twoFactor->verify($user, strlen(preg_replace('/\D/', '', $code)) === 6 ? $code : null, $code)) {
+            throw ValidationException::withMessages(['code' => 'Invalid code.']);
+        }
+        $this->twoFactor->disable($user);
+
+        return response()->json(['ok' => true]);
+    }
+
+    public function twoFactorRecoveryCodes(Request $request): JsonResponse
+    {
+        $request->validate(['current_password' => ['required', 'current_password:sanctum']]);
+        abort_unless($this->twoFactor->enabled($request->user()), 409, 'Two-factor is not enabled.');
+
+        return response()->json(['recovery_codes' => $this->twoFactor->newRecoveryCodes($request->user())]);
+    }
+
+    public function twoFactorStatus(Request $request): JsonResponse
+    {
+        return response()->json([
+            'enabled' => $this->twoFactor->enabled($request->user()),
+            'recovery_codes_left' => $this->twoFactor->recoveryCodesLeft($request->user()),
+        ]);
+    }
+
+    private function issueToken(User $user, string $device): JsonResponse
+    {
         $abilities = $user->isHeir() ? ['read'] : ['*'];
-        $token = $user->createToken($data['device_name'] ?? 'web', $abilities)->plainTextToken;
+        $token = $user->createToken($device, $abilities)->plainTextToken;
 
         if ($user->isOwner()) {
             $user->forceFill(['last_activity_at' => now()])->saveQuietly();

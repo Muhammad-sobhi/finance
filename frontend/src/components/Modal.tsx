@@ -74,6 +74,9 @@ export function FormModal({ title, fields, errors = {}, busy, onClose, onSubmit,
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
+    // React bubbles events through portals along the component tree: keep this
+    // submit from also reaching a <form> on the page that opened the dialog.
+    e.stopPropagation()
     if (!last) setStep(step + 1)
     else onSubmit()
   }

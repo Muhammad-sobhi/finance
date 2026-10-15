@@ -42,6 +42,12 @@ class AppServiceProvider extends ServiceProvider
             Limit::perMinute(20)->by($request->ip()),
         ]);
 
+        // Password / 2FA settings changes: generous for typos, too slow for guessing.
+        RateLimiter::for('account-security', fn (Request $request) => Limit::perMinute(10)->by('acct|'.($request->user()?->id ?: $request->ip())));
+
+        // Second login step: 5 tries/min per IP (a 6-digit code must not be guessable).
+        RateLimiter::for('two-factor', fn (Request $request) => Limit::perMinute(5)->by('2fa|'.$request->ip()));
+
         // Heir requests: few per hour per IP and per email (and the response never reveals a match).
         RateLimiter::for('heir-request', fn (Request $request) => [
             Limit::perHour(5)->by('ip|'.$request->ip()),
