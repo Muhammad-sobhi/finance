@@ -164,7 +164,7 @@ No domain or paid email needed. Everything below sits next to your other project
    MAIL_MAILER=smtp
    MAIL_HOST=smtp.gmail.com
    MAIL_PORT=587
-   MAIL_ENCRYPTION=tls
+   MAIL_SCHEME=smtp
    MAIL_USERNAME=yourname@gmail.com
    MAIL_PASSWORD=<16-char app password>
    MAIL_FROM_ADDRESS=yourname@gmail.com
