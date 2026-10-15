@@ -234,6 +234,38 @@ a.icon-btn.active { border-color: var(--accent); color: var(--accent); }
   .income-ov .card.kpi { padding: 10px 12px; }
 }
 
+/* ---------- planning (budgets, goals, zakat) ---------- */
+.meter { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; flex: none; }
+.meter i { display: block; height: 100%; background: var(--pos); border-radius: inherit; }
+.meter.near i { background: var(--c2); }
+.meter.over i { background: var(--neg); }
+.ic .meta { flex-wrap: wrap; row-gap: 2px; }
+button.card:disabled { cursor: default; opacity: 1; }
+.card.goal.done .amt .num { color: var(--pos); }
+.zakat { flex: 1; min-height: 0; display: grid; gap: var(--gap); grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: auto minmax(0, 1fr); }
+.zakat .kpi { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.zakat .kpi .v { font-size: clamp(16px, 1.7vw, 26px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zakat .kpi .v.z-date { font-size: clamp(14px, 1.3vw, 19px); font-family: var(--font-head); }
+.zakat .kpi .d { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px; }
+.zakat .kpi .acts { display: flex; gap: 8px; margin-top: auto; padding-top: 6px; flex-wrap: wrap; }
+.zakat .z-parts { grid-column: 1 / -1; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
+.zakat .z-parts h3 { display: flex; align-items: baseline; gap: 8px; }
+.zakat .z-parts h3 .more { margin-inline-start: auto; }
+.zakat .z-parts .fit { flex: 1; min-height: 0; overflow: hidden; }
+.zakat .li.total { border-top: 2px solid var(--ink); font-weight: 700; }
+.zakat .z-note { font-size: 12px; margin: 0; }
+@media (max-width: 1100px) {
+  .zakat { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto auto minmax(0, 1fr); }
+  .zakat .z-due { grid-column: 1 / -1; }
+}
+@media (max-width: 720px) {
+  .zakat { gap: 8px; }
+  .zakat .card.kpi { padding: 10px 12px; }
+  .zakat .z-due { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 8px; }
+  .zakat .z-due .acts { grid-column: 1 / -1; padding-top: 2px; }
+  .zakat .z-note { font-size: 11px; }
+}
+
 /* ---------- charts (components/Charts.tsx) ----------
    Per-theme categorical chart colors, checked with the dataviz palette validator
    (lightness band, chroma floor, color-blind separation, contrast vs the card surface). */

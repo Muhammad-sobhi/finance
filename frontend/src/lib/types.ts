@@ -161,6 +161,7 @@ export interface Investment {
   notes: string | null
   profit: number
   roi: number | null
+  zakatable: boolean
   values?: { id: number; date: string; value: number }[]
 }
 
@@ -181,6 +182,7 @@ export interface Asset {
   value_currency: string
   base_value: number
   auto_valued: boolean
+  zakatable: boolean
 }
 
 export interface Settings {
@@ -236,4 +238,50 @@ export interface IncomeSummary {
   expected: number
   outstanding: number
   series: { month: string; recurring: number; projects: number; other: number }[]
+}
+
+export interface Budget {
+  id: number
+  category_id: number
+  amount: number
+  spent: number
+  remaining: number
+  pct: number
+  status: 'ok' | 'near' | 'over'
+  projected: number | null
+  per_day_left: number | null
+}
+
+export interface Goal {
+  id: number
+  name: string
+  target_amount: number
+  currency: string
+  target_date: string | null
+  account_id: number | null
+  notes: string | null
+  saved: number
+  remaining: number
+  pct: number
+  achieved: boolean
+  months_left: number | null
+  monthly_needed: number | null
+  on_track: boolean | null
+  contributions?: { id: number; amount: number; date: string; note: string | null }[]
+}
+
+export interface Zakat {
+  base_currency: string
+  settings: { nisab: 'gold' | 'silver'; calendar: 'hijri' | 'gregorian'; date: string | null; deduct_debts: boolean }
+  parts: { cash: number; metals: number; other_assets: number; investments: number; owed_to_me: number; i_owe: number; overdrawn: number }
+  gross: number
+  deductions: number
+  net: number
+  nisab: number
+  price_missing: boolean
+  reached: boolean
+  rate: number
+  due: number
+  days_left: number | null
+  payments: { id: number; amount: number; date: string; zakatable_wealth: number; account_id: number | null; note: string | null }[]
 }

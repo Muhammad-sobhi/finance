@@ -141,5 +141,16 @@ class DemoSeeder extends Seeder
         ] as [$name, $type, $price, $value, $grams, $karat, $location]) {
             $owner->assets()->create(['name' => $name, 'type' => $type, 'currency' => 'EGP', 'purchase_price' => $price, 'current_value' => $value, 'grams' => $grams, 'karat' => $karat, 'location' => $location]);
         }
+        // Planning: budgets for the busiest categories, two goals, and a zakat day.
+        foreach (['food' => 6000, 'transport' => 1500, 'shopping' => 2500, 'entertainment' => 800, 'health' => 1500] as $key => $limit) {
+            $owner->budgets()->create(['category_id' => $owner->categories()->where('key', $key)->value('id'), 'amount' => $limit]);
+        }
+        $car = $owner->goals()->create(['name' => 'New car', 'target_amount' => 400000, 'currency' => 'EGP', 'target_date' => $today->addMonths(18)->toDateString()]);
+        foreach ([3, 2, 1] as $m) {
+            $car->contributions()->create(['amount' => 15000, 'date' => $today->subMonths($m)->toDateString()]);
+        }
+        $owner->goals()->create(['name' => 'Emergency fund', 'target_amount' => 150000, 'currency' => 'EGP',
+            'account_id' => $owner->accounts()->where('type', 'savings')->value('id')]);
+        $owner->update(['zakat_date' => $today->addDays(40)->toDateString()]);
     }
 }

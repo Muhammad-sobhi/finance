@@ -11,11 +11,12 @@ class Asset extends Model
 {
     use BelongsToOwner, HasFactory;
 
-    protected $fillable = ['name', 'type', 'currency', 'purchase_price', 'purchase_date', 'current_value', 'grams', 'karat', 'location', 'notes'];
+    protected $fillable = ['name', 'type', 'currency', 'purchase_price', 'purchase_date', 'current_value', 'grams', 'karat', 'location', 'notes', 'zakatable'];
 
     protected function casts(): array
     {
         return [
+            'zakatable' => 'boolean',
             'type' => AssetType::class,
             'purchase_price' => 'decimal:2',
             'purchase_date' => 'date:Y-m-d',
@@ -23,6 +24,12 @@ class Asset extends Model
             'grams' => 'decimal:3',
             'karat' => 'integer',
         ];
+    }
+
+    /** Zakat counts money-like holdings by default; a home, land, car or device only when marked (e.g. held for trade). */
+    public function isZakatable(): bool
+    {
+        return $this->zakatable ?? in_array($this->type, [AssetType::Gold, AssetType::Silver, AssetType::Jewelry, AssetType::ForeignCash], true);
     }
 
     /**

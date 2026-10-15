@@ -114,6 +114,7 @@ class InvestmentController extends Controller
             'payout_cycle' => ['nullable', Rule::enum(PayoutCycle::class)],
             'remind_days' => ['nullable', 'integer', 'between:0,365'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'zakatable' => ['sometimes', 'boolean'],
         ]);
         if (isset($data['currency'])) {
             $data['currency'] = strtoupper($data['currency']);
@@ -135,6 +136,7 @@ class InvestmentController extends Controller
             'start_date' => $i->start_date?->format('Y-m-d'), 'maturity_date' => $i->maturity_date?->format('Y-m-d'),
             'annual_return' => $i->annual_return !== null ? (float) $i->annual_return : null,
             'payout_cycle' => $i->payout_cycle?->value, 'remind_days' => $i->remind_days, 'notes' => $i->notes,
+            'zakatable' => $i->isZakatable(),
             'profit' => $i->profit(), 'roi' => $i->roi(),
         ];
     }

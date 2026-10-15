@@ -15,6 +15,7 @@ export const NAV: { path: string; key: Key; phone?: boolean }[] = [
   { path: '/bills', key: 'bills', phone: true },
   { path: '/income', key: 'incomeNav' },
   { path: '/categories', key: 'categories' },
+  { path: '/planning', key: 'planning' },
   { path: '/debts', key: 'debts' },
   { path: '/subscriptions', key: 'subscriptions' },
   { path: '/investments', key: 'investments' },

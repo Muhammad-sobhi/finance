@@ -50,6 +50,7 @@ class Transaction extends Model
         'debt' => 'managed_by_debt',
         'debt_payment' => 'managed_by_debt',
         'project_payment' => 'managed_by_project',
+        'zakat_payment' => 'managed_by_zakat',
     ];
 
     public function managedCode(): ?string

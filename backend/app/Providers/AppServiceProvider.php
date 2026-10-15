@@ -8,6 +8,7 @@ use App\Models\DebtPayment;
 use App\Models\IncomeSource;
 use App\Models\ProjectPayment;
 use App\Models\Subscription;
+use App\Models\ZakatPayment;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
@@ -34,6 +35,7 @@ class AppServiceProvider extends ServiceProvider
             'subscription' => Subscription::class,
             'income_source' => IncomeSource::class,
             'project_payment' => ProjectPayment::class,
+            'zakat_payment' => ZakatPayment::class,
         ]);
 
         // Brute-force protection: per email+IP, plus a looser per-IP ceiling.

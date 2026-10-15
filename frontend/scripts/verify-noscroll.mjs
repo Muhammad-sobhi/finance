@@ -13,7 +13,7 @@ const EMAIL = process.env.EMAIL ?? 'demo@example.com'
 const PASSWORD = process.env.PASSWORD ?? 'password'
 const SHOTS = process.env.SHOTS
 const VIEWPORTS = [[390, 780], [900, 700], [1440, 900]]
-const ROUTES = ['/', '/notifications', '/reports', '/income', '/accounts', '/transactions', '/categories', '/debts', '/bills', '/subscriptions', '/investments', '/assets', '/heir', '/settings',
+const ROUTES = ['/', '/notifications', '/reports', '/income', '/planning', '/accounts', '/transactions', '/categories', '/debts', '/bills', '/subscriptions', '/investments', '/assets', '/heir', '/settings',
   '/heir-request', '/link?to=%2Fapi%2Fv1%2Flinks%2Fcheck-in%2F1%3Fexpires%3D1%26signature%3Dx']
 const COMBOS = [['ledger', 'ar'], ['swiss', 'ar'], ['geo', 'ar'], ['vault', 'ar'], ['ledger', 'en'], ['vault', 'en']]
 // Dialogs: [route, selector(s) to click, label]
@@ -39,6 +39,15 @@ const DIALOGS = [
   ['/income', ['.income-page > .list-head .seg button:nth-child(3)'], 'income-projects'],
   ['/income', ['.income-page > .list-head .seg button:nth-child(3)', '.tab-body .list-head .btn'], 'project-form'],
   ['/income', ['.income-page > .list-head .seg button:nth-child(3)', '.tab-body .list-body [data-fi]'], 'project-detail'],
+  ['/planning', ['.tab-body .list-head .btn'], 'budget-form'],
+  ['/planning', ['.tab-body .list-body [data-fi]'], 'budget-edit'],
+  ['/planning', ['.planning > .list-head .seg button:nth-child(2)'], 'planning-goals'],
+  ['/planning', ['.planning > .list-head .seg button:nth-child(2)', '.tab-body .list-head .btn'], 'goal-form'],
+  ['/planning', ['.planning > .list-head .seg button:nth-child(2)', '.tab-body .list-body [data-fi]'], 'goal-detail'],
+  ['/planning', ['.planning > .list-head .seg button:nth-child(3)'], 'planning-zakat'],
+  ['/planning', ['.planning > .list-head .seg button:nth-child(3)', '.z-due .acts .btn:not(.ghost)'], 'zakat-pay'],
+  ['/planning', ['.planning > .list-head .seg button:nth-child(3)', '.z-due .acts .btn.ghost'], 'zakat-settings'],
+  ['/planning', ['.planning > .list-head .seg button:nth-child(3)', '.z-parts h3 .more'], 'zakat-history'],
 ]
 
 if (SHOTS) mkdirSync(SHOTS, { recursive: true })

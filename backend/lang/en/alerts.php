@@ -14,6 +14,7 @@ return [
         'credit_card' => ':name card payment',
         'income' => ':name expected',
         'project' => 'Payment from :name',
+        'zakat' => 'Zakat',
         'maturity' => ':name matures',
     ],
     'when' => [

@@ -33,7 +33,7 @@ class AlertScanner
 
     public function scanOwner(User $owner, CarbonImmutable $today): int
     {
-        $sent = 0;
+        $sent = app(BudgetService::class)->watch($owner, $today);
         foreach ($this->items($owner, $today) as $item) {
             $stage = $item->stage($today, $owner->alert_days);
             if ($stage === null) {
@@ -94,6 +94,14 @@ class AlertScanner
                 }
                 $out->push(new DueItem('credit_card', $a->id, $a->name, $due, abs((float) $a->balance), $a->currency, null, '/accounts'));
             });
+
+        // Zakat day (a week's notice at least, to prepare the money), only when something is due.
+        if ($owner->zakat_date) {
+            $zakat = app(ZakatService::class)->compute($owner, $today);
+            if ($zakat['due'] > 0) {
+                $out->push(new DueItem('zakat', $owner->id, '', CarbonImmutable::parse($owner->zakat_date), $zakat['due'], $owner->base_currency, max(7, $owner->alert_days), '/planning'));
+            }
+        }
 
         return $out;
     }

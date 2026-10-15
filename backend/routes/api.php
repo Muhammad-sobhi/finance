@@ -4,9 +4,11 @@ use App\Http\Controllers\Api\V1\AccountController;
 use App\Http\Controllers\Api\V1\AssetController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BillController;
+use App\Http\Controllers\Api\V1\BudgetController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DebtController;
+use App\Http\Controllers\Api\V1\GoalController;
 use App\Http\Controllers\Api\V1\HeirController;
 use App\Http\Controllers\Api\V1\HeirRequestController;
 use App\Http\Controllers\Api\V1\IncomeController;
@@ -19,6 +21,7 @@ use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\SettingsController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\TransactionController;
+use App\Http\Controllers\Api\V1\ZakatController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -78,6 +81,15 @@ Route::prefix('v1')->group(function () {
         Route::delete('investments/{investment}/values/{value}', [InvestmentController::class, 'deleteValue'])->name('investments.values.destroy');
 
         Route::apiResource('assets', AssetController::class);
+
+        Route::apiResource('budgets', BudgetController::class)->except('show');
+        Route::apiResource('goals', GoalController::class);
+        Route::post('goals/{goal}/contributions', [GoalController::class, 'addContribution'])->name('goals.contributions.store');
+        Route::delete('goals/{goal}/contributions/{contribution}', [GoalController::class, 'deleteContribution'])->name('goals.contributions.destroy');
+        Route::get('zakat', [ZakatController::class, 'show'])->name('zakat.show');
+        Route::patch('zakat/settings', [ZakatController::class, 'updateSettings'])->name('zakat.settings');
+        Route::post('zakat/pay', [ZakatController::class, 'pay'])->name('zakat.pay');
+        Route::delete('zakat/payments/{payment}', [ZakatController::class, 'destroyPayment'])->name('zakat.payments.destroy');
 
         Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
         Route::get('notifications/unread', [NotificationController::class, 'unread'])->name('notifications.unread');

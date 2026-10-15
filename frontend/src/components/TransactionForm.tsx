@@ -44,6 +44,7 @@ export function TransactionForm({ tx, onClose }: { tx?: Transaction | null; onCl
     } catch (err) {
       if (err instanceof ApiError && err.data.code === 'managed_by_debt') toast(t('managedByDebt'))
       else if (err instanceof ApiError && err.data.code === 'managed_by_project') toast(t('managedByProject'))
+      else if (err instanceof ApiError && err.data.code === 'managed_by_zakat') toast(t('managedByZakat'))
       else if (err instanceof ApiError) setErrors(err.fieldErrors)
       else toast(t('error'))
     } finally {

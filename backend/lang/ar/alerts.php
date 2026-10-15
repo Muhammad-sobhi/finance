@@ -14,6 +14,7 @@ return [
         'credit_card' => 'سداد بطاقة :name',
         'income' => 'دخل متوقع: :name',
         'project' => 'دفعة من :name',
+        'zakat' => 'الزكاة',
         'maturity' => 'استحقاق :name',
     ],
     'when' => [

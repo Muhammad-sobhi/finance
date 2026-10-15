@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\TransactionRequest;
 use App\Http\Resources\TransactionResource;
 use App\Models\Transaction;
+use App\Services\BudgetService;
 use App\Services\CurrencyConverter;
 use App\Services\TransactionService;
 use Carbon\CarbonImmutable;
@@ -16,7 +17,7 @@ use Illuminate\Support\Facades\Gate;
 
 class TransactionController extends Controller
 {
-    public function __construct(private readonly TransactionService $service) {}
+    public function __construct(private readonly TransactionService $service, private readonly BudgetService $budgets) {}
 
     /**
      * One month of transactions (newest first) with month and per-day totals in base currency.
@@ -84,6 +85,7 @@ class TransactionController extends Controller
     public function store(TransactionRequest $request): JsonResponse
     {
         $tx = $this->service->create($request->user(), $request->validated());
+        $this->budgets->watch($request->user());
 
         return (new TransactionResource($tx->refresh()))->response()->setStatusCode(201);
     }
@@ -99,7 +101,10 @@ class TransactionController extends Controller
     {
         $this->guardManaged($transaction);
 
-        return new TransactionResource($this->service->update($transaction, $request->validated())->refresh());
+        $tx = $this->service->update($transaction, $request->validated())->refresh();
+        $this->budgets->watch($request->user());
+
+        return new TransactionResource($tx);
     }
 
     public function destroy(Transaction $transaction): JsonResponse

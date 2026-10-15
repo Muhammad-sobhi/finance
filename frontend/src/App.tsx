@@ -15,6 +15,7 @@ import { Login } from './pages/Login'
 import { Notifications } from './pages/Notifications'
 import { HeirPage } from './pages/Heir'
 import { Income } from './pages/Income'
+import { Planning } from './pages/Planning'
 import { HeirRequestPage, LinkPage } from './pages/Public'
 import { Transactions } from './pages/Transactions'
 
@@ -37,6 +38,7 @@ export default function App() {
           <Route path="transactions" element={<Transactions />} />
           <Route path="categories" element={<Categories />} />
           <Route path="income" element={<Income />} />
+          <Route path="planning" element={<Planning />} />
           <Route path="debts" element={<Debts />} />
           <Route path="bills" element={<Recurring key="bills" kind="bills" />} />
           <Route path="subscriptions" element={<Recurring key="subscriptions" kind="subscriptions" />} />

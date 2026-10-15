@@ -27,6 +27,7 @@ class User extends Authenticatable
         'locale', 'theme', 'list_mode', 'base_currency', 'last_activity_at',
         'gold_price_24k', 'silver_price', 'alert_days', 'email_alerts', 'auto_fetch_rates',
         'heir_enabled', 'heir_inactivity_days', 'heir_grace_days',
+        'zakat_nisab', 'zakat_calendar', 'zakat_date', 'zakat_deduct_debts',
     ];
 
     protected $hidden = ['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'];
@@ -45,6 +46,9 @@ class User extends Authenticatable
         'heir_enabled' => false,
         'heir_inactivity_days' => 60,
         'heir_grace_days' => 14,
+        'zakat_nisab' => 'gold',
+        'zakat_calendar' => 'hijri',
+        'zakat_deduct_debts' => true,
     ];
 
     protected static function booted(): void
@@ -73,6 +77,8 @@ class User extends Authenticatable
             'heir_warning_started_at' => 'datetime',
             'heir_last_reminder_at' => 'datetime',
             'two_factor_confirmed_at' => 'datetime',
+            'zakat_date' => 'date:Y-m-d',
+            'zakat_deduct_debts' => 'boolean',
             'password' => 'hashed',
             'role' => UserRole::class,
         ];
@@ -173,6 +179,21 @@ class User extends Authenticatable
     public function heirAccessActive(): bool
     {
         return $this->heir_access_activated_at !== null;
+    }
+
+    public function budgets(): HasMany
+    {
+        return $this->hasMany(Budget::class);
+    }
+
+    public function goals(): HasMany
+    {
+        return $this->hasMany(Goal::class);
+    }
+
+    public function zakatPayments(): HasMany
+    {
+        return $this->hasMany(ZakatPayment::class);
     }
 
     public function snapshots(): HasMany
