@@ -19,7 +19,7 @@ class Transaction extends Model
 
     protected $fillable = [
         'type', 'account_id', 'to_account_id', 'category_id', 'amount', 'currency',
-        'to_amount', 'date', 'note', 'source_type', 'source_id',
+        'to_amount', 'fee', 'date', 'note', 'source_type', 'source_id',
     ];
 
     protected function casts(): array
@@ -28,6 +28,7 @@ class Transaction extends Model
             'type' => TransactionType::class,
             'amount' => 'decimal:2',
             'to_amount' => 'decimal:2',
+            'fee' => 'decimal:2',
             'date' => 'date:Y-m-d',
         ];
     }
@@ -64,6 +65,7 @@ class Transaction extends Model
         'zakat_payment' => 'managed_by_zakat',
         'installment_payment' => 'managed_by_installment',
         'gameya_payment' => 'managed_by_gameya',
+        'transfer_fee' => 'managed_by_transfer',
     ];
 
     public function managedCode(): ?string

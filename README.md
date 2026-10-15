@@ -108,6 +108,7 @@ All under `/api/v1`, JSON, `Authorization: Bearer <token>` unless marked public.
 | GET | `/dashboard` | net worth (+ change vs last month), liquid, debts, balances, 6-month spending, upcoming |
 | GET | `/reports?period=month&month=YYYY-MM` · `?period=year&year=YYYY` | totals, comparison, growth, categories, series, trend, advice |
 | CRUD | `/accounts`, `/categories`, `/transactions` | `?month=YYYY-MM&account_id&category_id&type`; `GET /transactions/quick-meta` |
+| — | transfers | optional `fee` (sending account currency) — booked as its own expense in *Fees*, kept in step with the transfer |
 | POST/GET/DELETE | `/transactions/{id}/receipt` | receipt photo / PDF (≤ 5 MB, private disk, owner + heirs can view) |
 | GET | `/export/transactions?from&to` | CSV (UTF-8 BOM, headers in the user's language) |
 | POST | `/import/transactions` | `{account_id, rows: [{date, amount (− = expense), note, category_id?}], dry_run?}` → `{rows, new, duplicates, categorized, imported?}` |

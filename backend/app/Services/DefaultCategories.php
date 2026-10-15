@@ -19,6 +19,7 @@ class DefaultCategories
         'family' => ['expense', 'family', '#6b8f71', 'Family'],
         'work' => ['expense', 'work', '#555555', 'Work'],
         'zakat' => ['expense', 'gift', '#2f7d4a', 'Zakat & charity'],
+        'fees' => ['expense', 'bill', '#7a6a55', 'Fees'],
         'other' => ['expense', 'tag', '#6b6a5c', 'Other'],
         'salary' => ['income', 'wallet', '#2e5e3e', 'Salary'],
         'freelance' => ['income', 'work', '#1e3a5f', 'Freelance'],

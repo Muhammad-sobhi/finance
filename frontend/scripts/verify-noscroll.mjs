@@ -52,6 +52,7 @@ const DIALOGS = [
   ['/settings', ['.show-sm .seg button:nth-child(3)', '.data-acts .btn:nth-child(3)'], 'backup-form'],
   ['/settings', ['.show-sm .seg button:nth-child(3)', '.data-acts .btn:nth-child(2)'], 'import-form'],
   ['/transactions', ['.list-body .row-link, .list-body .card.tx'], 'transaction-edit-form'],
+  ['/transactions', ['.list-head .btn', '#f-type button:nth-child(3)'], 'transfer-form'],
   ['/debts', ['.debts-page > .list-head .seg button:nth-child(2)'], 'installments'],
   ['/debts', ['.debts-page > .list-head .seg button:nth-child(2)', '.tab-body .list-head .btn'], 'plan-form'],
   ['/debts', ['.debts-page > .list-head .seg button:nth-child(2)', '.tab-body .list-body [data-fi]'], 'plan-detail'],

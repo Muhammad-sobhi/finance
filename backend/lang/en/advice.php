@@ -12,7 +12,7 @@ return [
     'forecast_negative' => 'At this pace you will spend :gap :currency more than you earn by month end.',
     'categories' => [
         'food' => 'food', 'transport' => 'transport', 'bills' => 'bills', 'shopping' => 'shopping', 'health' => 'health',
-        'education' => 'education', 'entertainment' => 'entertainment', 'family' => 'family', 'work' => 'work', 'other' => 'other', 'zakat' => 'zakat & charity',
+        'education' => 'education', 'entertainment' => 'entertainment', 'family' => 'family', 'work' => 'work', 'fees' => 'Fees', 'other' => 'other', 'zakat' => 'zakat & charity',
         'uncategorized' => 'uncategorized',
     ],
 ];

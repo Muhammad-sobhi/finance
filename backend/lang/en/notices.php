@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'categories' => ['food' => 'Food', 'transport' => 'Transport', 'bills' => 'Bills', 'shopping' => 'Shopping', 'health' => 'Health', 'education' => 'Education', 'entertainment' => 'Entertainment', 'family' => 'Family', 'work' => 'Work', 'zakat' => 'Zakat & charity', 'salary' => 'Salary', 'freelance' => 'Freelance', 'other_income' => 'Other income', 'other' => 'Other'],
+    'categories' => ['food' => 'Food', 'transport' => 'Transport', 'bills' => 'Bills', 'shopping' => 'Shopping', 'health' => 'Health', 'education' => 'Education', 'entertainment' => 'Entertainment', 'family' => 'Family', 'work' => 'Work', 'zakat' => 'Zakat & charity', 'salary' => 'Salary', 'freelance' => 'Freelance', 'other_income' => 'Other income', 'fees' => 'Fees', 'other' => 'Other'],
     'unusual_expense' => [
         'title' => 'Unusual expense: :category',
         'body' => 'You just spent :amount :currency on :category — about :times× what it usually costs (:median).',

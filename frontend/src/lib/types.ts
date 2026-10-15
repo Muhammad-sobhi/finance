@@ -61,6 +61,7 @@ export interface Transaction {
   amount: number
   currency: string
   to_amount: number | null
+  fee?: number | null
   base_amount?: number
   date: string
   note: string | null

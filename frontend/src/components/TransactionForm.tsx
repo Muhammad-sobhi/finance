@@ -22,6 +22,7 @@ export function TransactionForm({ tx, onClose }: { tx?: Transaction | null; onCl
     account_id: tx?.account_id ?? 0,
     to_account_id: tx?.to_account_id ?? 0,
     to_amount: tx?.to_amount != null ? String(tx.to_amount) : '',
+    fee: tx?.fee != null ? String(tx.fee) : '',
     category_id: tx?.category_id ?? 0,
     date: tx?.date ?? isoDate(),
     note: tx?.note ?? '',
@@ -82,6 +83,7 @@ export function TransactionForm({ tx, onClose }: { tx?: Transaction | null; onCl
       else if (err instanceof ApiError && err.data.code === 'managed_by_zakat') toast(t('managedByZakat'))
       else if (err instanceof ApiError && err.data.code === 'managed_by_installment') toast(t('managedByInstallment'))
       else if (err instanceof ApiError && err.data.code === 'managed_by_gameya') toast(t('managedByGameya'))
+      else if (err instanceof ApiError && err.data.code === 'managed_by_transfer') toast(t('managedByTransfer'))
       else if (err instanceof ApiError) setErrors(err.fieldErrors)
       else toast(t('error'))
     } finally {
@@ -96,6 +98,7 @@ export function TransactionForm({ tx, onClose }: { tx?: Transaction | null; onCl
       account_id: Number(f.account_id) || from?.id,
       to_account_id: transfer ? Number(f.to_account_id) || null : null,
       to_amount: crossCurrency && f.to_amount ? Number(f.to_amount) : null,
+      fee: transfer && f.fee ? Number(f.fee) : null,
       category_id: transfer ? null : Number(f.category_id) || null,
       date: f.date,
       note: f.note || null,
@@ -128,6 +131,10 @@ export function TransactionForm({ tx, onClose }: { tx?: Transaction | null; onCl
     {
       name: 'to_amount', label: `${t('received')} ${to ? `(${to.currency})` : ''}`, hidden: !crossCurrency,
       control: <input id="f-to_amount" className="inp num" inputMode="decimal" value={f.to_amount} onChange={set('to_amount')} />,
+    },
+    {
+      name: 'fee', label: `${t('transferFee')} ${from ? `(${from.currency})` : ''}`, hidden: !transfer,
+      control: <input id="f-fee" className="inp num" inputMode="decimal" value={f.fee} onChange={set('fee')} placeholder="0" />,
     },
     {
       name: 'category_id', label: t('category'), hidden: transfer,

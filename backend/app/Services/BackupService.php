@@ -69,7 +69,7 @@ class BackupService
     private const SOURCES = [
         'debt' => 'debts', 'debt_payment' => 'debt_payments', 'bill' => 'bills', 'subscription' => 'subscriptions',
         'income_source' => 'income_sources', 'project_payment' => 'project_payments', 'zakat_payment' => 'zakat_payments',
-        'installment_payment' => 'installment_payments', 'gameya_payment' => 'gameya_payments',
+        'installment_payment' => 'installment_payments', 'gameya_payment' => 'gameya_payments', 'transfer_fee' => 'transactions',
     ];
 
     /** @return array<string, mixed> */

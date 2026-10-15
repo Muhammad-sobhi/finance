@@ -20,6 +20,7 @@ class TransactionResource extends JsonResource
             'amount' => (float) $this->amount,
             'currency' => $this->currency,
             'to_amount' => $this->to_amount !== null ? (float) $this->to_amount : null,
+            'fee' => $this->fee !== null ? (float) $this->fee : null,
             'base_amount' => $this->when(isset($this->base_amount), fn () => $this->base_amount),
             'date' => $this->date->format('Y-m-d'),
             'note' => $this->note,

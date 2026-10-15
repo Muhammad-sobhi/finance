@@ -12,7 +12,7 @@ return [
     'forecast_negative' => 'بهذا المعدل ستصرف أكثر من دخلك بـ :gap :currency في نهاية الشهر.',
     'categories' => [
         'food' => 'الطعام', 'transport' => 'المواصلات', 'bills' => 'الفواتير', 'shopping' => 'التسوق', 'health' => 'الصحة',
-        'education' => 'التعليم', 'entertainment' => 'الترفيه', 'family' => 'العائلة', 'work' => 'العمل', 'other' => 'أخرى', 'zakat' => 'الزكاة والصدقات',
+        'education' => 'التعليم', 'entertainment' => 'الترفيه', 'family' => 'العائلة', 'work' => 'العمل', 'fees' => 'رسوم', 'other' => 'أخرى', 'zakat' => 'الزكاة والصدقات',
         'uncategorized' => 'بدون فئة',
     ],
 ];

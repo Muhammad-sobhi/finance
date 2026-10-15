@@ -91,6 +91,7 @@ const ar = {
   autoRecord: 'تسجيل تلقائي', incomeDue: 'دخل متوقع: {name}', projectDue: 'دفعة من {name}', receivedMonth: 'المستلم هذا الشهر',
   toAccountIn: 'الحساب المستلِم', managedByProject: 'هذه المعاملة تابعة لمشروع. عدّلها من صفحة الدخل.', paymentDue: 'موعد الدفع',
   managedByZakat: 'هذه المعاملة دفعة زكاة. احذفها من صفحة التخطيط.',
+  transferFee: 'رسوم التحويل', managedByTransfer: 'هذه رسوم تحويل. عدّلها من التحويل نفسه.',
   installApp: 'ثبّت التطبيق', iosInstall: 'لتثبيت التطبيق على آيفون: زر المشاركة ثم «إضافة إلى الشاشة الرئيسية».',
   signInActivity: 'نشاط الدخول', activityHint: 'آخر عمليات الدخول والمحاولات الفاشلة. لو رأيت جهازًا لا تعرفه غيّر كلمة المرور.', failedAttempt: 'محاولة فاشلة',
   via_password: 'كلمة المرور', via_authenticator: 'رمز التطبيق', via_recovery_code: 'كود احتياطي', via_trusted_device: 'جهاز موثوق',
@@ -150,7 +151,7 @@ const ar = {
     building: 'عقار / مبنى', land: 'أرض', car: 'سيارة', device: 'جهاز', jewelry: 'مجوهرات', foreign_cash: 'عملة أجنبية',
     end: 'في النهاية',
     food: 'طعام', transport: 'مواصلات', bills: 'فواتير', shopping: 'تسوق', health: 'صحة', education: 'تعليم',
-    entertainment: 'ترفيه', family: 'عائلة', work: 'عمل', zakat: 'زكاة وصدقات', salary: 'راتب', freelance: 'عمل حر', other_income: 'دخل آخر',
+    entertainment: 'ترفيه', family: 'عائلة', work: 'عمل', zakat: 'زكاة وصدقات', fees: 'رسوم', salary: 'راتب', freelance: 'عمل حر', other_income: 'دخل آخر',
   } as Record<string, string>,
 }
 
@@ -231,6 +232,7 @@ const en: typeof ar = {
   autoRecord: 'Record automatically', incomeDue: '{name} expected', projectDue: 'Payment from {name}', receivedMonth: 'Received this month',
   toAccountIn: 'Received into', managedByProject: 'This transaction belongs to a project. Edit it from Income.', paymentDue: 'Payment due',
   managedByZakat: 'This transaction is a zakat payment. Delete it from Planning.',
+  transferFee: 'Transfer fee', managedByTransfer: 'This is a transfer fee. Change it on the transfer itself.',
   installApp: 'Install app', iosInstall: 'To install on iPhone: tap Share, then “Add to Home Screen”.',
   signInActivity: 'Sign-in activity', activityHint: "Recent sign-ins and failed attempts. If you see a device you don't know, change your password.", failedAttempt: 'Failed attempt',
   via_password: 'Password', via_authenticator: 'App code', via_recovery_code: 'Recovery code', via_trusted_device: 'Trusted device',
@@ -290,7 +292,7 @@ const en: typeof ar = {
     building: 'Building', land: 'Land', car: 'Car', device: 'Device', jewelry: 'Jewelry', foreign_cash: 'Foreign cash',
     end: 'At maturity',
     food: 'Food', transport: 'Transport', bills: 'Bills', shopping: 'Shopping', health: 'Health', education: 'Education',
-    entertainment: 'Entertainment', family: 'Family', work: 'Work', zakat: 'Zakat & charity', salary: 'Salary', freelance: 'Freelance', other_income: 'Other income',
+    entertainment: 'Entertainment', family: 'Family', work: 'Work', zakat: 'Zakat & charity', fees: 'Fees', salary: 'Salary', freelance: 'Freelance', other_income: 'Other income',
   },
 }
 
