@@ -13,6 +13,11 @@ Arabic-first (RTL) with English, four themes, and a strict no-scroll layout. See
 | 6 | Heir access: dead-man switch + manual request with trusted-contact confirmation; read-only heirs | ✅ |
 | 7 | This README, deployment files in `deploy/` | ✅ |
 | + | Income: recurring income (salary, auto-record or one-tap "received"), freelance projects with payments and outstanding, overview | ✅ |
+| + | Planning: monthly budgets per category (80% / 100% alerts), savings goals, zakat calculator with reminder | ✅ |
+| + | Debts hub: installment plans (taqseet) and gameyas next to personal debts | ✅ |
+| + | Smart: month-end forecast, unusual-expense alerts, optional daily gold/silver spot prices | ✅ |
+| + | Data: CSV export, printable report, encrypted backup + restore, bank statement import, receipt photos | ✅ |
+| + | Security & app: optional 2FA (trusted devices), sign-in activity with new-device alerts, installable PWA with offline page | ✅ |
 
 **Database:** MySQL 8 in production (`DB_CONNECTION=mysql`). The test suite runs on SQLite in memory by default and also passes on MySQL/MariaDB (see *Checks*).
 
@@ -78,6 +83,16 @@ The check fails if `document.documentElement.scrollHeight > innerHeight` or any 
 - **No scroll** — lists render once off-screen, measure every row at the real width, and pack whole rows into pages (pager + swipe). Dashboard cards show what fits plus "+N more". Forms that don't fit become "Step 1 of N". Everything re-measures on resize, orientation, font load, theme and language change.
 - **Alerts** — `finance:alerts` (hourly) checks bills, subscriptions, debts, card payment days and investment maturities: N days before (per item, else the settings default), on the day, overdue. `alert_logs` makes each item + stage + due date fire once.
 - **Heirs** — see *Heir access* below. Heir logins are read-only, enforced by middleware **and** policies.
+- **Budgets** — a monthly limit per expense category; spending is converted to base currency. A notice goes out once per month at 80% and again when the limit is passed (checked after each transaction and hourly). Each card shows what is left per day and a straight-line month-end projection.
+- **Goals** — progress is either a linked account's balance (money really set aside) or amounts added by hand. Shows the monthly amount needed to reach the target date and whether you're on track (saved ≥ 95% of the straight-line share for the time elapsed).
+- **Zakat** (a helper, not a fatwa) — zakatable wealth = positive balances + gold / silver / jewelry / foreign cash + zakatable investments + money owed to you + gameya money paid in, minus (optional) debts you owe, card/negative balances and installments due within a year. Homes, cars, devices and rental real estate are excluded by default; any asset or investment can be ticked in or out. Nisab is 85 g of 24k gold or 595 g of silver at the settings price; the rate is 2.5% for a lunar year or 2.577% for a solar year. A reminder comes at least 7 days before the zakat day; recording the payment creates an expense and moves the day to the next hawl.
+- **Installments** — a plan has an amount, a count and a first due date; due dates never drift at month ends (31 Jan → 28 Feb → 31 Mar). Each paid installment is an expense on the chosen account (cash basis); what is left counts as a liability in net worth.
+- **Gameya** — members, my payout turn and the amount per round. Payments and the payout are savings, not spending or income, so they're kept out of reports (like debts); the net position (paid in − taken out) counts in net worth. Alerts for each round and for my turn.
+- **Forecast** — spent so far + everyday spending at this month's pace (the 3-month pace during the first week) for the days left + bills, subscriptions and installments still due this month, against income received and still expected. Shown on the dashboard; reports warn when it ends negative.
+- **Unusual expense** — a hand-entered expense more than 3× its category's 90-day median (with at least 5 past expenses) sends a notice.
+- **Backup** — *Settings → Your data → Encrypted backup* (password re-check) downloads the whole ledger as gzip'd JSON sealed with AES-256-GCM under a PBKDF2-SHA256 key (210k iterations) from a passphrase you choose; the server never keeps it. Restore with `php artisan finance:restore <file> <owner-email>` into a new, empty owner (ids are remapped and encrypted columns re-encrypted with that server's `APP_KEY`). Receipt files aren't included — back up `storage/app/private/receipts` with the server backup.
+- **Bank import** — the browser reads the CSV (`, ; tab`, quotes), guesses the date / description / amount (or debit + credit) columns in English or Arabic, and you confirm. The server skips rows already recorded in that account (same date, direction, amount and description — counted, so two identical coffees stay two), files each description under the category it had before, shows a dry run, then imports through the ledger.
+- **App on the phone (PWA)** — over HTTPS the browser offers to install it (*More → Install app*, or *Settings → Your data*; on iPhone: Share → *Add to Home Screen*). The home-screen icon has an *Add expense* shortcut that opens quick-add directly. Offline, the service worker shows a small offline page; no financial data is cached on the device.
 
 ## API (v1)
 
@@ -93,6 +108,16 @@ All under `/api/v1`, JSON, `Authorization: Bearer <token>` unless marked public.
 | GET | `/dashboard` | net worth (+ change vs last month), liquid, debts, balances, 6-month spending, upcoming |
 | GET | `/reports?period=month&month=YYYY-MM` · `?period=year&year=YYYY` | totals, comparison, growth, categories, series, trend, advice |
 | CRUD | `/accounts`, `/categories`, `/transactions` | `?month=YYYY-MM&account_id&category_id&type`; `GET /transactions/quick-meta` |
+| POST/GET/DELETE | `/transactions/{id}/receipt` | receipt photo / PDF (≤ 5 MB, private disk, owner + heirs can view) |
+| GET | `/export/transactions?from&to` | CSV (UTF-8 BOM, headers in the user's language) |
+| POST | `/import/transactions` | `{account_id, rows: [{date, amount (− = expense), note, category_id?}], dry_run?}` → `{rows, new, duplicates, categorized, imported?}` |
+| POST | `/backup` | `{current_password, passphrase}` → encrypted backup file |
+| GET | `/auth/activity` | last 50 sign-ins and failed attempts |
+| GET/PATCH/DELETE | `/budgets?month=YYYY-MM` | spent, remaining, pct, status ok/near/over, projected, per day left |
+| CRUD | `/goals` | `POST /goals/{id}/contributions` (negative = withdrawal), `DELETE /goals/{id}/contributions/{cid}` |
+| GET | `/zakat` | parts, nisab, due, days left, payments; `PATCH /zakat/settings`, `POST /zakat/pay` (`complete` rolls the date), `DELETE /zakat/payments/{id}` |
+| CRUD | `/installments` | `POST /installments/{id}/pay`, `DELETE /installments/{id}/payments/{pid}` (latest only) |
+| CRUD | `/gameyas` | `POST /gameyas/{id}/pay` (next round), `POST /gameyas/{id}/receive` (payout), `DELETE /gameyas/{id}/payments/{pid}` |
 | CRUD | `/debts` | `POST /debts/{id}/payments`, `DELETE /debts/{id}/payments/{pid}` |
 | CRUD | `/bills`, `/subscriptions` | `POST /{type}/{id}/pay` — expense + roll due date |
 | GET | `/income/summary?month=YYYY-MM` | received this month by recurring / projects / other, expected, outstanding, 6-month series |
@@ -100,7 +125,7 @@ All under `/api/v1`, JSON, `Authorization: Bearer <token>` unless marked public.
 | CRUD | `/projects` | freelance work; `POST /projects/{id}/payments` (income into an account), `DELETE /projects/{id}/payments/{pid}` |
 | CRUD | `/investments` | `POST/DELETE /investments/{id}/values` |
 | CRUD | `/assets` | gold/silver valued from settings price × grams × karat/24 |
-| GET/PATCH | `/settings` | metal prices, alert days, email alerts, auto rates; `POST/PATCH/DELETE /exchange-rates` |
+| GET/PATCH | `/settings` | metal prices, alert days, email alerts, auto rates / metal prices; `POST /settings/metal-prices` (fetch now); `POST/PATCH/DELETE /exchange-rates` |
 | GET | `/notifications` | `GET /notifications/unread`, `POST /notifications/{id}/read`, `POST /notifications/read-all` |
 | GET/POST | `/push/key`, `/push/subscribe`, `/push/unsubscribe` | browser push for this device |
 | GET | `/heir` | switch status, heirs, trusted contacts, requests |
@@ -220,6 +245,7 @@ Scheduled jobs (`php artisan schedule:list`):
 | `finance:heir-check` | hourly | dead-man reminders/activation, confirmed requests whose window ended |
 | `finance:auto-pay` | 06:00 | pays due auto-pay bills/subscriptions and records auto-record income |
 | `finance:fetch-rates` | 07:00 | updates exchange rates for owners who enabled it |
+| `finance:fetch-metals` | 07:05 | gold/silver per gram from the global spot price × the owner's USD rate (opt-in; needs a USD rate) |
 | `finance:snapshot` | 23:50 | this month's net worth (trend charts, growth) |
 
 ### 6. Updates
@@ -236,6 +262,8 @@ mysqldump --single-transaction finance | gzip > /var/backups/finance-$(date +%F)
 find /var/backups -name 'finance-*.sql.gz' -mtime +30 -delete
 ```
 
+Also copy `backend/storage/app/private/receipts` (receipt photos) with the same job, and keep an in-app *Encrypted backup* file somewhere off the server.
+
 Keep `backend/.env` (it holds `APP_KEY`, which decrypts account numbers, national IDs and notes) backed up separately and securely — without it the encrypted fields cannot be read.
 
 ## Security notes
@@ -250,6 +278,9 @@ What protects the app (each item is covered by feature tests unless noted):
 - **Emailed actions** — signed, expiring links; the heir request never reveals whether an email is registered and is rate-limited.
 - **Browser** (deploy/nginx.conf) — HTTPS only with HSTS; a strict Content-Security-Policy (only our own scripts, no inline scripts, no third-party hosts, no framing); `X-Frame-Options`, `nosniff`, `Referrer-Policy`, `COOP`; `X-Powered-By` hidden. CORS allows only `FRONTEND_URL`. Verified locally through nginx: no CSP violations, service worker and fonts load.
 - **Dependencies** — `composer audit` and `npm audit` report no known vulnerabilities (re-run them on each update).
-- **Secrets** — none in the repo; only `.env.example`. Set `APP_DEBUG=false` in production and `expose_php = Off` in `/etc/php/8.3/fpm/php.ini`.
+- **Secrets** — none in the repo; only `.env.example`. Set `APP_DEBUG=false` in production and `expose_php = Off` in `/etc/php/8.3/fpm/php.ini`. For receipts set `upload_max_filesize = 8M` and `post_max_size = 8M` there too (nginx allows 8 MB).
+- **Sign-in activity** — every sign-in and every failed password / code on a real account is logged (method, browser + OS, IP; last 200 kept) and listed in *Settings → Account & security*. A sign-in from a browser/device not seen in 180 days notifies the owner in-app, by push and always by email.
+- **Receipts** — stored outside the web root on the private disk with random names, served only through the authorized API (never a public URL), `no-store`, `nosniff`; deleted with their transaction. Photos are shrunk to ≤ 1600 px in the browser before upload.
+- **Exports** — CSV cells starting with `= + - @` are prefixed so spreadsheets don't run them as formulas.
 
 - **Two-factor authentication** — optional TOTP (Google/Microsoft Authenticator, 1Password) from *Settings → Account & security*: the secret is encrypted, the QR is drawn in the browser (never sent elsewhere), each code works once (no replay), 8 single-use recovery codes are stored hashed, the second login step expires after 5 minutes and is limited to 5 tries/min. Turning it off needs the password and a code.

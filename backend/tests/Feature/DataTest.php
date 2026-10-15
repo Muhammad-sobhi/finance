@@ -68,7 +68,8 @@ class DataTest extends TestCase
 
         $this->postJson('/api/v1/import/transactions', ['account_id' => $this->wallet->id, 'rows' => $rows])->assertJson(['imported' => 4]);
         $this->assertSame(9700.0 - 90 + 15000 - 20, (float) $this->wallet->fresh()->balance);
-        $this->assertSame(2, $this->owner->transactions()->where('note', 'CARREFOUR')->where('category_id', $this->cat('shopping'))->count());
+        // Compared in PHP: MySQL's default collation would also match "Carrefour".
+        $this->assertSame(2, $this->owner->transactions()->get()->where('note', 'CARREFOUR')->where('category_id', $this->cat('shopping'))->count());
         $this->assertNull($this->owner->transactions()->where('note', 'Fee')->value('category_id'));
 
         // Importing the same file again adds nothing.
