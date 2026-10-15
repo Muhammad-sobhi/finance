@@ -17,6 +17,16 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            // 'owner' holds the data; 'heir' is a read-only login linked to an owner.
+            $table->string('role', 16)->default('owner');
+            $table->foreignId('owner_id')->nullable()->constrained('users')->cascadeOnDelete();
+            $table->string('locale', 5)->default('ar');
+            $table->string('theme', 16)->default('ledger');
+            $table->string('list_mode', 8)->default('table');
+            $table->char('base_currency', 3)->default('EGP');
+            $table->timestamp('last_activity_at')->nullable();
+            // Set when heir access is activated (dead-man switch or confirmed request).
+            $table->timestamp('heir_access_activated_at')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });
