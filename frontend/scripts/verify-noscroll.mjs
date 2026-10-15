@@ -128,4 +128,5 @@ if (failures.length) {
   console.error(`✗ ${failures.length} scroll violation(s):\n  ${failures.join('\n  ')}`)
   process.exit(1)
 }
-console.log(`✓ no scrolling: ${ROUTES.length + DIALOGS.length} views × ${VIEWPORTS.length} viewports × ${COMBOS.length} theme/lang combos`)
+console.log(`✓ no scrolling: ${ROUTES.length + DIALOGS.length} views × ${VIEWPORTS.length} viewports × ${COMBOS.length} theme/lang combos`
+  + (process.env.HEIR_EMAIL ? ` + read-only heir view (13 pages × ${VIEWPORTS.length} viewports)` : ''))
