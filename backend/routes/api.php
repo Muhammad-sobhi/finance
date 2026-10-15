@@ -8,11 +8,13 @@ use App\Http\Controllers\Api\V1\BudgetController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DebtController;
+use App\Http\Controllers\Api\V1\GameyaController;
 use App\Http\Controllers\Api\V1\GoalController;
 use App\Http\Controllers\Api\V1\HeirController;
 use App\Http\Controllers\Api\V1\HeirRequestController;
 use App\Http\Controllers\Api\V1\IncomeController;
 use App\Http\Controllers\Api\V1\IncomeSourceController;
+use App\Http\Controllers\Api\V1\InstallmentController;
 use App\Http\Controllers\Api\V1\InvestmentController;
 use App\Http\Controllers\Api\V1\LinkController;
 use App\Http\Controllers\Api\V1\NotificationController;
@@ -63,6 +65,13 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('debts', DebtController::class);
         Route::post('debts/{debt}/payments', [DebtController::class, 'addPayment'])->name('debts.payments.store');
         Route::delete('debts/{debt}/payments/{payment}', [DebtController::class, 'deletePayment'])->name('debts.payments.destroy');
+        Route::apiResource('installments', InstallmentController::class);
+        Route::post('installments/{installment}/pay', [InstallmentController::class, 'pay'])->name('installments.pay');
+        Route::delete('installments/{installment}/payments/{payment}', [InstallmentController::class, 'deletePayment'])->name('installments.payments.destroy');
+        Route::apiResource('gameyas', GameyaController::class);
+        Route::post('gameyas/{gameya}/pay', [GameyaController::class, 'pay'])->name('gameyas.pay');
+        Route::post('gameyas/{gameya}/receive', [GameyaController::class, 'receive'])->name('gameyas.receive');
+        Route::delete('gameyas/{gameya}/payments/{payment}', [GameyaController::class, 'deletePayment'])->name('gameyas.payments.destroy');
 
         Route::apiResource('bills', BillController::class)->parameters(['bills' => 'id']);
         Route::post('bills/{id}/pay', [BillController::class, 'pay'])->name('bills.pay');

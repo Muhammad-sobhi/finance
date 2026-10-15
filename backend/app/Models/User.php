@@ -191,6 +191,16 @@ class User extends Authenticatable
         return $this->hasMany(Goal::class);
     }
 
+    public function installmentPlans(): HasMany
+    {
+        return $this->hasMany(InstallmentPlan::class);
+    }
+
+    public function gameyas(): HasMany
+    {
+        return $this->hasMany(Gameya::class);
+    }
+
     public function zakatPayments(): HasMany
     {
         return $this->hasMany(ZakatPayment::class);

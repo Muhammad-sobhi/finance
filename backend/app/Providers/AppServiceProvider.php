@@ -5,7 +5,9 @@ namespace App\Providers;
 use App\Models\Bill;
 use App\Models\Debt;
 use App\Models\DebtPayment;
+use App\Models\GameyaPayment;
 use App\Models\IncomeSource;
+use App\Models\InstallmentPayment;
 use App\Models\ProjectPayment;
 use App\Models\Subscription;
 use App\Models\ZakatPayment;
@@ -36,6 +38,8 @@ class AppServiceProvider extends ServiceProvider
             'income_source' => IncomeSource::class,
             'project_payment' => ProjectPayment::class,
             'zakat_payment' => ZakatPayment::class,
+            'installment_payment' => InstallmentPayment::class,
+            'gameya_payment' => GameyaPayment::class,
         ]);
 
         // Brute-force protection: per email+IP, plus a looser per-IP ceiling.

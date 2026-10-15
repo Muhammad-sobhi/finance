@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Enums\AccountType;
 use App\Models\User;
 use App\Services\DebtService;
+use App\Services\InstallmentService;
 use App\Services\NetWorth;
 use App\Services\ProjectService;
 use App\Services\RecurringService;
@@ -152,5 +153,20 @@ class DemoSeeder extends Seeder
         $owner->goals()->create(['name' => 'Emergency fund', 'target_amount' => 150000, 'currency' => 'EGP',
             'account_id' => $owner->accounts()->where('type', 'savings')->value('id')]);
         $owner->update(['zakat_date' => $today->addDays(40)->toDateString()]);
+        // Installments and a gameya.
+        $wallet = $owner->accounts()->where('type', 'debit_card')->value('id');
+        $phone = $owner->installmentPlans()->create(['name' => 'iPhone', 'provider' => 'valU', 'currency' => 'EGP', 'installment_amount' => 3200, 'count' => 12,
+            'first_due_date' => $today->subMonths(4)->toDateString(), 'account_id' => $wallet, 'category_id' => $owner->categories()->where('key', 'shopping')->value('id')]);
+        $owner->installmentPlans()->create(['name' => 'Washing machine', 'provider' => 'B.TECH', 'currency' => 'EGP', 'installment_amount' => 1450, 'count' => 10,
+            'first_due_date' => $today->subMonths(1)->addDays(3)->toDateString(), 'down_payment' => 3000, 'account_id' => $wallet]);
+        $gameya = $owner->gameyas()->create(['name' => 'Office gameya', 'organizer' => 'Mona', 'members' => 10, 'my_turn' => 6, 'amount' => 2000,
+            'currency' => 'EGP', 'start_date' => $today->subMonths(3)->startOfMonth()->toDateString(), 'account_id' => $wallet]);
+        $service2 = app(InstallmentService::class);
+        for ($n = 1; $n <= 4; $n++) {
+            $service2->payInstallment($phone, ['date' => $phone->dueOf($n)->min($today)->toDateString()]);
+        }
+        for ($r = 1; $r <= 3; $r++) {
+            $service2->gameyaMove($gameya, 'contribution', ['date' => $gameya->roundDate($r)->toDateString()]);
+        }
     }
 }

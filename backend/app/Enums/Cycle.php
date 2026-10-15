@@ -24,6 +24,18 @@ enum Cycle: string
         };
     }
 
+    /** Date of the n-th occurrence counted from `$start` (0 = start) without month-end drift. */
+    public function nth(CarbonImmutable $start, int $n): CarbonImmutable
+    {
+        return match ($this) {
+            self::Once => $start,
+            self::Weekly => $start->addWeeks($n),
+            self::Monthly => $start->addMonthsNoOverflow($n),
+            self::Quarterly => $start->addMonthsNoOverflow(3 * $n),
+            self::Yearly => $start->addYearsNoOverflow($n),
+        };
+    }
+
     /** Factor that converts one payment per cycle into a monthly cost. */
     public function monthlyFactor(): float
     {

@@ -273,7 +273,7 @@ export interface Goal {
 export interface Zakat {
   base_currency: string
   settings: { nisab: 'gold' | 'silver'; calendar: 'hijri' | 'gregorian'; date: string | null; deduct_debts: boolean }
-  parts: { cash: number; metals: number; other_assets: number; investments: number; owed_to_me: number; i_owe: number; overdrawn: number }
+  parts: { cash: number; metals: number; other_assets: number; investments: number; owed_to_me: number; i_owe: number; installments: number; overdrawn: number }
   gross: number
   deductions: number
   net: number
@@ -284,4 +284,55 @@ export interface Zakat {
   due: number
   days_left: number | null
   payments: { id: number; amount: number; date: string; zakatable_wealth: number; account_id: number | null; note: string | null }[]
+}
+
+export interface InstallmentPlan {
+  id: number
+  name: string
+  provider: string | null
+  currency: string
+  installment_amount: number
+  count: number
+  cycle: 'weekly' | 'monthly' | 'quarterly'
+  first_due_date: string
+  down_payment: number | null
+  account_id: number | null
+  category_id: number | null
+  remind_days: number | null
+  notes: string | null
+  paid_count: number
+  remaining: number
+  total: number
+  next_due: string | null
+  days: number | null
+  last_due: string
+  done: boolean
+  payments?: { id: number; number: number; amount: number; date: string; account_id: number | null }[]
+}
+
+export interface Gameya {
+  id: number
+  name: string
+  organizer: string | null
+  members: number
+  my_turn: number
+  amount: number
+  currency: string
+  start_date: string
+  cycle: 'weekly' | 'monthly'
+  account_id: number | null
+  remind_days: number | null
+  notes: string | null
+  payout: number
+  paid_rounds: number
+  received: boolean
+  position: number
+  next_round: number | null
+  next_date: string | null
+  days: number | null
+  payout_date: string
+  payout_days: number | null
+  end_date: string
+  done: boolean
+  payments?: { id: number; kind: 'contribution' | 'payout'; round: number; amount: number; date: string; account_id: number | null }[]
 }

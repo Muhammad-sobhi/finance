@@ -95,6 +95,20 @@ class AlertScanner
                 $out->push(new DueItem('credit_card', $a->id, $a->name, $due, abs((float) $a->balance), $a->currency, null, '/accounts'));
             });
 
+        $owner->installmentPlans()->withCount('payments')->get()
+            ->filter(fn ($p) => $p->nextDue() !== null)
+            ->each(fn ($p) => $out->push(new DueItem(
+                'installment', $p->id, $p->name, $p->nextDue(), (float) $p->installment_amount, $p->currency, $p->remind_days, '/debts',
+            )));
+        $owner->gameyas()->with('payments')->get()->each(function ($g) use ($out) {
+            if ($round = $g->nextRound()) {
+                $out->push(new DueItem('gameya', $g->id, $g->name, $g->roundDate($round), (float) $g->amount, $g->currency, $g->remind_days, '/debts'));
+            }
+            if (! $g->received()) {
+                $out->push(new DueItem('gameya_payout', $g->id, $g->name, $g->roundDate($g->my_turn), $g->payout(), $g->currency, $g->remind_days, '/debts'));
+            }
+        });
+
         // Zakat day (a week's notice at least, to prepare the money), only when something is due.
         if ($owner->zakat_date) {
             $zakat = app(ZakatService::class)->compute($owner, $today);

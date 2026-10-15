@@ -259,8 +259,8 @@ function GoalForm({ goal, accounts, onClose }: { goal: Goal | null; accounts: Ac
   )
 }
 
-const PARTS = ['cash', 'metals', 'other_assets', 'investments', 'owed_to_me', 'i_owe', 'overdrawn'] as const
-const MINUS = new Set(['i_owe', 'overdrawn'])
+const PARTS = ['cash', 'metals', 'other_assets', 'investments', 'owed_to_me', 'i_owe', 'installments', 'overdrawn'] as const
+const MINUS = new Set(['i_owe', 'installments', 'overdrawn'])
 
 function ZakatView() {
   const i = useI18n()

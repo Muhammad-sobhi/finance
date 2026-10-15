@@ -1,0 +1,73 @@
+<?php
+
+namespace App\Models;
+
+use App\Enums\Cycle;
+use App\Models\Concerns\BelongsToOwner;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class Gameya extends Model
+{
+    use BelongsToOwner;
+
+    protected $fillable = ['name', 'organizer', 'members', 'my_turn', 'amount', 'currency', 'start_date', 'cycle', 'account_id', 'remind_days', 'notes'];
+
+    protected $attributes = ['cycle' => 'monthly'];
+
+    protected function casts(): array
+    {
+        return [
+            'amount' => 'decimal:2', 'members' => 'integer', 'my_turn' => 'integer',
+            'start_date' => 'date:Y-m-d', 'cycle' => Cycle::class, 'remind_days' => 'integer',
+        ];
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(GameyaPayment::class)->orderBy('round')->orderBy('kind');
+    }
+
+    /** The pot one member takes each round. */
+    public function payout(): float
+    {
+        return round((float) $this->amount * $this->members, 2);
+    }
+
+    public function roundDate(int $round): CarbonImmutable
+    {
+        return $this->cycle->nth(CarbonImmutable::parse($this->start_date), $round - 1);
+    }
+
+    public function paidRounds(): int
+    {
+        return $this->payments->where('kind', 'contribution')->count();
+    }
+
+    public function received(): bool
+    {
+        return $this->payments->where('kind', 'payout')->isNotEmpty();
+    }
+
+    public function nextRound(): ?int
+    {
+        $n = $this->paidRounds() + 1;
+
+        return $n <= $this->members ? $n : null;
+    }
+
+    public function isDone(): bool
+    {
+        return $this->nextRound() === null && $this->received();
+    }
+
+    /** Paid in − taken out: positive = the group owes you; negative = you still owe the group. */
+    public function position(): float
+    {
+        $paid = (float) $this->payments->where('kind', 'contribution')->sum('amount');
+        $got = (float) $this->payments->where('kind', 'payout')->sum('amount');
+
+        return round($paid - $got, 2);
+    }
+}

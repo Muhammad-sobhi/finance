@@ -48,6 +48,14 @@ const DIALOGS = [
   ['/planning', ['.planning > .list-head .seg button:nth-child(3)', '.z-due .acts .btn:not(.ghost)'], 'zakat-pay'],
   ['/planning', ['.planning > .list-head .seg button:nth-child(3)', '.z-due .acts .btn.ghost'], 'zakat-settings'],
   ['/planning', ['.planning > .list-head .seg button:nth-child(3)', '.z-parts h3 .more'], 'zakat-history'],
+  ['/debts', ['.debts-page > .list-head .seg button:nth-child(2)'], 'installments'],
+  ['/debts', ['.debts-page > .list-head .seg button:nth-child(2)', '.tab-body .list-head .btn'], 'plan-form'],
+  ['/debts', ['.debts-page > .list-head .seg button:nth-child(2)', '.tab-body .list-body [data-fi]'], 'plan-detail'],
+  ['/debts', ['.debts-page > .list-head .seg button:nth-child(2)', '.tab-body .list-body [data-fi]', '.modal-f .btn:not(.ghost)'], 'plan-pay'],
+  ['/debts', ['.debts-page > .list-head .seg button:nth-child(3)'], 'gameyas'],
+  ['/debts', ['.debts-page > .list-head .seg button:nth-child(3)', '.tab-body .list-head .btn'], 'gameya-form'],
+  ['/debts', ['.debts-page > .list-head .seg button:nth-child(3)', '.tab-body .list-body [data-fi]'], 'gameya-detail'],
+  ['/debts', ['.debts-page > .list-head .seg button:nth-child(3)', '.tab-body .list-body [data-fi]', '.modal-f .btn:not(.ghost)'], 'gameya-pay'],
 ]
 
 if (SHOTS) mkdirSync(SHOTS, { recursive: true })

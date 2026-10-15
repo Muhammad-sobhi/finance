@@ -15,6 +15,9 @@ return [
         'income' => ':name expected',
         'project' => 'Payment from :name',
         'zakat' => 'Zakat',
+        'installment' => ':name installment',
+        'gameya' => ':name gameya payment',
+        'gameya_payout' => 'Your :name gameya turn',
         'maturity' => ':name matures',
     ],
     'when' => [

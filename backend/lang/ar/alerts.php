@@ -15,6 +15,9 @@ return [
         'income' => 'دخل متوقع: :name',
         'project' => 'دفعة من :name',
         'zakat' => 'الزكاة',
+        'installment' => 'قسط :name',
+        'gameya' => 'دفعة جمعية :name',
+        'gameya_payout' => 'دورك في جمعية :name',
         'maturity' => 'استحقاق :name',
     ],
     'when' => [

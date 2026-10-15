@@ -31,8 +31,8 @@ class Transaction extends Model
         ];
     }
 
-    /** Morph names of sources whose money is a loan, not income or spending. */
-    public const DEBT_SOURCES = ['debt', 'debt_payment'];
+    /** Morph names of sources whose money is a loan (or gameya savings), not income or spending. */
+    public const DEBT_SOURCES = ['debt', 'debt_payment', 'gameya_payment'];
 
     /** Excludes lending/repayments so they don't distort income and spending totals. */
     public function scopeCashflow(Builder $query): Builder
@@ -51,6 +51,8 @@ class Transaction extends Model
         'debt_payment' => 'managed_by_debt',
         'project_payment' => 'managed_by_project',
         'zakat_payment' => 'managed_by_zakat',
+        'installment_payment' => 'managed_by_installment',
+        'gameya_payment' => 'managed_by_gameya',
     ];
 
     public function managedCode(): ?string

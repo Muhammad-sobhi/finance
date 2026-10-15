@@ -13,10 +13,35 @@ import { del, patch, post } from '../lib/api'
 import { daysUntil, isoDate } from '../lib/dates'
 import { useSession } from '../lib/session'
 import type { Account, Debt, Listed } from '../lib/types'
+import { Gameyas, Installments } from './Commitments'
 
 type Meta = { totals: { owed_to_me: number; i_owe: number }; base_currency: string }
 
+type Tab = 'debts' | 'installments' | 'gameyas'
+
+/** Debts hub: personal debts, installment plans (taqseet) and gameyas. */
 export function Debts() {
+  const { t } = useI18n()
+  const [tab, setTab] = useState<Tab>('debts')
+  return (
+    <div className="list debts-page">
+      <div className="list-head">
+        <div className="seg" role="tablist" aria-label={t('debts')}>
+          {(['debts', 'installments', 'gameyas'] as const).map((k) => (
+            <button type="button" key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{t(k === 'debts' ? 'peopleDebts' : k)}</button>
+          ))}
+        </div>
+      </div>
+      <div className="tab-body">
+        {tab === 'debts' && <DebtList />}
+        {tab === 'installments' && <Installments />}
+        {tab === 'gameyas' && <Gameyas />}
+      </div>
+    </div>
+  )
+}
+
+function DebtList() {
   const i = useI18n()
   const { t, num: n, date: fmtDate } = i
   const { readOnly } = useSession()

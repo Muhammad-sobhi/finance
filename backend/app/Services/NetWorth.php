@@ -7,15 +7,17 @@ use App\Enums\DebtStatus;
 use App\Models\Account;
 use App\Models\Asset;
 use App\Models\Debt;
+use App\Models\Gameya;
+use App\Models\InstallmentPlan;
 use App\Models\Investment;
 use App\Models\NetWorthSnapshot;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 
-/** The single definition of net worth: accounts + investments + assets + owed to me − I owe. */
+/** The single definition of net worth: accounts + investments + assets + owed to me + gameya position − I owe − installments left. */
 class NetWorth
 {
-    /** @return array{accounts: float, liquid: float, investments: float, assets: float, owed_to_me: float, i_owe: float, net_worth: float} */
+    /** @return array{accounts: float, liquid: float, investments: float, assets: float, owed_to_me: float, i_owe: float, installments: float, gameya: float, net_worth: float} */
     public function compute(User $user): array
     {
         $owner = $user->dataOwner();
@@ -36,12 +38,15 @@ class NetWorth
             return $fx->toBase($value, $currency);
         });
 
+        $installments = InstallmentPlan::ownedBy($owner)->withCount('payments')->get()->sum(fn (InstallmentPlan $p) => $fx->toBase($p->remaining(), $p->currency));
+        $gameya = Gameya::ownedBy($owner)->with('payments')->get()->sum(fn (Gameya $g) => $fx->toBase($g->position(), $g->currency));
+
         $r = fn ($v) => round((float) $v, 2);
 
         return [
             'accounts' => $r($accTotal), 'liquid' => $r($liquid), 'investments' => $r($investments), 'assets' => $r($assets),
-            'owed_to_me' => $r($owed), 'i_owe' => $r($owe),
-            'net_worth' => $r($accTotal + $investments + $assets + $owed - $owe),
+            'owed_to_me' => $r($owed), 'i_owe' => $r($owe), 'installments' => $r($installments), 'gameya' => $r($gameya),
+            'net_worth' => $r($accTotal + $investments + $assets + $owed + $gameya - $owe - $installments),
         ];
     }
 

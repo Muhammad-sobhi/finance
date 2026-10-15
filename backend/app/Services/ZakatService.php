@@ -9,6 +9,8 @@ use App\Enums\TransactionType;
 use App\Models\Account;
 use App\Models\Asset;
 use App\Models\Debt;
+use App\Models\Gameya;
+use App\Models\InstallmentPlan;
 use App\Models\Investment;
 use App\Models\User;
 use App\Models\ZakatPayment;
@@ -62,8 +64,17 @@ class ZakatService
         $owed = $debts->where('direction', DebtDirection::OwedToMe)->sum(fn (Debt $d) => $fx->toBase($d->remaining(), $d->currency));
         $owe = $debts->where('direction', DebtDirection::IOwe)->sum(fn (Debt $d) => $fx->toBase($d->remaining(), $d->currency));
 
+        // Gameya: money paid in beyond what you took out is owed back to you; the reverse is a debt.
+        $gameya = Gameya::ownedBy($owner)->with('payments')->get()->sum(fn (Gameya $g) => $fx->toBase($g->position(), $g->currency));
+        $owed += max(0, $gameya);
+        $owe += max(0, -$gameya);
+        // Installments: only those falling due within the coming year reduce this year's zakat.
+        $yearAhead = $today->addYear();
+        $installments = InstallmentPlan::ownedBy($owner)->withCount('payments')->get()
+            ->sum(fn (InstallmentPlan $p) => $fx->toBase($p->remainingUntil($yearAhead), $p->currency));
+
         $gross = $cash + $metals + $otherAssets + $investments + $owed;
-        $deductions = $owner->zakat_deduct_debts ? $owe + $overdrawn : 0.0;
+        $deductions = $owner->zakat_deduct_debts ? $owe + $overdrawn + $installments : 0.0;
         $net = max(0.0, $gross - $deductions);
 
         $gold = $owner->zakat_nisab === 'gold';
@@ -84,6 +95,7 @@ class ZakatService
                 'cash' => $r($cash), 'metals' => $r($metals), 'other_assets' => $r($otherAssets),
                 'investments' => $r($investments), 'owed_to_me' => $r($owed),
                 'i_owe' => $r($owner->zakat_deduct_debts ? $owe : 0), 'overdrawn' => $r($owner->zakat_deduct_debts ? $overdrawn : 0),
+                'installments' => $r($owner->zakat_deduct_debts ? $installments : 0),
             ],
             'gross' => $r($gross), 'deductions' => $r($deductions), 'net' => $r($net),
             'nisab' => $r($nisab), 'price_missing' => $price <= 0, 'reached' => $reached,
