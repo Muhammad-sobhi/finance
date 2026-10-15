@@ -1,0 +1,93 @@
+// No-scroll verification (CLAUDE.md quality bar).
+// For every page × viewport × theme/lang: the document must not exceed the viewport and
+// no element may have scrollHeight > clientHeight. Also opens the dialogs.
+//
+// Usage: API + `npm run preview` running, then
+//   BASE_URL=http://localhost:4173 EMAIL=demo@example.com PASSWORD=password npm run verify:noscroll
+// Set SHOTS=dir to save screenshots. Set CHROMIUM=/path/to/chrome if Playwright's browser isn't installed.
+import { chromium } from 'playwright-core'
+import { mkdirSync } from 'node:fs'
+
+const BASE = process.env.BASE_URL ?? 'http://localhost:4173'
+const EMAIL = process.env.EMAIL ?? 'demo@example.com'
+const PASSWORD = process.env.PASSWORD ?? 'password'
+const SHOTS = process.env.SHOTS
+const VIEWPORTS = [[390, 780], [900, 700], [1440, 900]]
+const ROUTES = ['/', '/accounts', '/transactions', '/categories', '/debts', '/bills', '/subscriptions', '/investments', '/assets', '/reports', '/heir', '/settings']
+const COMBOS = [['ledger', 'ar'], ['swiss', 'ar'], ['geo', 'ar'], ['vault', 'ar'], ['ledger', 'en'], ['vault', 'en']]
+// Dialogs: [route, selector to click, label]
+const DIALOGS = [
+  ['/', '.fab', 'quick-add'],
+  ['/accounts', '.list-head .btn', 'account-form'],
+  ['/transactions', '.list-head .btn', 'transaction-form'],
+  ['/categories', '.list-head .btn', 'category-form'],
+]
+
+if (SHOTS) mkdirSync(SHOTS, { recursive: true })
+
+const res = await fetch(`${BASE}/api/v1/auth/login`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+  body: JSON.stringify({ email: EMAIL, password: PASSWORD, device_name: 'noscroll-check' }),
+})
+if (!res.ok) throw new Error(`login failed: ${res.status}`)
+const { token } = await res.json()
+
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM })
+const failures = []
+
+const check = (page) => page.evaluate(() => {
+  const out = []
+  const de = document.documentElement
+  if (de.scrollHeight > innerHeight) out.push(`document height ${de.scrollHeight} > ${innerHeight}`)
+  if (de.scrollWidth > innerWidth) out.push(`document width ${de.scrollWidth} > ${innerWidth}`)
+  for (const el of document.querySelectorAll('body *')) {
+    if (el.scrollHeight > el.clientHeight && el.clientHeight > 0) {
+      const id = el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + (el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\s+/).join('.') : '')
+      out.push(`${id} scrollHeight ${el.scrollHeight} > clientHeight ${el.clientHeight}`)
+    }
+  }
+  return out
+})
+
+for (const [w, h] of VIEWPORTS) {
+  for (const [theme, lang] of COMBOS) {
+    const ctx = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: w <= 720 })
+    await ctx.addInitScript(([t, th, l]) => {
+      localStorage.setItem('fin.token', t)
+      localStorage.setItem('fin.theme', th)
+      localStorage.setItem('fin.lang', l)
+    }, [token, theme, lang])
+    const page = await ctx.newPage()
+    // Server-side prefs win at boot; set them to the combo under test.
+    await fetch(`${BASE}/api/v1/auth/me`, { method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ theme, locale: lang }) })
+
+    const visit = async (route, label, action) => {
+      await page.goto(BASE + route)
+      await page.waitForSelector('.view', { timeout: 10000 })
+      await page.waitForLoadState('networkidle')
+      if (action) {
+        await page.click(action)
+        await page.waitForSelector('.modal')
+        await page.waitForLoadState('networkidle')
+      }
+      await page.evaluate(() => document.fonts.ready)
+      await page.waitForTimeout(150)
+      const problems = await check(page)
+      const name = `${w}x${h} ${theme}/${lang} ${label}`
+      if (problems.length) failures.push(`${name}\n    ${problems.join('\n    ')}`)
+      if (SHOTS && (theme === 'ledger' || label === '/')) await page.screenshot({ path: `${SHOTS}/${w}x${h}-${theme}-${lang}-${label.replace(/\W+/g, '_') || 'home'}.png` })
+    }
+
+    for (const r of ROUTES) await visit(r, r)
+    for (const [r, sel, label] of DIALOGS) await visit(r, label, sel)
+    await ctx.close()
+  }
+}
+await browser.close()
+
+if (failures.length) {
+  console.error(`✗ ${failures.length} scroll violation(s):\n  ${failures.join('\n  ')}`)
+  process.exit(1)
+}
+console.log(`✓ no scrolling: ${ROUTES.length + DIALOGS.length} views × ${VIEWPORTS.length} viewports × ${COMBOS.length} theme/lang combos`)
