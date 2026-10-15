@@ -123,6 +123,7 @@ Route::prefix('v1')->group(function () {
 
         Route::get('settings', [SettingsController::class, 'show'])->name('settings.show');
         Route::patch('settings', [SettingsController::class, 'update'])->name('settings.update');
+        Route::post('settings/metal-prices', [SettingsController::class, 'refreshMetals'])->middleware('throttle:account-security')->name('settings.metals');
         Route::post('exchange-rates', [SettingsController::class, 'storeRate'])->name('rates.store');
         Route::patch('exchange-rates/{rate}', [SettingsController::class, 'updateRate'])->name('rates.update');
         Route::delete('exchange-rates/{rate}', [SettingsController::class, 'destroyRate'])->name('rates.destroy');

@@ -30,6 +30,7 @@ export function Dashboard() {
   const cur = spending[spending.length - 1]
   const monthNet = cur ? cur.income - cur.expense : 0
   const base = data?.base_currency ?? ''
+  const fc = data?.forecast
 
   const cls = (n: number) => `panel${panel === n ? ' on' : ''}`
 
@@ -41,6 +42,14 @@ export function Dashboard() {
             <div className="lbl">{t('worth')}</div>
             <div className="v num">{data ? num(data.net_worth) : '…'} <small className="cur-sm">{base}</small></div>
             <div className={`d ${monthNet >= 0 ? 'pos' : 'neg'}`}>{monthNet >= 0 ? '▲' : '▼'} <span className="num">{num(Math.abs(monthNet))}</span> {t('thisMonth')}</div>
+            {fc && fc.days_left > 0 && (
+              <div className="d fc muted" title={t('forecastLine', { spend: num(fc.projected_spend), save: '' })}>
+                {t('forecastLine', {
+                  spend: num(fc.projected_spend),
+                  save: fc.projected_savings >= 0 ? t('forecastSave', { n: num(fc.projected_savings) }) : t('forecastShort', { n: num(-fc.projected_savings) }),
+                })}
+              </div>
+            )}
           </div>
           <div className="card kpi"><div className="lbl">{t('liquid')}</div><div className="v num">{data ? num(data.liquid) : '…'}</div></div>
           <div className="card kpi"><div className="lbl">{t('owedToMe')}</div><div className="v num pos">{data ? num(data.owed_to_me) : '…'}</div></div>

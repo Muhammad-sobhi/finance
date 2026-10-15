@@ -9,9 +9,10 @@ return [
     'card_utilization' => ':name is :pct% utilized. Keep credit card use under 30% of the limit.',
     'debt_overdue' => 'Your debt to :name (:amount :currency) is overdue.',
     'collect_debt' => ':name\'s debt to you (:amount :currency) is overdue — follow up.',
+    'forecast_negative' => 'At this pace you will spend :gap :currency more than you earn by month end.',
     'categories' => [
         'food' => 'food', 'transport' => 'transport', 'bills' => 'bills', 'shopping' => 'shopping', 'health' => 'health',
-        'education' => 'education', 'entertainment' => 'entertainment', 'family' => 'family', 'work' => 'work', 'other' => 'other',
+        'education' => 'education', 'entertainment' => 'entertainment', 'family' => 'family', 'work' => 'work', 'other' => 'other', 'zakat' => 'zakat & charity',
         'uncategorized' => 'uncategorized',
     ],
 ];

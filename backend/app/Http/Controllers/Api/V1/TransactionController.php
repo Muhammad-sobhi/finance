@@ -10,6 +10,7 @@ use App\Models\Transaction;
 use App\Services\BudgetService;
 use App\Services\CurrencyConverter;
 use App\Services\TransactionService;
+use App\Services\UnusualSpend;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,7 +18,7 @@ use Illuminate\Support\Facades\Gate;
 
 class TransactionController extends Controller
 {
-    public function __construct(private readonly TransactionService $service, private readonly BudgetService $budgets) {}
+    public function __construct(private readonly TransactionService $service, private readonly BudgetService $budgets, private readonly UnusualSpend $unusual) {}
 
     /**
      * One month of transactions (newest first) with month and per-day totals in base currency.
@@ -86,6 +87,7 @@ class TransactionController extends Controller
     {
         $tx = $this->service->create($request->user(), $request->validated());
         $this->budgets->watch($request->user());
+        $this->unusual->check($request->user(), $tx);
 
         return (new TransactionResource($tx->refresh()))->response()->setStatusCode(201);
     }

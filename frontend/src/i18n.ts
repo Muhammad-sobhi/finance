@@ -91,6 +91,8 @@ const ar = {
   autoRecord: 'تسجيل تلقائي', incomeDue: 'دخل متوقع: {name}', projectDue: 'دفعة من {name}', receivedMonth: 'المستلم هذا الشهر',
   toAccountIn: 'الحساب المستلِم', managedByProject: 'هذه المعاملة تابعة لمشروع. عدّلها من صفحة الدخل.', paymentDue: 'موعد الدفع',
   managedByZakat: 'هذه المعاملة دفعة زكاة. احذفها من صفحة التخطيط.',
+  autoMetals: 'تحديث سعر الذهب والفضة تلقائيًا (السعر العالمي)', updateNow: 'حدّث الآن', needUsdRate: 'أضف سعر الدولار في جدول العملات أولًا', metalsDown: 'خدمة الأسعار لا ترد الآن. حاول لاحقًا.',
+  forecastLine: 'متوقع آخر الشهر: مصروف {spend} · {save}', forecastSave: 'ادخار {n}', forecastShort: 'عجز {n}',
   // installments & gameya
   peopleDebts: 'ديون الأشخاص', installments: 'التقسيط', gameyas: 'الجمعيات',
   newPlan: 'تقسيط جديد', editPlan: 'تعديل التقسيط', installmentAmount: 'قيمة القسط', installmentsCount: 'عدد الأقساط', firstDue: 'موعد أول قسط',
@@ -214,6 +216,8 @@ const en: typeof ar = {
   autoRecord: 'Record automatically', incomeDue: '{name} expected', projectDue: 'Payment from {name}', receivedMonth: 'Received this month',
   toAccountIn: 'Received into', managedByProject: 'This transaction belongs to a project. Edit it from Income.', paymentDue: 'Payment due',
   managedByZakat: 'This transaction is a zakat payment. Delete it from Planning.',
+  autoMetals: 'Auto-update gold & silver (global price)', updateNow: 'Update now', needUsdRate: 'Add a USD exchange rate first', metalsDown: 'The price service is not answering. Try later.',
+  forecastLine: 'Month-end forecast: spend {spend} · {save}', forecastSave: 'save {n}', forecastShort: 'short {n}',
   // installments & gameya
   peopleDebts: 'People', installments: 'Installments', gameyas: 'Gameyas',
   newPlan: 'New installment plan', editPlan: 'Edit plan', installmentAmount: 'Installment', installmentsCount: 'Number of installments', firstDue: 'First installment due',

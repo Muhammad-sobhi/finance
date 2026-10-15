@@ -25,7 +25,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name', 'email', 'password', 'role', 'owner_id',
         'locale', 'theme', 'list_mode', 'base_currency', 'last_activity_at',
-        'gold_price_24k', 'silver_price', 'alert_days', 'email_alerts', 'auto_fetch_rates',
+        'gold_price_24k', 'silver_price', 'alert_days', 'email_alerts', 'auto_fetch_rates', 'auto_metal_prices',
         'heir_enabled', 'heir_inactivity_days', 'heir_grace_days',
         'zakat_nisab', 'zakat_calendar', 'zakat_date', 'zakat_deduct_debts',
     ];
@@ -43,6 +43,7 @@ class User extends Authenticatable
         'alert_days' => 3,
         'email_alerts' => true,
         'auto_fetch_rates' => false,
+        'auto_metal_prices' => false,
         'heir_enabled' => false,
         'heir_inactivity_days' => 60,
         'heir_grace_days' => 14,
@@ -71,6 +72,8 @@ class User extends Authenticatable
             'alert_days' => 'integer',
             'email_alerts' => 'boolean',
             'auto_fetch_rates' => 'boolean',
+            'auto_metal_prices' => 'boolean',
+            'metal_prices_updated_at' => 'datetime',
             'heir_enabled' => 'boolean',
             'heir_inactivity_days' => 'integer',
             'heir_grace_days' => 'integer',

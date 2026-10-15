@@ -95,6 +95,20 @@ export interface Dashboard {
   balances: { id: number; name: string; type: AccountType; currency: string; balance: number; base_balance: number }[]
   spending: { month: string; expense: number; income: number }[]
   upcoming: Upcoming[]
+  forecast: Forecast
+}
+
+export interface Forecast {
+  month: string
+  days_left: number
+  spent: number
+  daily_rate: number
+  scheduled: number
+  projected_spend: number
+  income: number
+  expected_income: number
+  projected_income: number
+  projected_savings: number
 }
 
 export type Cycle = 'once' | 'weekly' | 'monthly' | 'quarterly' | 'yearly'
@@ -192,6 +206,8 @@ export interface Settings {
   alert_days: number
   email_alerts: boolean
   auto_fetch_rates: boolean
+  auto_metal_prices: boolean
+  metal_prices_updated_at: string | null
   rates: { id: number; currency: string; rate: number; auto_update: boolean; updated_at: string | null }[]
 }
 

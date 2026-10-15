@@ -10,6 +10,7 @@ use App\Models\Transaction;
 use App\Services\AlertScanner;
 use App\Services\CurrencyConverter;
 use App\Services\DueItem;
+use App\Services\ForecastService;
 use App\Services\NetWorth;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -53,6 +54,7 @@ class DashboardController extends Controller
             ]),
             'spending' => $this->monthly($user, $fx, $today),
             'upcoming' => $this->upcoming($user, $today),
+            'forecast' => app(ForecastService::class)->month($user, $today),
         ]);
     }
 

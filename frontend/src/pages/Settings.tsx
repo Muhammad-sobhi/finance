@@ -27,7 +27,7 @@ export function Settings() {
   useEffect(() => {
     if (data) setF({
       gold_price_24k: String(data.gold_price_24k), silver_price: String(data.silver_price), alert_days: String(data.alert_days),
-      email_alerts: data.email_alerts, auto_fetch_rates: data.auto_fetch_rates,
+      email_alerts: data.email_alerts, auto_fetch_rates: data.auto_fetch_rates, auto_metal_prices: data.auto_metal_prices,
     })
   }, [data])
 
@@ -36,7 +36,7 @@ export function Settings() {
     try {
       await patch('/settings', {
         gold_price_24k: num(f.gold_price_24k) ?? 0, silver_price: num(f.silver_price) ?? 0, alert_days: num(f.alert_days) ?? 0,
-        email_alerts: f.email_alerts, auto_fetch_rates: f.auto_fetch_rates,
+        email_alerts: f.email_alerts, auto_metal_prices: f.auto_metal_prices,
       })
       setErrors({})
       toast(t('saved'))
@@ -46,6 +46,11 @@ export function Settings() {
       else toast(t('error'))
     }
   }
+
+  const refreshMetals = () => post('/settings/metal-prices', {}).then(() => { toast(t('saved')); refresh() }).catch((err) => {
+    const code = err instanceof ApiError ? err.data.code : null
+    toast(code === 'usd_rate_missing' ? t('needUsdRate') : code === 'metals_unavailable' ? t('metalsDown') : t('error'))
+  })
 
   const row = (k: string, label: string, mode: 'decimal' | 'numeric' = 'decimal') => (
     <div className="setting-row">
@@ -77,7 +82,13 @@ export function Settings() {
           {row('silver_price', `${t('silverPrice')} (${data?.base_currency ?? ''})`)}
           {row('alert_days', t('alertDays'), 'numeric')}
           {toggle('email_alerts', t('emailAlerts'))}
-          {toggle('auto_fetch_rates', t('fetchRates'))}
+          <div className="setting-row">
+            <label htmlFor="s-auto_metal_prices">{t('autoMetals')}{data?.metal_prices_updated_at && <small className="muted"> · {fmtDate(data.metal_prices_updated_at.slice(0, 10), { day: 'numeric', month: 'short' })}</small>}</label>
+            <span className="row-ctl">
+              {!readOnly && <button type="button" className="icon-btn sm" aria-label={t('updateNow')} title={t('updateNow')} onClick={refreshMetals}><Icon name="subscriptions" /></button>}
+              <input id="s-auto_metal_prices" type="checkbox" disabled={readOnly} checked={!!f.auto_metal_prices} onChange={(e) => setF({ ...f, auto_metal_prices: e.target.checked })} />
+            </span>
+          </div>
           <PushRow />
           <AccountRows />
           {!readOnly && <div className="actions"><button type="submit" className="btn">{t('save')}</button></div>}
@@ -96,6 +107,11 @@ export function Settings() {
                 </span>
               </div>
             )} />
+          <div className="setting-row">
+            <label htmlFor="s-auto_fetch_rates">{t('fetchRates')}</label>
+            <input id="s-auto_fetch_rates" type="checkbox" disabled={readOnly} checked={!!data?.auto_fetch_rates}
+              onChange={(e) => patch('/settings', { auto_fetch_rates: e.target.checked }).then(() => { toast(t('saved')); refresh() }).catch(() => toast(t('error')))} />
+          </div>
           {!readOnly && <div className="actions"><button type="button" className="btn" onClick={() => setRate(null)}><Icon name="plus" />{t('addRate')}</button></div>}
         </div>
       </div>

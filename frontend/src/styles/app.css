@@ -164,6 +164,8 @@ td.acts { width: 1%; }
 [data-theme='vault'] .sub-h { color: var(--accent); }
 .show-sm { display: none; }
 .split .card .paged { flex: 1; min-height: 0; }
+.kpi .d.fc { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.setting-row .row-ctl { display: inline-flex; align-items: center; gap: 10px; flex: none; }
 .setting-row input[type='checkbox'] { width: 18px; height: 18px; accent-color: var(--accent); }
 @media (max-width: 720px) { .show-sm { display: flex; } }
 .li-btn { all: unset; box-sizing: border-box; display: flex; width: 100%; cursor: pointer; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0; border-bottom: var(--row-line); font-size: 14px; }

@@ -224,6 +224,14 @@ class ReportService
             }
         }
 
+        // The running month: warn early when the forecast ends below zero.
+        if ($period === 'month' && $start->isSameMonth($today)) {
+            $f = app(ForecastService::class)->month($this->owner, $today);
+            if ($f['projected_savings'] < 0 && $f['days_left'] > 0) {
+                $add('forecast_negative', 'warn', ['gap' => round(-$f['projected_savings']), 'currency' => $base]);
+            }
+        }
+
         $subs = Subscription::ownedBy($this->owner)->where('is_active', true)->get()
             ->sum(fn (Subscription $s) => $this->fx->toBase($s->monthlyCost(), $s->currency));
         if ($monthlyIncome > 0 && $subs / $monthlyIncome * 100 > self::SUBSCRIPTION_SHARE) {

@@ -4,6 +4,7 @@ use App\Enums\UserRole;
 use App\Models\User;
 use App\Services\AlertScanner;
 use App\Services\HeirService;
+use App\Services\MetalPriceFetcher;
 use App\Services\NetWorth;
 use App\Services\RateFetcher;
 use App\Services\RecurringService;
@@ -45,7 +46,12 @@ Artisan::command('finance:fetch-rates', function (RateFetcher $fetcher) {
     $this->info('Updated '.$fetcher->run().' rate(s).');
 })->purpose('Auto-update exchange rates for owners who enabled it');
 
+Artisan::command('finance:fetch-metals', function (MetalPriceFetcher $fetcher) {
+    $this->info('Updated gold/silver prices for '.$fetcher->run().' owner(s).');
+})->purpose('Auto-update gold/silver prices for owners who enabled it');
+
 Schedule::command('finance:snapshot')->dailyAt('23:50');
+Schedule::command('finance:fetch-metals')->dailyAt('07:05');
 Schedule::command('finance:fetch-rates')->dailyAt('07:00');
 
 Artisan::command('finance:heir-check', function (HeirService $heirs) {
