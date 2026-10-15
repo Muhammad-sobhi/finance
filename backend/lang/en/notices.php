@@ -6,6 +6,10 @@ return [
         'title' => 'Unusual expense: :category',
         'body' => 'You just spent :amount :currency on :category — about :times× what it usually costs (:median).',
     ],
+    'new_sign_in' => [
+        'title' => 'New sign-in to your account',
+        'body' => 'Someone signed in from :device (IP :ip) at :time. If this wasn\'t you, change your password now and sign out other devices.',
+    ],
     'budget_near' => [
         'title' => 'Budget almost used: :category',
         'body' => 'You have spent :spent of your :limit :currency budget for :category this month (:pct%).',

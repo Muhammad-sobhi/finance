@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useI18n, type Key } from '../i18n'
+import { useInstall } from '../lib/install'
 import { useSession } from '../lib/session'
 import type { Theme } from '../lib/types'
 import { Bell } from './Bell'
@@ -40,7 +41,16 @@ export function Shell() {
   const current = loc.pathname === '/notifications' ? { key: 'notifications' as Key } : NAV.find((n) => n.path === loc.pathname) ?? NAV[0]
   const onMore = !NAV.find((n) => n.path === loc.pathname)?.phone
 
+  const { canInstall, install } = useInstall()
   const go = (path: string) => { setSheet(false); nav(path) }
+
+  // Home-screen shortcut "Add expense" opens the app at /?quick=1.
+  useEffect(() => {
+    if (new URLSearchParams(loc.search).get('quick') === '1') {
+      if (!readOnly) setQuick(true)
+      nav(loc.pathname, { replace: true })
+    }
+  }, [loc.search, loc.pathname, nav, readOnly])
 
   return (
     <div className="app">
@@ -103,6 +113,11 @@ export function Shell() {
                 <Icon name={n.key} /><span>{t(n.key)}</span>
               </button>
             ))}
+            {canInstall && (
+              <button type="button" onClick={() => { setSheet(false); install() }}>
+                <Icon name="plus" /><span>{t('installApp')}</span>
+              </button>
+            )}
             <button type="button" onClick={() => { setSheet(false); logout() }}>
               <Icon name="logout" className="flip" /><span>{t('logout')}</span>
             </button>

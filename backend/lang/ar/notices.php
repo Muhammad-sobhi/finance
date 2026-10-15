@@ -6,6 +6,10 @@ return [
         'title' => 'مصروف غير معتاد: :category',
         'body' => 'صرفت الآن :amount :currency على :category — حوالي :times أضعاف المعتاد (:median).',
     ],
+    'new_sign_in' => [
+        'title' => 'تسجيل دخول جديد إلى حسابك',
+        'body' => 'تم تسجيل الدخول من :device (عنوان :ip) في :time. إن لم تكن أنت فغيّر كلمة المرور الآن وسجّل الخروج من الأجهزة الأخرى.',
+    ],
     'budget_near' => [
         'title' => 'الميزانية قاربت على النفاد: :category',
         'body' => 'صرفت :spent من ميزانية :limit :currency لبند :category هذا الشهر (:pct%).',

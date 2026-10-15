@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { currency, money, text } from '../components/fields'
 import { DataTools } from '../components/DataTools'
+import { DetailModal } from '../components/DetailModal'
 import { Icon } from '../components/Icon'
 import { TwoFactorRow } from '../components/TwoFactorSettings'
 import { DeleteButton, FormModal } from '../components/Modal'
@@ -128,11 +129,17 @@ export function Settings() {
 function AccountRows() {
   const { t } = useI18n()
   const { user, readOnly, toast } = useSession()
-  const [open, setOpen] = useState<'profile' | 'password' | null>(null)
+  const [open, setOpen] = useState<'profile' | 'password' | 'activity' | null>(null)
   const others = () => post<{ revoked: number }>('/auth/logout-others', {}).then((r) => toast(t('loggedOutOthers', { n: r.revoked }))).catch(() => toast(t('error')))
   return (
     <>
-      <div className="setting-row"><span>{t('account_')}</span><b className="muted" dir="ltr">{user?.email}</b></div>
+      <div className="setting-row">
+        <span>{t('account_')}</span>
+        <span className="row-ctl">
+          <b className="muted acct-email" dir="ltr">{user?.email}</b>
+          <button type="button" className="btn sm ghost" onClick={() => setOpen('activity')}>{t('signInActivity')}</button>
+        </span>
+      </div>
       <div className="setting-row acct-actions">
         {!readOnly && <button type="button" className="btn sm ghost" onClick={() => setOpen('profile')}>{t('editProfile')}</button>}
         <button type="button" className="btn sm ghost" onClick={() => setOpen('password')}>{t('changePassword')}</button>
@@ -141,6 +148,7 @@ function AccountRows() {
       <TwoFactorRow />
       {open === 'profile' && <ProfileForm onClose={() => setOpen(null)} />}
       {open === 'password' && <PasswordForm onClose={() => setOpen(null)} />}
+      {open === 'activity' && <ActivityList onClose={() => setOpen(null)} />}
     </>
   )
 }
@@ -214,5 +222,31 @@ function RateForm({ rate, onClose }: { rate: Rate | null; onClose: () => void })
         { ...currency(form, 'currency', t('currency')), hidden: !!rate },
         money(form, 'rate', t('rate')),
       ]} />
+  )
+}
+
+interface SignIn { id: number; success: boolean; method: string; device: string; ip: string | null; at: string }
+
+/** Recent sign-ins and failed attempts on this account. */
+function ActivityList({ onClose }: { onClose: () => void }) {
+  const { t, date } = useI18n()
+  const { data } = useApi<{ data: SignIn[] }>('/auth/activity')
+  const rows = useMemo(() => data?.data ?? [], [data])
+  return (
+    <DetailModal title={t('signInActivity')} onClose={onClose}>
+      <p className="muted hint">{t('activityHint')}</p>
+      <Paged items={rows}
+        empty={<p className="muted none">{t('empty')}</p>}
+        container={(c) => <div className="rows">{c}</div>}
+        renderItem={(e) => (
+          <div className="li" key={e.id}>
+            <span><b>{e.device}</b> <small className="muted" dir="ltr">{e.ip}</small></span>
+            <span>
+              <small className="muted">{date(e.at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</small>
+              <span className={`tag${e.success ? ' quiet' : ' late'}`}>{e.success ? t(`via_${e.method}`) : t('failedAttempt')}</span>
+            </span>
+          </div>
+        )} />
+    </DetailModal>
   )
 }

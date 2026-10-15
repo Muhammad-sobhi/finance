@@ -91,6 +91,9 @@ const ar = {
   autoRecord: 'تسجيل تلقائي', incomeDue: 'دخل متوقع: {name}', projectDue: 'دفعة من {name}', receivedMonth: 'المستلم هذا الشهر',
   toAccountIn: 'الحساب المستلِم', managedByProject: 'هذه المعاملة تابعة لمشروع. عدّلها من صفحة الدخل.', paymentDue: 'موعد الدفع',
   managedByZakat: 'هذه المعاملة دفعة زكاة. احذفها من صفحة التخطيط.',
+  installApp: 'ثبّت التطبيق', iosInstall: 'لتثبيت التطبيق على آيفون: زر المشاركة ثم «إضافة إلى الشاشة الرئيسية».',
+  signInActivity: 'نشاط الدخول', activityHint: 'آخر عمليات الدخول والمحاولات الفاشلة. لو رأيت جهازًا لا تعرفه غيّر كلمة المرور.', failedAttempt: 'محاولة فاشلة',
+  via_password: 'كلمة المرور', via_authenticator: 'رمز التطبيق', via_recovery_code: 'كود احتياطي', via_trusted_device: 'جهاز موثوق',
   // data tools
   dataTab: 'البيانات', dataTools: 'بياناتك', exportCsv: 'تصدير CSV', importBank: 'استيراد كشف بنك', backupNow: 'نسخة احتياطية مشفّرة',
   backupHint: 'النسخة ملف مشفّر بعبارة مرور تختارها؛ لا نحتفظ بها. احفظ الملف وعبارة المرور في مكانين مختلفين.',
@@ -228,6 +231,9 @@ const en: typeof ar = {
   autoRecord: 'Record automatically', incomeDue: '{name} expected', projectDue: 'Payment from {name}', receivedMonth: 'Received this month',
   toAccountIn: 'Received into', managedByProject: 'This transaction belongs to a project. Edit it from Income.', paymentDue: 'Payment due',
   managedByZakat: 'This transaction is a zakat payment. Delete it from Planning.',
+  installApp: 'Install app', iosInstall: 'To install on iPhone: tap Share, then “Add to Home Screen”.',
+  signInActivity: 'Sign-in activity', activityHint: "Recent sign-ins and failed attempts. If you see a device you don't know, change your password.", failedAttempt: 'Failed attempt',
+  via_password: 'Password', via_authenticator: 'App code', via_recovery_code: 'Recovery code', via_trusted_device: 'Trusted device',
   // data tools
   dataTab: 'Data', dataTools: 'Your data', exportCsv: 'Export CSV', importBank: 'Import bank statement', backupNow: 'Encrypted backup',
   backupHint: 'The backup is a file sealed with a passphrase you choose; we never keep it. Store the file and the passphrase in different places.',

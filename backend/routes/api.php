@@ -50,6 +50,7 @@ Route::prefix('v1')->group(function () {
         Route::put('auth/password', [AuthController::class, 'updatePassword'])->middleware('throttle:account-security')->name('auth.password');
         Route::post('auth/logout-others', [AuthController::class, 'logoutOthers'])->name('auth.logout-others');
         Route::get('auth/two-factor', [AuthController::class, 'twoFactorStatus'])->name('auth.2fa.status');
+        Route::get('auth/activity', [AuthController::class, 'activity'])->name('auth.activity');
         Route::post('auth/two-factor/setup', [AuthController::class, 'twoFactorSetup'])->middleware('throttle:account-security')->name('auth.2fa.setup');
         Route::post('auth/two-factor/confirm', [AuthController::class, 'twoFactorConfirm'])->middleware('throttle:account-security')->name('auth.2fa.confirm');
         Route::post('auth/two-factor/disable', [AuthController::class, 'twoFactorDisable'])->middleware('throttle:account-security')->name('auth.2fa.disable');

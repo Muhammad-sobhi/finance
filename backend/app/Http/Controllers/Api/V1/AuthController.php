@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateProfileRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Services\SignInLog;
 use App\Services\TwoFactor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -16,7 +19,7 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    public function __construct(private readonly TwoFactor $twoFactor) {}
+    public function __construct(private readonly TwoFactor $twoFactor, private readonly SignInLog $log) {}
 
     public function login(Request $request): JsonResponse
     {
@@ -32,13 +35,18 @@ class AuthController extends Controller
         $valid = Hash::check($data['password'], $user?->password ?? self::dummyHash());
 
         if (! $user || ! $valid || ! $this->canLogIn($user)) {
+            if ($user && ! $valid) {
+                $this->log->failure($user, $request, 'password');
+            }
             throw ValidationException::withMessages(['email' => __('auth.failed')]);
         }
 
         // Second step required: hand back a short-lived challenge instead of a token.
-        if ($this->twoFactor->enabled($user) && ! $this->twoFactor->isTrusted($user, $data['device_token'] ?? null)) {
+        $twoFactor = $this->twoFactor->enabled($user);
+        if ($twoFactor && ! $this->twoFactor->isTrusted($user, $data['device_token'] ?? null)) {
             return response()->json(['two_factor' => true, 'challenge' => $this->twoFactor->challengeFor($user)]);
         }
+        $this->log->success($user, $request, $twoFactor ? 'trusted_device' : 'password');
 
         return $this->issueToken($user, $data['device_name'] ?? 'web');
     }
@@ -57,9 +65,12 @@ class AuthController extends Controller
         if (! $user) {
             throw ValidationException::withMessages(['challenge' => 'Sign-in expired. Enter your password again.']);
         }
+        $method = ! empty($data['recovery_code']) ? 'recovery_code' : 'authenticator';
         if (! $this->twoFactor->verify($user, $data['code'] ?? null, $data['recovery_code'] ?? null)) {
+            $this->log->failure($user, $request, $method);
             throw ValidationException::withMessages(['code' => 'Invalid code.']);
         }
+        $this->log->success($user, $request, $method);
 
         $response = $this->issueToken($user, $data['device_name'] ?? 'web');
         if ($request->boolean('remember')) {
@@ -128,6 +139,17 @@ class AuthController extends Controller
         }
 
         return response()->json(['token' => $token, 'user' => new UserResource($user)]);
+    }
+
+    /** The last sign-ins and failed attempts on this account. */
+    public function activity(Request $request): JsonResponse
+    {
+        $rows = DB::table('login_events')->where('user_id', $request->user()->id)->orderByDesc('id')->limit(50)
+            ->get(['id', 'success', 'method', 'device', 'ip', 'created_at'])
+            ->map(fn ($e) => ['id' => $e->id, 'success' => (bool) $e->success, 'method' => $e->method, 'device' => $e->device,
+                'ip' => $e->ip, 'at' => Carbon::parse($e->created_at)->toIso8601String()]);
+
+        return response()->json(['data' => $rows]);
     }
 
     public function logout(Request $request): JsonResponse

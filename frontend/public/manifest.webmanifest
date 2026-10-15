@@ -1,11 +1,25 @@
 {
+  "id": "/",
   "name": "خزينتي — Treasury",
   "short_name": "خزينتي",
+  "description": "مصروفاتك وحساباتك وديونك في مكان واحد — Your money in one place",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "any",
   "dir": "rtl",
   "lang": "ar",
   "background_color": "#f4efe3",
   "theme_color": "#2e5e3e",
-  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+  "categories": ["finance", "productivity"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "سجّل مصروف — Add expense", "short_name": "مصروف", "url": "/?quick=1", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "المصروفات اليومية — Daily expenses", "short_name": "اليومية", "url": "/transactions" }
+  ]
 }
