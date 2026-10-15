@@ -8,6 +8,7 @@ import { Categories } from './pages/Categories'
 import { Debts } from './pages/Debts'
 import { Investments } from './pages/Investments'
 import { Recurring } from './pages/Recurring'
+import { Reports } from './pages/Reports'
 import { Settings } from './pages/Settings'
 import { Dashboard } from './pages/Dashboard'
 import { Login } from './pages/Login'
@@ -35,7 +36,7 @@ export default function App() {
           <Route path="subscriptions" element={<Recurring key="subscriptions" kind="subscriptions" />} />
           <Route path="investments" element={<Investments />} />
           <Route path="assets" element={<Assets />} />
-          <Route path="reports" element={<Placeholder k="reports" />} />
+          <Route path="reports" element={<Reports />} />
           <Route path="heir" element={<Placeholder k="heir" />} />
           <Route path="settings" element={<Settings />} />
           <Route path="notifications" element={<Notifications />} />

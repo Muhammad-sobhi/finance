@@ -193,3 +193,17 @@ export interface Settings {
 }
 
 export interface Listed<T, M = Record<string, never>> { data: T[]; meta: M }
+
+export interface Report {
+  period: 'month' | 'year'
+  value: string
+  base_currency: string
+  totals: { income: number; expense: number; savings: number; savings_rate: number | null }
+  previous: { income: number; expense: number; savings: number; savings_rate: number | null }
+  change: { income: number | null; expense: number | null; savings: number | null }
+  growth: { basis: 'net_worth' | 'savings'; pct: number | null; growing: boolean; value: number; previous: number }
+  by_category: { category_id: number | null; key: string | null; name: string | null; color: string | null; icon: string | null; amount: number; share: number; previous: number; change: number | null }[]
+  series: { month: string; income: number; expense: number }[]
+  net_worth_trend: { month: string; net_worth: number }[]
+  advice: { code: string; level: 'danger' | 'warn' | 'info'; text: { ar: string; en: string } }[]
+}
