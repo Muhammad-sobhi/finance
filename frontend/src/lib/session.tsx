@@ -26,6 +26,8 @@ interface Session {
   setLang: (l: Lang) => void
   setListMode: (m: ListMode) => void
   login: (email: string, password: string) => Promise<void>
+  /** Re-read the signed-in user (after profile changes). */
+  reloadUser: () => Promise<void>
   logout: () => Promise<void>
   /** Bumped after any write so every mounted view refetches. */
   revision: number
@@ -103,6 +105,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       token.set(res.token)
       applyUser(res.user)
     },
+    reloadUser: async () => { applyUser(await api<User>('/auth/me')) },
     logout: async () => {
       await post('/auth/logout', {}).catch(() => undefined)
       token.set(null)

@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { measureLines, observeSize, packPages } from '../lib/fit'
 import { useLayoutEpoch } from '../hooks/useLayoutEpoch'
 import { useI18n } from '../i18n'
@@ -77,7 +78,8 @@ export function FormModal({ title, fields, errors = {}, busy, onClose, onSubmit,
     else onSubmit()
   }
 
-  return (
+  // Portal to <body>: a dialog's <form> must never end up nested inside a page's <form>.
+  return createPortal(
     <div className="overlay" ref={overlayRef} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <form className="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" onSubmit={submit} noValidate>
         <div className="modal-h">
@@ -100,7 +102,8 @@ export function FormModal({ title, fields, errors = {}, busy, onClose, onSubmit,
           <button type="submit" className="btn" disabled={busy}>{last ? (submitLabel ?? t('save')) : t('next')}</button>
         </div>
       </form>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

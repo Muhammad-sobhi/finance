@@ -39,6 +39,9 @@ Route::prefix('v1')->group(function () {
         Route::post('auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
         Route::get('auth/me', [AuthController::class, 'me'])->name('auth.me');
         Route::patch('auth/me', [AuthController::class, 'update'])->name('auth.me.update');
+        Route::patch('auth/profile', [AuthController::class, 'updateProfile'])->name('auth.profile');
+        Route::put('auth/password', [AuthController::class, 'updatePassword'])->middleware('throttle:6,1')->name('auth.password');
+        Route::post('auth/logout-others', [AuthController::class, 'logoutOthers'])->name('auth.logout-others');
 
         Route::get('dashboard', DashboardController::class)->name('dashboard');
         Route::get('reports', ReportController::class)->name('reports');

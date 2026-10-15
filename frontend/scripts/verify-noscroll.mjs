@@ -32,6 +32,8 @@ const DIALOGS = [
   ['/assets', '.list-head .btn', 'asset-form'],
   ['/settings', ['.show-sm .seg button:nth-child(2)', '.split .actions .btn[type=button]'], 'rate-form'],
   ['/heir', ['.show-sm .seg button:nth-child(2)', '.split .card:last-child .actions .btn'], 'heir-form'],
+  ['/settings', ['.acct-actions .btn:nth-child(1)'], 'profile-form'],
+  ['/settings', ['.acct-actions .btn:nth-child(2)'], 'password-form'],
   ['/income', ['.income-page > .list-head .seg button:nth-child(2)'], 'income-recurring'],
   ['/income', ['.income-page > .list-head .seg button:nth-child(2)', '.tab-body .list-head .btn'], 'income-form'],
   ['/income', ['.income-page > .list-head .seg button:nth-child(3)'], 'income-projects'],

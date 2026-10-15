@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { currency, money } from '../components/fields'
+import { currency, money, text } from '../components/fields'
 import { Icon } from '../components/Icon'
 import { DeleteButton, FormModal } from '../components/Modal'
 import { Paged } from '../components/Paged'
 import { useApi } from '../hooks/useApi'
 import { num, useForm } from '../hooks/useForm'
 import { useI18n } from '../i18n'
-import { ApiError, del, patch, post } from '../lib/api'
+import { ApiError, del, patch, post, put } from '../lib/api'
 import { disablePush, enablePush, pushState, type PushState } from '../lib/push'
 import { useSession } from '../lib/session'
 import type { Settings as S } from '../lib/types'
@@ -78,6 +78,7 @@ export function Settings() {
           {toggle('email_alerts', t('emailAlerts'))}
           {toggle('auto_fetch_rates', t('fetchRates'))}
           <PushRow />
+          <AccountRows />
           {!readOnly && <div className="actions"><button type="submit" className="btn">{t('save')}</button></div>}
         </form>
         <div className={`card${tab !== 'rates' ? ' off-sm' : ''}`}>
@@ -99,6 +100,58 @@ export function Settings() {
       </div>
       {rate !== undefined && <RateForm rate={rate} onClose={() => setRate(undefined)} />}
     </div>
+  )
+}
+
+/** Name / email (owner), password and other devices (owner and heir). */
+function AccountRows() {
+  const { t } = useI18n()
+  const { user, readOnly, toast } = useSession()
+  const [open, setOpen] = useState<'profile' | 'password' | null>(null)
+  const others = () => post<{ revoked: number }>('/auth/logout-others', {}).then((r) => toast(t('loggedOutOthers', { n: r.revoked }))).catch(() => toast(t('error')))
+  return (
+    <>
+      <div className="setting-row"><span>{t('account_')}</span><b className="muted" dir="ltr">{user?.email}</b></div>
+      <div className="setting-row acct-actions">
+        {!readOnly && <button type="button" className="btn sm ghost" onClick={() => setOpen('profile')}>{t('editProfile')}</button>}
+        <button type="button" className="btn sm ghost" onClick={() => setOpen('password')}>{t('changePassword')}</button>
+        <button type="button" className="btn sm ghost" onClick={others}>{t('logoutOthers')}</button>
+      </div>
+      {open === 'profile' && <ProfileForm onClose={() => setOpen(null)} />}
+      {open === 'password' && <PasswordForm onClose={() => setOpen(null)} />}
+    </>
+  )
+}
+
+function ProfileForm({ onClose }: { onClose: () => void }) {
+  const { t } = useI18n()
+  const { user, reloadUser } = useSession()
+  const form = useForm({ name: user?.name ?? '', email: user?.email ?? '', current_password: '' }, onClose)
+  const emailChanged = String(form.f.email).trim().toLowerCase() !== user?.email
+  const submit = () => form.run(async () => {
+    await patch('/auth/profile', { name: form.f.name, email: String(form.f.email).trim(), ...(emailChanged ? { current_password: form.f.current_password } : {}) })
+    await reloadUser()
+  })
+  return (
+    <FormModal title={t('editProfile')} errors={form.errors} busy={form.busy} onClose={onClose} onSubmit={submit} fields={[
+      text(form, 'name', t('name'), { maxLength: 120, full: true }),
+      text(form, 'email', t('email'), { type: 'email', dir: 'ltr', maxLength: 255, full: true }),
+      text(form, 'current_password', t('currentPassword'), { type: 'password', dir: 'ltr', full: true, hidden: !emailChanged }),
+    ]} />
+  )
+}
+
+function PasswordForm({ onClose }: { onClose: () => void }) {
+  const { t } = useI18n()
+  const { toast } = useSession()
+  const form = useForm({ current_password: '', password: '', password_confirmation: '' }, () => { toast(t('passwordChanged')); onClose() })
+  const submit = () => form.run(() => put('/auth/password', form.f))
+  return (
+    <FormModal title={t('changePassword')} errors={form.errors} busy={form.busy} onClose={onClose} onSubmit={submit} fields={[
+      text(form, 'current_password', t('currentPassword'), { type: 'password', dir: 'ltr', full: true }),
+      text(form, 'password', `${t('newPassword')} (${t('passwordHint')})`, { type: 'password', dir: 'ltr', full: true }),
+      text(form, 'password_confirmation', t('passwordConfirm'), { type: 'password', dir: 'ltr', full: true }),
+    ]} />
   )
 }
 

@@ -8,14 +8,7 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/icon.svg" />
     <title>خزينتي — Treasury</title>
-    <script>
-      // Apply saved theme/lang before first paint to avoid a flash of the wrong theme.
-      try {
-        var t = localStorage.getItem('fin.theme'), l = localStorage.getItem('fin.lang')
-        if (t) document.documentElement.dataset.theme = t
-        if (l) { document.documentElement.lang = l; document.documentElement.dir = l === 'ar' ? 'rtl' : 'ltr' }
-      } catch (e) {}
-    </script>
+    <script src="/boot.js"></script>
   </head>
   <body>
     <div id="root"></div>

@@ -54,3 +54,5 @@ Artisan::command('finance:heir-check', function (HeirService $heirs) {
 })->purpose('Dead-man switch reminders/activation and confirmed heir requests');
 
 Schedule::command('finance:heir-check')->hourly()->withoutOverlapping();
+
+Schedule::command('sanctum:prune-expired --hours=24')->daily();

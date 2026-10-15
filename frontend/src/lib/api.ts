@@ -50,4 +50,5 @@ export async function api<T = unknown>(path: string, opts: { method?: string; bo
 
 export const post = <T>(path: string, body: unknown) => api<T>(path, { method: 'POST', body })
 export const patch = <T>(path: string, body: unknown) => api<T>(path, { method: 'PATCH', body })
+export const put = <T>(path: string, body: unknown) => api<T>(path, { method: 'PUT', body })
 export const del = (path: string) => api<void>(path, { method: 'DELETE' })

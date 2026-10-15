@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { useI18n } from '../i18n'
 import { Icon } from './Icon'
 
@@ -10,7 +11,7 @@ export function DetailModal({ title, children, footer, onClose }: { title: strin
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
-  return (
+  return createPortal(
     <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal detail" role="dialog" aria-modal="true" aria-labelledby="detail-title">
         <div className="modal-h">
@@ -20,7 +21,8 @@ export function DetailModal({ title, children, footer, onClose }: { title: strin
         <div className="detail-b">{children}</div>
         {footer && <div className="modal-f">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

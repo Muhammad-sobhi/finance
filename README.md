@@ -237,8 +237,16 @@ Keep `backend/.env` (it holds `APP_KEY`, which decrypts account numbers, nationa
 
 ## Security notes
 
-- Passwords hashed (bcrypt); Sanctum bearer tokens; login limited to 5/min per email+IP, heir requests to 5/hour per IP and 3/hour per email.
-- Every model is owner-scoped by policy; heirs are read-only by middleware and by policy.
-- Encrypted at rest: account numbers and notes, heir national ID / address / notes, debt notes.
-- Emailed actions use signed, expiring URLs; the heir request never reveals whether an email is registered.
-- No secrets in the repo — only `.env.example`.
+What protects the app (each item is covered by feature tests unless noted):
+
+- **Login** — bcrypt-hashed passwords (min 10 chars); 5 attempts/min per email+IP and 20/min per IP; the same answer and the same work for unknown emails and wrong passwords (no account discovery by message or timing).
+- **Sessions** — Sanctum bearer tokens that expire after 30 days (`SANCTUM_EXPIRATION`, pruned daily); logout revokes the token; *Settings → Account & security* changes the password (signs out every other device) and can sign out other devices on demand. Changing the login email needs the current password.
+- **Authorization** — every record is scoped to its owner by policy; a test sweeps every module to prove one owner can't read, change or delete another's data or reference it in a write. Heirs are read-only by middleware *and* policy; the only writes they can make are their own display prefs, password and sessions.
+- **Input** — every write is validated server-side; mass assignment is restricted to fillable fields; queries go through Eloquent/bound parameters (no SQL built from input).
+- **Data at rest** — account numbers and notes, heir national ID / address / notes, debt and project notes are encrypted with `APP_KEY`.
+- **Emailed actions** — signed, expiring links; the heir request never reveals whether an email is registered and is rate-limited.
+- **Browser** (deploy/nginx.conf) — HTTPS only with HSTS; a strict Content-Security-Policy (only our own scripts, no inline scripts, no third-party hosts, no framing); `X-Frame-Options`, `nosniff`, `Referrer-Policy`, `COOP`; `X-Powered-By` hidden. CORS allows only `FRONTEND_URL`. Verified locally through nginx: no CSP violations, service worker and fonts load.
+- **Dependencies** — `composer audit` and `npm audit` report no known vulnerabilities (re-run them on each update).
+- **Secrets** — none in the repo; only `.env.example`. Set `APP_DEBUG=false` in production and `expose_php = Off` in `/etc/php/8.3/fpm/php.ini`.
+
+Not included yet: two-factor authentication (TOTP) for the owner login — recommended as a next step.

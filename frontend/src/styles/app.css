@@ -263,3 +263,4 @@ a.icon-btn.active { border-color: var(--accent); color: var(--accent); }
 .breakdown { display: flex; flex-direction: column; gap: 3px; margin-top: 4px; font-size: 13px; }
 .breakdown span { display: flex; align-items: center; gap: 6px; }
 .breakdown b { margin-inline-start: auto; font-family: var(--font-num); }
+.acct-actions { justify-content: flex-start; flex-wrap: wrap; gap: 6px; }
