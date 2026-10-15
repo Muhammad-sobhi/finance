@@ -3,18 +3,18 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\AccountType;
-use App\Enums\DebtDirection;
 use App\Enums\DebtStatus;
 use App\Enums\TransactionType;
 use App\Http\Controllers\Controller;
 use App\Models\Account;
-use App\Models\Asset;
 use App\Models\Bill;
 use App\Models\Debt;
 use App\Models\Investment;
+use App\Models\NetWorthSnapshot;
 use App\Models\Subscription;
 use App\Models\Transaction;
 use App\Services\CurrencyConverter;
+use App\Services\NetWorth;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -30,29 +30,23 @@ class DashboardController extends Controller
         $accounts = Account::ownedBy($user)->where('is_active', true)->get()
             ->each(fn (Account $a) => $a->base_balance = $fx->toBase($a->balance, $a->currency));
 
-        $owner = $user->dataOwner();
+        $nw = app(NetWorth::class)->compute($user);
         $debts = Debt::ownedBy($user)->where('status', DebtStatus::Open)->withSum('payments', 'amount')->get();
-        $owed = round($debts->where('direction', DebtDirection::OwedToMe)->sum(fn (Debt $d) => $fx->toBase($d->remaining(), $d->currency)), 2);
-        $owe = round($debts->where('direction', DebtDirection::IOwe)->sum(fn (Debt $d) => $fx->toBase($d->remaining(), $d->currency)), 2);
         $investments = Investment::ownedBy($user)->get();
-        $invested = round($investments->sum(fn (Investment $i) => $fx->toBase($i->current_value, $i->currency)), 2);
-        $assets = round(Asset::ownedBy($user)->get()->sum(function (Asset $a) use ($owner, $fx) {
-            [$value, $currency] = $a->valuation($owner);
 
-            return $fx->toBase($value, $currency);
-        }), 2);
-
-        $netWorth = round($accounts->sum('base_balance') + $invested + $assets + $owed - $owe, 2);
-        $liquid = round($accounts->filter(fn (Account $a) => $a->type->isLiquid() && $a->base_balance > 0)->sum('base_balance'), 2);
+        // Change vs the end of last month, from the monthly snapshots.
+        $prev = NetWorthSnapshot::ownedBy($user)->where('month', $today->startOfMonth()->subMonth()->toDateString())->value('net_worth');
+        $change = $prev !== null && (float) $prev != 0.0 ? round(($nw['net_worth'] - (float) $prev) / abs((float) $prev) * 100, 1) : null;
 
         return response()->json([
             'base_currency' => $fx->base,
-            'net_worth' => $netWorth,
-            'liquid' => $liquid,
-            'owed_to_me' => $owed,
-            'i_owe' => $owe,
-            'investments' => $invested,
-            'assets' => $assets,
+            'net_worth' => $nw['net_worth'],
+            'net_worth_change_pct' => $change,
+            'liquid' => $nw['liquid'],
+            'owed_to_me' => $nw['owed_to_me'],
+            'i_owe' => $nw['i_owe'],
+            'investments' => $nw['investments'],
+            'assets' => $nw['assets'],
             'balances' => $accounts->sortByDesc('base_balance')->values()->map(fn (Account $a) => [
                 'id' => $a->id,
                 'name' => $a->name,

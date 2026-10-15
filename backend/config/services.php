@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    // Exchange-rate provider for finance:fetch-rates ({base} is replaced). Free, no key.
+    'rates' => [
+        'url' => env('RATES_URL', 'https://open.er-api.com/v6/latest/{base}'),
+    ],
+
 ];

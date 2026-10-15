@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Enums\AccountType;
 use App\Models\User;
 use App\Services\DebtService;
+use App\Services\NetWorth;
 use App\Services\TransactionService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
@@ -68,6 +69,15 @@ class DemoSeeder extends Seeder
         // Opening balances chosen so today's balances look like a real wallet.
         foreach ($accounts as $i => $account) {
             $account->update(['balance' => $targets[$i]]);
+        }
+
+        // Net-worth history for the trend chart: steady growth up to today's live value.
+        $now = app(NetWorth::class)->snapshot($owner)->net_worth;
+        for ($m = 6; $m >= 1; $m--) {
+            $owner->snapshots()->updateOrCreate(
+                ['month' => CarbonImmutable::today()->startOfMonth()->subMonths($m)->toDateString()],
+                ['net_worth' => round($now * (1 - 0.018 * $m)), 'breakdown' => []],
+            );
         }
     }
 

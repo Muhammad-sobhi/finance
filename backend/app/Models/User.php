@@ -135,6 +135,11 @@ class User extends Authenticatable
         return $this->hasMany(Asset::class);
     }
 
+    public function snapshots(): HasMany
+    {
+        return $this->hasMany(NetWorthSnapshot::class);
+    }
+
     public function exchangeRates(): HasMany
     {
         return $this->hasMany(ExchangeRate::class);

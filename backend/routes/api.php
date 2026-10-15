@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DebtController;
 use App\Http\Controllers\Api\V1\InvestmentController;
 use App\Http\Controllers\Api\V1\NotificationController;
+use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\SettingsController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\TransactionController;
@@ -23,6 +24,7 @@ Route::prefix('v1')->group(function () {
         Route::patch('auth/me', [AuthController::class, 'update'])->name('auth.me.update');
 
         Route::get('dashboard', DashboardController::class)->name('dashboard');
+        Route::get('reports', ReportController::class)->name('reports');
 
         Route::get('transactions/quick-meta', [TransactionController::class, 'quickMeta'])->name('transactions.quick-meta');
         Route::apiResource('accounts', AccountController::class);
