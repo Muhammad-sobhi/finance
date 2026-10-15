@@ -194,7 +194,8 @@ a.icon-btn.active { border-color: var(--accent); color: var(--accent); }
 .neg-bg { background: var(--neg); }
 [data-theme='vault'] .pos-bg { background: var(--accent); }
 .advice { align-items: flex-start; }
-.advice > span { min-width: 0; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.5; }
+/* Full text, no clamping: the card fits whole advice items and moves the rest to "+N more". */
+.advice > span { min-width: 0; line-height: 1.5; }
 .grow-tag { color: var(--pos); border-color: var(--pos); }
 @media (max-width: 1100px) and (min-width: 721px) {
   .reports .rep { grid-template-rows: auto auto minmax(0, 1fr) minmax(0, 1fr); }

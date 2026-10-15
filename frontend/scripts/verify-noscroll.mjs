@@ -4,7 +4,7 @@
 //
 // Usage: API + `npm run preview` running, then (add HEIR_EMAIL/HEIR_PASSWORD to also check the read-only heir view)
 //   BASE_URL=http://localhost:4173 EMAIL=demo@example.com PASSWORD=password npm run verify:noscroll
-// Set SHOTS=dir to save screenshots. Set CHROMIUM=/path/to/chrome if Playwright's browser isn't installed.
+// Set SHOTS=dir to save screenshots, ONLY=/reports,quick-add to check just those views. Set CHROMIUM=/path/to/chrome if Playwright's browser isn't installed.
 import { chromium } from 'playwright-core'
 import { mkdirSync } from 'node:fs'
 
@@ -105,8 +105,10 @@ for (const [w, h] of VIEWPORTS) {
     const safe = async (r, label, sel) => {
       try { await visit(r, label, sel) } catch (e) { failures.push(`${w}x${h} ${theme}/${lang} ${label}: ${e.message.split('\n')[0]}`) }
     }
-    for (const r of ROUTES) await safe(r, r)
-    for (const [r, sel, label] of DIALOGS) await safe(r, label, sel)
+    // ONLY=/reports,quick-add limits the run to those routes/dialog labels.
+    const only = process.env.ONLY?.split(',')
+    for (const r of ROUTES) if (!only || only.includes(r)) await safe(r, r)
+    for (const [r, sel, label] of DIALOGS) if (!only || only.includes(label)) await safe(r, label, sel)
     await ctx.close()
   }
 }
@@ -139,5 +141,6 @@ if (failures.length) {
   console.error(`✗ ${failures.length} scroll violation(s):\n  ${failures.join('\n  ')}`)
   process.exit(1)
 }
-console.log(`✓ no scrolling: ${ROUTES.length + DIALOGS.length} views × ${VIEWPORTS.length} viewports × ${COMBOS.length} theme/lang combos`
+const views = process.env.ONLY ? `${process.env.ONLY.split(',').length} selected` : ROUTES.length + DIALOGS.length
+console.log(`✓ no scrolling: ${views} views × ${VIEWPORTS.length} viewports × ${COMBOS.length} theme/lang combos`
   + (process.env.HEIR_EMAIL ? ` + read-only heir view (14 pages × ${VIEWPORTS.length} viewports)` : ''))
