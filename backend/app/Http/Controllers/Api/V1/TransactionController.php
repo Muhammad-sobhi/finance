@@ -111,11 +111,11 @@ class TransactionController extends Controller
         return response()->json(null, 204);
     }
 
-    /** Loan and repayment transactions are owned by their debt; edit them there. */
+    /** Loan/repayment and project-payment transactions are owned by their record; edit them there. */
     private function guardManaged(Transaction $transaction): void
     {
-        if ($transaction->isDebtMovement()) {
-            abort(response()->json(['message' => 'Edit this from its debt.', 'code' => 'managed_by_debt'], 409));
+        if ($code = $transaction->managedCode()) {
+            abort(response()->json(['message' => 'Edit this from the record it belongs to.', 'code' => $code], 409));
         }
     }
 }

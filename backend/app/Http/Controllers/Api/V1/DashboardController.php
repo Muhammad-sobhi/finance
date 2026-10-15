@@ -9,8 +9,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\Bill;
 use App\Models\Debt;
+use App\Models\IncomeSource;
 use App\Models\Investment;
 use App\Models\NetWorthSnapshot;
+use App\Models\Project;
 use App\Models\Subscription;
 use App\Models\Transaction;
 use App\Services\CurrencyConverter;
@@ -97,6 +99,11 @@ class DashboardController extends Controller
             $class::ownedBy($user)->where('is_active', true)->where($class::DUE_COLUMN, '<=', $horizon->toDateString())->get()
                 ->each(fn ($r) => $out->push($item($kind, $r->id, $r->name, $r->dueDate(), (float) $r->amount, $r->currency)));
         }
+        IncomeSource::ownedBy($user)->where('is_active', true)->where('next_date', '<=', $horizon->toDateString())->get()
+            ->each(fn (IncomeSource $r) => $out->push($item('income', $r->id, $r->name, $r->dueDate(), (float) $r->amount, $r->currency)));
+        Project::ownedBy($user)->where('status', 'active')->whereNotNull('due_date')->where('due_date', '<=', $horizon->toDateString())
+            ->withSum('payments', 'amount')->get()->filter(fn (Project $p) => $p->outstanding() > 0)
+            ->each(fn (Project $p) => $out->push($item('project', $p->id, "{$p->client} — {$p->name}", CarbonImmutable::parse($p->due_date), $p->outstanding(), $p->currency)));
         $debts->filter(fn (Debt $d) => $d->due_date && $d->due_date->lte($horizon))
             ->each(fn (Debt $d) => $out->push($item($d->direction->value, $d->id, $d->person, CarbonImmutable::parse($d->due_date), $d->remaining(), $d->currency)));
         $investments->filter(fn (Investment $i) => $i->maturity_date && $i->maturity_date->between($today, $horizon))

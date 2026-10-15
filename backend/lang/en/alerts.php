@@ -12,6 +12,8 @@ return [
         'owed_to_me' => ':name owes you',
         'i_owe' => 'You owe :name',
         'credit_card' => ':name card payment',
+        'income' => ':name expected',
+        'project' => 'Payment from :name',
         'maturity' => ':name matures',
     ],
     'when' => [

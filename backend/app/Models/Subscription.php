@@ -14,6 +14,8 @@ class Subscription extends Model
 
     public const DUE_COLUMN = 'renew_date';
 
+    public const TX_TYPE = 'expense';
+
     protected $fillable = ['name', 'category_id', 'amount', 'currency', 'renew_date', 'start_date', 'scope', 'cycle', 'remind_days', 'auto_pay', 'account_id', 'notes', 'is_active'];
 
     protected function casts(): array

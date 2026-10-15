@@ -12,6 +12,8 @@ return [
         'owed_to_me' => 'دين لك على :name',
         'i_owe' => 'دين عليك لـ :name',
         'credit_card' => 'سداد بطاقة :name',
+        'income' => 'دخل متوقع: :name',
+        'project' => 'دفعة من :name',
         'maturity' => 'استحقاق :name',
     ],
     'when' => [

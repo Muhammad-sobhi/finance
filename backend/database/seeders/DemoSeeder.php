@@ -6,6 +6,8 @@ use App\Enums\AccountType;
 use App\Models\User;
 use App\Services\DebtService;
 use App\Services\NetWorth;
+use App\Services\ProjectService;
+use App\Services\RecurringService;
 use App\Services\TransactionService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
@@ -50,10 +52,16 @@ class DemoSeeder extends Seeder
         $notes = ['food' => 'Groceries', 'transport' => 'Uber', 'shopping' => 'Clothes', 'health' => 'Pharmacy', 'entertainment' => 'Cinema', 'family' => 'Gift', 'bills' => 'Electricity'];
         $start = CarbonImmutable::today()->subMonths(5)->startOfMonth();
 
+        // Monthly salary as a recurring income source; each month's pay is "received" through it.
+        $salary = $owner->incomeSources()->create([
+            'name' => 'Salary', 'category_id' => $cats['salary'], 'amount' => 35000, 'currency' => 'EGP',
+            'next_date' => $start->toDateString(), 'cycle' => 'monthly', 'account_id' => $accounts[0]->id,
+        ]);
+
         mt_srand(42);
         for ($d = $start; $d <= CarbonImmutable::today(); $d = $d->addDay()) {
             if ($d->day === 1) {
-                $service->create($owner, ['type' => 'income', 'account_id' => $accounts[0]->id, 'category_id' => $cats['salary'], 'amount' => 35000, 'date' => $d->toDateString(), 'note' => 'Salary']);
+                app(RecurringService::class)->pay($salary, ['date' => $d->toDateString()]);
             }
             for ($n = mt_rand(0, 3); $n > 0; $n--) {
                 $key = array_rand($notes);
@@ -70,6 +78,14 @@ class DemoSeeder extends Seeder
         foreach ($accounts as $i => $account) {
             $account->update(['balance' => $targets[$i]]);
         }
+
+        // Freelance work: one partly paid, one waiting for payment.
+        $projects = app(ProjectService::class);
+        $site = $owner->projects()->create(['client' => 'Nile Tech', 'name' => 'Company website', 'amount' => 25000, 'currency' => 'EGP',
+            'start_date' => CarbonImmutable::today()->subMonths(2)->toDateString(), 'due_date' => CarbonImmutable::today()->addDays(10)->toDateString()]);
+        $projects->addPayment($site, ['amount' => 10000, 'date' => CarbonImmutable::today()->subMonth()->toDateString(), 'account_id' => $accounts[0]->id, 'note' => 'deposit']);
+        $owner->projects()->create(['client' => 'Gulf Apps', 'name' => 'Mobile API', 'amount' => 800, 'currency' => 'USD',
+            'start_date' => CarbonImmutable::today()->subMonth()->toDateString(), 'due_date' => CarbonImmutable::today()->subDays(2)->toDateString()]);
 
         // Heir setup (switch armed; access not active).
         $owner->update(['heir_enabled' => true, 'heir_inactivity_days' => 60, 'heir_grace_days' => 14]);

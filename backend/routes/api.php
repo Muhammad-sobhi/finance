@@ -9,9 +9,12 @@ use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DebtController;
 use App\Http\Controllers\Api\V1\HeirController;
 use App\Http\Controllers\Api\V1\HeirRequestController;
+use App\Http\Controllers\Api\V1\IncomeController;
+use App\Http\Controllers\Api\V1\IncomeSourceController;
 use App\Http\Controllers\Api\V1\InvestmentController;
 use App\Http\Controllers\Api\V1\LinkController;
 use App\Http\Controllers\Api\V1\NotificationController;
+use App\Http\Controllers\Api\V1\ProjectController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\SettingsController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
@@ -53,6 +56,13 @@ Route::prefix('v1')->group(function () {
         Route::post('bills/{id}/pay', [BillController::class, 'pay'])->name('bills.pay');
         Route::apiResource('subscriptions', SubscriptionController::class)->parameters(['subscriptions' => 'id']);
         Route::post('subscriptions/{id}/pay', [SubscriptionController::class, 'pay'])->name('subscriptions.pay');
+
+        Route::get('income/summary', [IncomeController::class, 'summary'])->name('income.summary');
+        Route::apiResource('income-sources', IncomeSourceController::class)->parameters(['income-sources' => 'id']);
+        Route::post('income-sources/{id}/receive', [IncomeSourceController::class, 'pay'])->name('income-sources.receive');
+        Route::apiResource('projects', ProjectController::class);
+        Route::post('projects/{project}/payments', [ProjectController::class, 'addPayment'])->name('projects.payments.store');
+        Route::delete('projects/{project}/payments/{payment}', [ProjectController::class, 'deletePayment'])->name('projects.payments.destroy');
 
         Route::apiResource('investments', InvestmentController::class);
         Route::post('investments/{investment}/values', [InvestmentController::class, 'addValue'])->name('investments.values.store');

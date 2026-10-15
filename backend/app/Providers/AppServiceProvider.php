@@ -5,6 +5,8 @@ namespace App\Providers;
 use App\Models\Bill;
 use App\Models\Debt;
 use App\Models\DebtPayment;
+use App\Models\IncomeSource;
+use App\Models\ProjectPayment;
 use App\Models\Subscription;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -30,6 +32,8 @@ class AppServiceProvider extends ServiceProvider
             'debt_payment' => DebtPayment::class,
             'bill' => Bill::class,
             'subscription' => Subscription::class,
+            'income_source' => IncomeSource::class,
+            'project_payment' => ProjectPayment::class,
         ]);
 
         // Brute-force protection: per email+IP, plus a looser per-IP ceiling.

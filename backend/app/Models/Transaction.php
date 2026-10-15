@@ -45,6 +45,18 @@ class Transaction extends Model
         return in_array($this->source_type, self::DEBT_SOURCES, true);
     }
 
+    /** Transactions owned by another record must be changed there: source → error code. */
+    public const MANAGED_SOURCES = [
+        'debt' => 'managed_by_debt',
+        'debt_payment' => 'managed_by_debt',
+        'project_payment' => 'managed_by_project',
+    ];
+
+    public function managedCode(): ?string
+    {
+        return self::MANAGED_SOURCES[$this->source_type] ?? null;
+    }
+
     public function account(): BelongsTo
     {
         return $this->belongsTo(Account::class);

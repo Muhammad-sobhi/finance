@@ -64,6 +64,17 @@ class AlertScanner
             )));
         }
 
+        // Expected income: no early warning unless the source asks for one; auto-recorded ones need no prompt.
+        $owner->incomeSources()->where('is_active', true)->where('auto_pay', false)->get()
+            ->each(fn ($r) => $out->push(new DueItem(
+                'income', $r->id, $r->name, $r->dueDate(), (float) $r->amount, $r->currency, $r->remind_days ?? 0, '/income',
+            )));
+        $owner->projects()->where('status', 'active')->whereNotNull('due_date')->withSum('payments', 'amount')->get()
+            ->filter(fn ($p) => $p->outstanding() > 0)
+            ->each(fn ($p) => $out->push(new DueItem(
+                'project', $p->id, "{$p->client} — {$p->name}", CarbonImmutable::parse($p->due_date), $p->outstanding(), $p->currency, $p->remind_days, '/income',
+            )));
+
         $owner->debts()->where('status', DebtStatus::Open)->whereNotNull('due_date')->withSum('payments', 'amount')->get()
             ->each(fn ($d) => $out->push(new DueItem(
                 $d->direction->value, $d->id, $d->person, CarbonImmutable::parse($d->due_date), $d->remaining(), $d->currency, $d->remind_days, '/debts',
