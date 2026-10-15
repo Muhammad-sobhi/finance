@@ -327,3 +327,10 @@ button.card:disabled { cursor: default; opacity: 1; }
 .codes code { font-family: 'IBM Plex Mono', monospace; }
 .auth-links .more { font-family: inherit; }
 .small-check { font-size: 13px; color: var(--muted); }
+
+/* iPhone/iPad Safari zooms into any field whose text is under 16px and stays zoomed after
+   leaving it (the page then looks cut off until a reload). 16px fields there prevent it. */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+@supports (-webkit-touch-callout: none) {
+  input, select, textarea, .inp { font-size: max(16px, 1em) !important; }
+}
