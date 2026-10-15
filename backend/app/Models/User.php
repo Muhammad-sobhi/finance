@@ -24,6 +24,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name', 'email', 'password', 'role', 'owner_id',
         'locale', 'theme', 'list_mode', 'base_currency', 'last_activity_at',
+        'gold_price_24k', 'silver_price', 'alert_days', 'email_alerts', 'auto_fetch_rates',
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -34,6 +35,11 @@ class User extends Authenticatable
         'theme' => 'ledger',
         'list_mode' => 'table',
         'base_currency' => 'EGP',
+        'gold_price_24k' => 0,
+        'silver_price' => 0,
+        'alert_days' => 3,
+        'email_alerts' => true,
+        'auto_fetch_rates' => false,
     ];
 
     protected static function booted(): void
@@ -51,6 +57,11 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'last_activity_at' => 'datetime',
             'heir_access_activated_at' => 'datetime',
+            'gold_price_24k' => 'decimal:2',
+            'silver_price' => 'decimal:2',
+            'alert_days' => 'integer',
+            'email_alerts' => 'boolean',
+            'auto_fetch_rates' => 'boolean',
             'password' => 'hashed',
             'role' => UserRole::class,
         ];
@@ -96,6 +107,31 @@ class User extends Authenticatable
     public function transactions(): HasMany
     {
         return $this->hasMany(Transaction::class);
+    }
+
+    public function debts(): HasMany
+    {
+        return $this->hasMany(Debt::class);
+    }
+
+    public function bills(): HasMany
+    {
+        return $this->hasMany(Bill::class);
+    }
+
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
+    public function investments(): HasMany
+    {
+        return $this->hasMany(Investment::class);
+    }
+
+    public function assets(): HasMany
+    {
+        return $this->hasMany(Asset::class);
     }
 
     public function exchangeRates(): HasMany

@@ -49,7 +49,7 @@ class TransactionController extends Controller
         $days = [];
         foreach ($rows as $tx) {
             $tx->base_amount = $fx->toBase($tx->amount, $tx->currency);
-            if ($tx->type === TransactionType::Transfer) {
+            if ($tx->type === TransactionType::Transfer || $tx->isDebtMovement()) {
                 continue;
             }
             $key = $tx->type->value;
@@ -97,6 +97,7 @@ class TransactionController extends Controller
 
     public function update(TransactionRequest $request, Transaction $transaction): TransactionResource
     {
+        $this->guardManaged($transaction);
 
         return new TransactionResource($this->service->update($transaction, $request->validated())->refresh());
     }
@@ -104,8 +105,17 @@ class TransactionController extends Controller
     public function destroy(Transaction $transaction): JsonResponse
     {
         Gate::authorize('delete', $transaction);
+        $this->guardManaged($transaction);
         $this->service->delete($transaction);
 
         return response()->json(null, 204);
+    }
+
+    /** Loan and repayment transactions are owned by their debt; edit them there. */
+    private function guardManaged(Transaction $transaction): void
+    {
+        if ($transaction->isDebtMovement()) {
+            abort(response()->json(['message' => 'Edit this from its debt.', 'code' => 'managed_by_debt'], 409));
+        }
     }
 }

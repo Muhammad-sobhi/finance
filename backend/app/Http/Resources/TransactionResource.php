@@ -23,6 +23,8 @@ class TransactionResource extends JsonResource
             'base_amount' => $this->when(isset($this->base_amount), fn () => $this->base_amount),
             'date' => $this->date->format('Y-m-d'),
             'note' => $this->note,
+            'source_type' => $this->source_type,
+            'source_id' => $this->source_id,
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\TransactionType;
 use App\Models\Concerns\BelongsToOwner;
 use Database\Factories\TransactionFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -28,6 +29,20 @@ class Transaction extends Model
             'to_amount' => 'decimal:2',
             'date' => 'date:Y-m-d',
         ];
+    }
+
+    /** Morph names of sources whose money is a loan, not income or spending. */
+    public const DEBT_SOURCES = ['debt', 'debt_payment'];
+
+    /** Excludes lending/repayments so they don't distort income and spending totals. */
+    public function scopeCashflow(Builder $query): Builder
+    {
+        return $query->where(fn (Builder $q) => $q->whereNull('source_type')->orWhereNotIn('source_type', self::DEBT_SOURCES));
+    }
+
+    public function isDebtMovement(): bool
+    {
+        return in_array($this->source_type, self::DEBT_SOURCES, true);
     }
 
     public function account(): BelongsTo

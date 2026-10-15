@@ -26,6 +26,9 @@ class HeirReadOnlyTest extends TestCase
         $this->getJson("/api/v1/transactions/{$tx->id}")->assertOk();
         $this->getJson('/api/v1/dashboard')->assertOk()->assertJsonPath('net_worth', 490);
         $this->getJson('/api/v1/auth/me')->assertJsonPath('read_only', true);
+        foreach (['debts', 'bills', 'subscriptions', 'investments', 'assets', 'settings'] as $path) {
+            $this->getJson("/api/v1/{$path}")->assertOk();
+        }
 
         $writes = [
             ['post', '/api/v1/accounts', ['name' => 'x', 'type' => 'cash', 'currency' => 'EGP']],
@@ -37,6 +40,13 @@ class HeirReadOnlyTest extends TestCase
             ['post', '/api/v1/transactions', ['type' => 'expense', 'account_id' => $account->id, 'amount' => 1]],
             ['put', "/api/v1/transactions/{$tx->id}", ['amount' => 1]],
             ['delete', "/api/v1/transactions/{$tx->id}", []],
+            ['post', '/api/v1/debts', ['person' => 'x', 'direction' => 'i_owe', 'amount' => 1, 'currency' => 'EGP']],
+            ['post', '/api/v1/bills', ['name' => 'x', 'amount' => 1, 'currency' => 'EGP', 'due_date' => '2026-01-01', 'cycle' => 'once']],
+            ['post', '/api/v1/subscriptions', []],
+            ['post', '/api/v1/investments', []],
+            ['post', '/api/v1/assets', []],
+            ['patch', '/api/v1/settings', ['alert_days' => 1]],
+            ['post', '/api/v1/exchange-rates', ['currency' => 'USD', 'rate' => 1]],
         ];
         foreach ($writes as [$method, $url, $body]) {
             $this->json($method, $url, $body)->assertForbidden()->assertJsonPath('code', 'read_only');
