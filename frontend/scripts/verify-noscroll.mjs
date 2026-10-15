@@ -15,12 +15,21 @@ const SHOTS = process.env.SHOTS
 const VIEWPORTS = [[390, 780], [900, 700], [1440, 900]]
 const ROUTES = ['/', '/accounts', '/transactions', '/categories', '/debts', '/bills', '/subscriptions', '/investments', '/assets', '/reports', '/heir', '/settings']
 const COMBOS = [['ledger', 'ar'], ['swiss', 'ar'], ['geo', 'ar'], ['vault', 'ar'], ['ledger', 'en'], ['vault', 'en']]
-// Dialogs: [route, selector to click, label]
+// Dialogs: [route, selector(s) to click, label]
 const DIALOGS = [
   ['/', '.fab', 'quick-add'],
   ['/accounts', '.list-head .btn', 'account-form'],
   ['/transactions', '.list-head .btn', 'transaction-form'],
   ['/categories', '.list-head .btn', 'category-form'],
+  ['/debts', '.list-head .btn', 'debt-form'],
+  ['/debts', '.list-body [data-fi]', 'debt-detail'],
+  ['/bills', '.list-head .btn', 'bill-form'],
+  ['/bills', '.list-body .btn.sm', 'bill-pay'],
+  ['/subscriptions', '.list-head .btn', 'subscription-form'],
+  ['/investments', '.list-head .btn', 'investment-form'],
+  ['/investments', '.list-body [data-fi]', 'investment-detail'],
+  ['/assets', '.list-head .btn', 'asset-form'],
+  ['/settings', ['.show-sm .seg button:nth-child(2)', '.split .actions .btn[type=button]'], 'rate-form'],
 ]
 
 if (SHOTS) mkdirSync(SHOTS, { recursive: true })
@@ -67,7 +76,11 @@ for (const [w, h] of VIEWPORTS) {
       await page.waitForSelector('.view', { timeout: 10000 })
       await page.waitForLoadState('networkidle')
       if (action) {
-        await page.click(action)
+        // A list of selectors is clicked in order; steps that aren't visible at this size are skipped.
+        for (const sel of [action].flat()) {
+          const el = page.locator(sel).first()
+          if (await el.isVisible()) await el.click()
+        }
         await page.waitForSelector('.modal')
         await page.waitForLoadState('networkidle')
       }

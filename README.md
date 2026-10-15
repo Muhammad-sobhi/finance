@@ -11,7 +11,8 @@ See `CLAUDE.md` for the full brief and `design/` for the visual source of truth.
 | --- | --- | --- |
 | 1 | Backend core: schema, policies, Sanctum auth, accounts / categories / transactions API, feature tests | ✅ |
 | 2 | Frontend shell (4 themes, AR/EN + RTL, nav, no-scroll engine), login, dashboard, daily expenses + quick-add, accounts, categories | ✅ |
-| 3–7 | Debts, bills, subscriptions, investments, assets, settings · alerts · reports · heir system · deploy docs | next |
+| 3 | Debts (partial payments moving money), bills & subscriptions (mark paid, auto-pay), investments (value history, ROI), assets (gold/silver auto-valued), settings & exchange rates | ✅ |
+| 4–7 | Alerts · reports · heir system · deploy docs | next |
 
 ## Local setup
 
@@ -59,5 +60,12 @@ All under `/api/v1`, JSON, `Authorization: Bearer <token>`.
 | CRUD | `/categories` | `?type=expense\|income`; sorted most-used (90 days) first |
 | CRUD | `/transactions` | `?month=YYYY-MM&account_id&category_id&type`; returns month + per-day totals; writes adjust balances atomically |
 | GET | `/transactions/quick-meta` | last used account/category for quick-add |
+| CRUD | `/debts` | `?status&direction`; meta totals; `POST /debts/{id}/payments`, `DELETE /debts/{id}/payments/{pid}` |
+| CRUD | `/bills`, `/subscriptions` | `POST /{type}/{id}/pay` creates the expense and rolls the due date; subscriptions meta = monthly cost personal/work |
+| CRUD | `/investments` | `POST /investments/{id}/values` records a dated value; detail returns history |
+| CRUD | `/assets` | gold/silver valued from settings price × grams × karat/24 |
+| GET / PATCH | `/settings` | metal prices, alert days, email alerts; `POST/PATCH/DELETE /exchange-rates` |
+
+Scheduler: `finance:auto-pay` runs daily at 06:00 (pays due auto-pay bills/subscriptions).
 
 Heir logins (role `heir`) are read-only: every non-GET request is refused with `403 {code: "read_only"}` by middleware, and policies refuse writes independently.

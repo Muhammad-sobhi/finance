@@ -131,3 +131,44 @@ tr.day:hover { background: none; }
   .dash > .panel { inset: 0 0 54px 0; }
   .dots { bottom: 18px; }
 }
+
+/* ---------- step 3: detail dialogs, summaries ---------- */
+.modal.detail { height: min(640px, 100%); }
+.detail-b { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; padding: 14px 18px; overflow: hidden; }
+.detail-b .paged { gap: 8px; }
+.facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px 16px; flex: none; }
+.facts div { min-width: 0; }
+.facts dt { font-size: 11px; color: var(--muted); }
+.facts dd { font-family: var(--font-num); font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rows { display: flex; flex-direction: column; }
+.rows .li > span:last-child { display: inline-flex; align-items: center; gap: 8px; flex: none; }
+.btn.sm { padding: 4px 10px; font-size: 12px; }
+.icon-btn.sm { width: 28px; height: 28px; }
+.icon-btn.sm svg { width: 14px; height: 14px; }
+.ic .acts { display: flex; justify-content: flex-end; gap: 6px; }
+td.acts { width: 1%; }
+.mini-chart { height: 120px; flex: none; }
+.split { height: 100%; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--gap); }
+.split > .card { min-height: 0; }
+.setting-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: var(--row-line); font-size: 14px; }
+.setting-row label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.setting-row .inp { width: 140px; flex: none; padding: 6px 8px; }
+.card .actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 12px; margin-top: auto; flex: none; }
+@media (max-width: 720px) {
+  .split { display: flex; flex-direction: column; }
+  .split > .card { flex: 1; }
+  .split > .card.off-sm { display: none; }
+  .modal.detail { height: 92%; }
+  .detail-b { padding: 12px 14px; }
+}
+.sub-h { font-family: var(--font-display); font-size: 14px; font-weight: 700; flex: none; }
+[data-theme='vault'] .sub-h { color: var(--accent); }
+.show-sm { display: none; }
+.split .card .paged { flex: 1; min-height: 0; }
+.setting-row input[type='checkbox'] { width: 18px; height: 18px; accent-color: var(--accent); }
+@media (max-width: 720px) { .show-sm { display: flex; } }
+.li-btn { all: unset; box-sizing: border-box; display: flex; width: 100%; cursor: pointer; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0; border-bottom: var(--row-line); font-size: 14px; }
+.li-btn > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.li-btn:focus-visible { outline: 2px solid var(--accent); }
+/* phone: keep card actions away from the FAB, which sits at the inline-end corner */
+@media (max-width: 720px) { .card .actions { justify-content: flex-start; } }

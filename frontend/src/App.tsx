@@ -3,7 +3,12 @@ import { Shell } from './components/Shell'
 import { useI18n } from './i18n'
 import { useSession } from './lib/session'
 import { Accounts } from './pages/Accounts'
+import { Assets } from './pages/Assets'
 import { Categories } from './pages/Categories'
+import { Debts } from './pages/Debts'
+import { Investments } from './pages/Investments'
+import { Recurring } from './pages/Recurring'
+import { Settings } from './pages/Settings'
 import { Dashboard } from './pages/Dashboard'
 import { Login } from './pages/Login'
 import { Placeholder } from './pages/Placeholder'
@@ -24,14 +29,14 @@ export default function App() {
           <Route path="accounts" element={<Accounts />} />
           <Route path="transactions" element={<Transactions />} />
           <Route path="categories" element={<Categories />} />
-          <Route path="debts" element={<Placeholder k="debts" />} />
-          <Route path="bills" element={<Placeholder k="bills" />} />
-          <Route path="subscriptions" element={<Placeholder k="subscriptions" />} />
-          <Route path="investments" element={<Placeholder k="investments" />} />
-          <Route path="assets" element={<Placeholder k="assets" />} />
+          <Route path="debts" element={<Debts />} />
+          <Route path="bills" element={<Recurring key="bills" kind="bills" />} />
+          <Route path="subscriptions" element={<Recurring key="subscriptions" kind="subscriptions" />} />
+          <Route path="investments" element={<Investments />} />
+          <Route path="assets" element={<Assets />} />
           <Route path="reports" element={<Placeholder k="reports" />} />
           <Route path="heir" element={<Placeholder k="heir" />} />
-          <Route path="settings" element={<Placeholder k="settings" />} />
+          <Route path="settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
