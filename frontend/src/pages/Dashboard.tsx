@@ -7,7 +7,8 @@ import { useIsPhone } from '../hooks/useMedia'
 import { useSwipe } from '../hooks/useSwipe'
 import { useI18n } from '../i18n'
 import { monthIndex } from '../lib/dates'
-import type { Dashboard as Dash, Upcoming } from '../lib/types'
+import { DUE_ROUTE, dueSubject } from '../lib/alerts'
+import type { Dashboard as Dash } from '../lib/types'
 
 const PANELS = 4
 
@@ -30,18 +31,6 @@ export function Dashboard() {
   const monthNet = cur ? cur.income - cur.expense : 0
   const base = data?.base_currency ?? ''
 
-  const ROUTE: Record<string, string> = { bill: '/bills', subscription: '/subscriptions', owed_to_me: '/debts', i_owe: '/debts', maturity: '/investments', credit_card: '/accounts' }
-  const label = (raw: Upcoming) => {
-    // Isolate the (often Latin) name so it doesn't reorder the Arabic sentence around it.
-    const u = { ...raw, name: `\u2068${raw.name}\u2069` }
-    switch (u.kind) {
-      case 'credit_card': return t('cardDue', { name: u.name })
-      case 'owed_to_me': return t('debtFrom', { name: u.name })
-      case 'i_owe': return t('debtTo', { name: u.name })
-      case 'maturity': return t('matures', { name: u.name })
-      default: return u.name
-    }
-  }
   const cls = (n: number) => `panel${panel === n ? ' on' : ''}`
 
   return (
@@ -93,8 +82,8 @@ export function Dashboard() {
           <h3>{t('upcoming')}</h3>
           {upcoming.length === 0 ? <p className="muted none">{t('nothingSoon')}</p> : (!phone || panel === 3) && (
             <FitList items={upcoming} onMore={() => nav('/bills')} renderItem={(u) => (
-              <button type="button" className="li li-btn" key={`${u.kind}-${u.id}`} onClick={() => nav(ROUTE[u.kind] ?? '/')}>
-                <span>{label(u)} — <span className="num">{num(u.amount)}</span></span>
+              <button type="button" className="li li-btn" key={`${u.kind}-${u.id}`} onClick={() => nav(DUE_ROUTE[u.kind] ?? '/')}>
+                <span>{dueSubject(i, u.kind, u.name)} — <span className="num">{num(u.amount)}</span></span>
                 <DueTag days={u.days} />
               </button>
             )} />

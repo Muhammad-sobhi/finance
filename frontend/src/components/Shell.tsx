@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useI18n, type Key } from '../i18n'
 import { useSession } from '../lib/session'
 import type { Theme } from '../lib/types'
+import { Bell } from './Bell'
 import { Icon } from './Icon'
 import { QuickAdd } from './QuickAdd'
 import { TransactionForm } from './TransactionForm'
@@ -34,7 +35,7 @@ export function Shell() {
   const [sheet, setSheet] = useState(false)
   const [quick, setQuick] = useState(false)
   const [full, setFull] = useState(false)
-  const current = NAV.find((n) => n.path === loc.pathname) ?? NAV[0]
+  const current = loc.pathname === '/notifications' ? { key: 'notifications' as Key } : NAV.find((n) => n.path === loc.pathname) ?? NAV[0]
   const onMore = !NAV.find((n) => n.path === loc.pathname)?.phone
 
   const go = (path: string) => { setSheet(false); nav(path) }
@@ -64,6 +65,7 @@ export function Shell() {
         <header className="top">
           <h1>{t(current.key)}</h1>
           <div className="ctrls">
+            <Bell />
             <div className="swatches" role="radiogroup" aria-label={t('theme')}>
               {(Object.keys(SWATCH) as Theme[]).map((k) => (
                 <button type="button" key={k} role="radio" aria-checked={theme === k} className={theme === k ? 'on' : ''}

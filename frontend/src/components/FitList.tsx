@@ -1,5 +1,6 @@
 import { cloneElement, useEffect, useLayoutEffect, useRef, useState, type ReactElement } from 'react'
 import { measureLines, observeSize } from '../lib/fit'
+import { useLayoutEpoch } from '../hooks/useLayoutEpoch'
 import { useI18n } from '../i18n'
 
 interface Props<T> {
@@ -17,7 +18,8 @@ export function FitList<T>({ items, renderItem, onMore, className = 'fit' }: Pro
   const [shown, setShown] = useState<number | null>(null)
   const [tick, setTick] = useState(0)
 
-  useLayoutEffect(() => { setShown(null) }, [items, tick])
+  const epoch = useLayoutEpoch()
+  useLayoutEffect(() => { setShown(null) }, [items, tick, epoch])
 
   useLayoutEffect(() => {
     const el = box.current

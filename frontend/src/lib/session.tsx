@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { api, patch, post, token, UNAUTHORIZED_EVENT } from './api'
+import { api, ApiError, patch, post, token, UNAUTHORIZED_EVENT } from './api'
 import { I18nCtx, makeI18n, type Lang } from '../i18n'
 import type { ListMode, Theme, User } from './types'
 
@@ -59,7 +59,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!token.get()) return
-    api<User>('/auth/me').then(applyUser).catch(() => token.set(null)).finally(() => setBooting(false))
+    // Retry transient failures (rate limit, network); only a 401 means the token is gone.
+    const boot = (attempt: number): Promise<void> => api<User>('/auth/me').then(applyUser).catch((err) => {
+      if (err instanceof ApiError && err.status === 401) return token.set(null)
+      if (attempt < 3) return new Promise<void>((r) => setTimeout(r, 1000 * (attempt + 1))).then(() => boot(attempt + 1))
+    })
+    boot(0).finally(() => setBooting(false))
   }, [applyUser])
 
   useEffect(() => {

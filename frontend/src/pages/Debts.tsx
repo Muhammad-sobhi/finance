@@ -10,13 +10,11 @@ import { useApi } from '../hooks/useApi'
 import { num, orNull, useForm } from '../hooks/useForm'
 import { useI18n } from '../i18n'
 import { del, patch, post } from '../lib/api'
-import { isoDate } from '../lib/dates'
+import { daysUntil, isoDate } from '../lib/dates'
 import { useSession } from '../lib/session'
 import type { Account, Debt, Listed } from '../lib/types'
 
 type Meta = { totals: { owed_to_me: number; i_owe: number }; base_currency: string }
-
-const daysUntil = (d: string | null) => (d ? Math.round((new Date(d + 'T00:00:00').getTime() - new Date(isoDate() + 'T00:00:00').getTime()) / 86400000) : null)
 
 export function Debts() {
   const i = useI18n()

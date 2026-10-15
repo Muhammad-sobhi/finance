@@ -11,6 +11,7 @@ import { Recurring } from './pages/Recurring'
 import { Settings } from './pages/Settings'
 import { Dashboard } from './pages/Dashboard'
 import { Login } from './pages/Login'
+import { Notifications } from './pages/Notifications'
 import { Placeholder } from './pages/Placeholder'
 import { Transactions } from './pages/Transactions'
 
@@ -37,6 +38,7 @@ export default function App() {
           <Route path="reports" element={<Placeholder k="reports" />} />
           <Route path="heir" element={<Placeholder k="heir" />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="notifications" element={<Notifications />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

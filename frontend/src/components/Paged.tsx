@@ -1,6 +1,7 @@
 import { cloneElement, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactElement, type ReactNode } from 'react'
 import { measureLines, observeSize, packPages } from '../lib/fit'
 import { useI18n } from '../i18n'
+import { useLayoutEpoch } from '../hooks/useLayoutEpoch'
 import { useSwipe } from '../hooks/useSwipe'
 import { Icon } from './Icon'
 
@@ -28,9 +29,21 @@ export function Paged<T>({ items, renderItem, container, keepWithNext, resetKey 
   const [pages, setPages] = useState<[number, number][] | null>(null)
   const [page, setPage] = useState(0)
   const [measureTick, setMeasureTick] = useState(0)
+  const epoch = useLayoutEpoch()
+  const retried = useRef(false)
 
-  // New data or a resize → measure again (render everything once, invisibly).
-  useLayoutEffect(() => { setPages(null) }, [items, measureTick])
+  // New data, a resize, or new font metrics → measure again (render everything once, invisibly).
+  useLayoutEffect(() => { setPages(null); retried.current = false }, [items, measureTick, epoch])
+
+  // Safety net: if a packed page still overflows (metrics shifted after measuring), re-measure once.
+  useLayoutEffect(() => {
+    const body = bodyRef.current
+    if (pages === null || !body || retried.current) return
+    if (body.scrollHeight > body.clientHeight) {
+      retried.current = true
+      setPages(null)
+    }
+  })
   useEffect(() => { setPage(0) }, [resetKey])
 
   useLayoutEffect(() => {

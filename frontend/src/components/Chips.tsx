@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { useLayoutEpoch } from '../hooks/useLayoutEpoch'
 import { measureLines, observeSize } from '../lib/fit'
 
 interface Chip { id: number; label: ReactNode; color?: string }
@@ -14,7 +15,8 @@ export function FitChips({ chips, value, onChange, label }: { chips: Chip[]; val
   const [tick, setTick] = useState(0)
   const rest = chips.slice(offset)
 
-  useLayoutEffect(() => { setCount(null) }, [chips, offset, tick])
+  const epoch = useLayoutEpoch()
+  useLayoutEffect(() => { setCount(null) }, [chips, offset, tick, epoch])
   useLayoutEffect(() => {
     const el = box.current
     if (count !== null || !el) return

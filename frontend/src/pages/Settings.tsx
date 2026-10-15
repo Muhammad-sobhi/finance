@@ -7,6 +7,7 @@ import { useApi } from '../hooks/useApi'
 import { num, useForm } from '../hooks/useForm'
 import { useI18n } from '../i18n'
 import { ApiError, del, patch, post } from '../lib/api'
+import { disablePush, enablePush, pushState, type PushState } from '../lib/push'
 import { useSession } from '../lib/session'
 import type { Settings as S } from '../lib/types'
 
@@ -76,6 +77,7 @@ export function Settings() {
           {row('alert_days', t('alertDays'), 'numeric')}
           {toggle('email_alerts', t('emailAlerts'))}
           {toggle('auto_fetch_rates', t('fetchRates'))}
+          <PushRow />
           {!readOnly && <div className="actions"><button type="submit" className="btn">{t('save')}</button></div>}
         </form>
         <div className={`card${tab !== 'rates' ? ' off-sm' : ''}`}>
@@ -96,6 +98,30 @@ export function Settings() {
         </div>
       </div>
       {rate !== undefined && <RateForm rate={rate} onClose={() => setRate(undefined)} />}
+    </div>
+  )
+}
+
+/** Browser push for this device: enable / disable, or explain why it can't. */
+function PushRow() {
+  const { t } = useI18n()
+  const { readOnly, toast } = useSession()
+  const [state, setState] = useState<PushState | null>(null)
+  useEffect(() => { pushState().then(setState) }, [])
+  const act = async () => {
+    try {
+      setState(state === 'on' ? await disablePush() : await enablePush())
+    } catch {
+      toast(t('error'))
+    }
+  }
+  const label = state === 'unsupported' ? t('pushNo') : state === 'denied' ? t('pushDenied') : state === 'on' ? t('pushOk') : t('notifications')
+  return (
+    <div className="setting-row">
+      <span>{label}</span>
+      {!readOnly && (state === 'on' || state === 'off') && (
+        <button type="button" className={`btn sm${state === 'on' ? ' ghost' : ''}`} onClick={act}>{state === 'on' ? t('pushOff') : t('pushOn')}</button>
+      )}
     </div>
   )
 }

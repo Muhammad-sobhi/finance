@@ -12,7 +12,8 @@ See `CLAUDE.md` for the full brief and `design/` for the visual source of truth.
 | 1 | Backend core: schema, policies, Sanctum auth, accounts / categories / transactions API, feature tests | ✅ |
 | 2 | Frontend shell (4 themes, AR/EN + RTL, nav, no-scroll engine), login, dashboard, daily expenses + quick-add, accounts, categories | ✅ |
 | 3 | Debts (partial payments moving money), bills & subscriptions (mark paid, auto-pay), investments (value history, ROI), assets (gold/silver auto-valued), settings & exchange rates | ✅ |
-| 4–7 | Alerts · reports · heir system · deploy docs | next |
+| 4 | Alerts: in-app notification center, email, browser web push (service worker + VAPID); each item+stage once | ✅ |
+| 5–7 | Reports · heir system · deploy docs | next |
 
 ## Local setup
 
@@ -66,6 +67,13 @@ All under `/api/v1`, JSON, `Authorization: Bearer <token>`.
 | CRUD | `/assets` | gold/silver valued from settings price × grams × karat/24 |
 | GET / PATCH | `/settings` | metal prices, alert days, email alerts; `POST/PATCH/DELETE /exchange-rates` |
 
-Scheduler: `finance:auto-pay` runs daily at 06:00 (pays due auto-pay bills/subscriptions).
+| GET | `/notifications` | latest alerts + unread count; `GET /notifications/unread`, `POST /notifications/{id}/read`, `POST /notifications/read-all` |
+| GET / POST | `/push/key`, `/push/subscribe`, `/push/unsubscribe` | browser push (VAPID public key, register/remove this device) |
+
+Scheduler (`* * * * * php artisan schedule:run`):
+- `finance:alerts` hourly — N days before (per item, else the settings default), on the day, and overdue; deduplicated per item + stage + due date. In-app alerts are written immediately; email and push go through the queue worker.
+- `finance:auto-pay` daily at 06:00 — pays due auto-pay bills/subscriptions.
+
+Web push needs VAPID keys (`php artisan webpush:vapid`) and HTTPS in production (browsers only allow push and service workers on secure origins; `localhost` is exempt).
 
 Heir logins (role `heir`) are read-only: every non-GET request is refused with `403 {code: "read_only"}` by middleware, and policies refuse writes independently.

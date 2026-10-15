@@ -13,7 +13,7 @@ const EMAIL = process.env.EMAIL ?? 'demo@example.com'
 const PASSWORD = process.env.PASSWORD ?? 'password'
 const SHOTS = process.env.SHOTS
 const VIEWPORTS = [[390, 780], [900, 700], [1440, 900]]
-const ROUTES = ['/', '/accounts', '/transactions', '/categories', '/debts', '/bills', '/subscriptions', '/investments', '/assets', '/reports', '/heir', '/settings']
+const ROUTES = ['/', '/notifications', '/accounts', '/transactions', '/categories', '/debts', '/bills', '/subscriptions', '/investments', '/assets', '/reports', '/heir', '/settings']
 const COMBOS = [['ledger', 'ar'], ['swiss', 'ar'], ['geo', 'ar'], ['vault', 'ar'], ['ledger', 'en'], ['vault', 'en']]
 // Dialogs: [route, selector(s) to click, label]
 const DIALOGS = [

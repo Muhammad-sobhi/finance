@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { measureLines, observeSize, packPages } from '../lib/fit'
+import { useLayoutEpoch } from '../hooks/useLayoutEpoch'
 import { useI18n } from '../i18n'
 import { Icon } from './Icon'
 
@@ -37,7 +38,8 @@ export function FormModal({ title, fields, errors = {}, busy, onClose, onSubmit,
   const visible = fields.filter((f) => !f.hidden)
   const shape = visible.map((f) => f.name + (errors[f.name] ? '!' : '')).join('|')
 
-  useLayoutEffect(() => { setSteps(null) }, [shape, tick])
+  const epoch = useLayoutEpoch()
+  useLayoutEffect(() => { setSteps(null) }, [shape, tick, epoch])
 
   useLayoutEffect(() => {
     const body = bodyRef.current

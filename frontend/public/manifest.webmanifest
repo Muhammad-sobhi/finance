@@ -1,0 +1,11 @@
+{
+  "name": "خزينتي — Treasury",
+  "short_name": "خزينتي",
+  "start_url": "/",
+  "display": "standalone",
+  "dir": "rtl",
+  "lang": "ar",
+  "background_color": "#f4efe3",
+  "theme_color": "#2e5e3e",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

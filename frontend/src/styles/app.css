@@ -172,3 +172,14 @@ td.acts { width: 1%; }
 .li-btn:focus-visible { outline: 2px solid var(--accent); }
 /* phone: keep card actions away from the FAB, which sits at the inline-end corner */
 @media (max-width: 720px) { .card .actions { justify-content: flex-start; } }
+
+/* ---------- step 4: notification center ---------- */
+a.icon-btn { color: inherit; text-decoration: none; }
+a.icon-btn.active { border-color: var(--accent); color: var(--accent); }
+.note { padding: 9px 4px; }
+.note.unread { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.note.unread .note-main b::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); margin-inline-end: 6px; vertical-align: middle; }
+.note-main { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
+.note-main b { font-size: 12px; font-weight: 700; }
+.note-main > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.note-side { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex: none; }

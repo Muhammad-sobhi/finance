@@ -27,6 +27,12 @@ class DueAlert extends Notification implements ShouldQueue
         ]));
     }
 
+    /** In-app alerts are written immediately; only mail and push wait for the queue worker. */
+    public function viaConnections(): array
+    {
+        return ['database' => 'sync'];
+    }
+
     public function toArray(User $user): array
     {
         // Structured fields let the UI re-render in the current language; text is a fallback.

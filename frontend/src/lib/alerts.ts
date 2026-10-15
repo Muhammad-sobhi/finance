@@ -1,0 +1,18 @@
+import type { I18n } from '../i18n'
+
+/** Human label for a due item, translated at render time. The name is bidi-isolated. */
+export function dueSubject(i: I18n, kind: string, rawName: string): string {
+  const name = `⁨${rawName}⁩`
+  switch (kind) {
+    case 'credit_card': return i.t('cardDue', { name })
+    case 'owed_to_me': return i.t('debtFrom', { name })
+    case 'i_owe': return i.t('debtTo', { name })
+    case 'maturity': return i.t('matures', { name })
+    case 'subscription': return i.t('subDue', { name })
+    default: return name
+  }
+}
+
+export const DUE_ROUTE: Record<string, string> = {
+  bill: '/bills', subscription: '/subscriptions', owed_to_me: '/debts', i_owe: '/debts', maturity: '/investments', credit_card: '/accounts',
+}
