@@ -21,6 +21,7 @@ class DemoSeeder extends Seeder
         }
         $owner->exchangeRates()->create(['currency' => 'USD', 'rate' => 48.5]);
 
+        // [name, type, provider, currency, final balance, credit limit, due day]
         $accounts = collect([
             ['NBE Debit', AccountType::DebitCard, 'NBE', 'EGP', 42300],
             ['CIB Credit', AccountType::CreditCard, 'CIB', 'EGP', -6400, 40000, 25],
@@ -34,9 +35,11 @@ class DemoSeeder extends Seeder
             ['Savings account', AccountType::Savings, 'NBE', 'EGP', 120000],
             ['USD wallet', AccountType::Cash, null, 'USD', 500],
             ['WE Pay', AccountType::WePay, 'WE', 'EGP', 300],
-        ])->map(fn ($a, $i) => $owner->accounts()->create([
+        ]);
+        $targets = $accounts->pluck(4)->all();
+        $accounts = $accounts->map(fn ($a, $i) => $owner->accounts()->create([
             'name' => $a[0], 'type' => $a[1], 'provider' => $a[2], 'currency' => $a[3],
-            'balance' => $a[4], 'credit_limit' => $a[5] ?? null, 'due_day' => $a[6] ?? null, 'sort' => $i,
+            'balance' => 0, 'credit_limit' => $a[5] ?? null, 'due_day' => $a[6] ?? null, 'sort' => $i,
         ]));
 
         $cats = $owner->categories()->pluck('id', 'key');
@@ -57,6 +60,11 @@ class DemoSeeder extends Seeder
                     'category_id' => $cats[$key], 'amount' => mt_rand(3, 90) * 10, 'date' => $d->toDateString(), 'note' => $notes[$key],
                 ]);
             }
+        }
+
+        // Opening balances chosen so today's balances look like a real wallet.
+        foreach ($accounts as $i => $account) {
+            $account->update(['balance' => $targets[$i]]);
         }
     }
 }
