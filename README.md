@@ -151,6 +151,31 @@ Heir (role `heir`) tokens get `403 {code: "read_only"}` on every non-GET request
 
 HTTPS is required: browsers only allow service workers and web push on secure origins.
 
+### Free trial on a server that already hosts other sites
+
+No domain or paid email needed. Everything below sits next to your other projects without touching them.
+
+1. **A free hostname with HTTPS.** Either use the VPS's own hostname (hPanel → VPS → Overview, e.g. `srv123456.hstgr.cloud`, if no other site uses it) or make a free one at <https://www.duckdns.org> (sign in, create `myfinance.duckdns.org`, set its IP to the VPS IP). Use it wherever this guide says `finance.example.com`, then `sudo certbot --nginx -d myfinance.duckdns.org`.
+2. **Its own folder, database and names** — `/var/www/finance`, database + user `finance`, supervisor program `finance-queue`, nginx file `/etc/nginx/sites-available/finance`. Don't edit the other sites' files or the `default` site; run `sudo nginx -t` before every reload.
+3. **PHP 8.3.** Check `php -v`. If the other projects use another version, install `php8.3-fpm` alongside it (both run at once); our nginx file already points at `php8.3-fpm.sock`.
+4. **Email without a domain: Gmail SMTP** (free, ~500 emails/day). Turn on 2-Step Verification on the Google account, create an *App password* (Google Account → Security → App passwords), then:
+
+   ```dotenv
+   MAIL_MAILER=smtp
+   MAIL_HOST=smtp.gmail.com
+   MAIL_PORT=587
+   MAIL_ENCRYPTION=tls
+   MAIL_USERNAME=yourname@gmail.com
+   MAIL_PASSWORD=<16-char app password>
+   MAIL_FROM_ADDRESS=yourname@gmail.com
+   MAIL_FROM_NAME="Treasury"
+   ```
+
+   Test it: `php artisan tinker --execute "Mail::raw('test', fn (\$m) => \$m->to('you@example.com')->subject('Treasury test'));"`. Later, with your own domain, only these lines change.
+5. **Testers** — each tester gets their own owner account: `php artisan finance:owner tester@example.com "Name"`. Their data is fully separate (every record is scoped to its owner).
+
+Cost: nothing. When you buy a domain, point it at the server, add it to `server_name`, run certbot for it, and update `APP_URL` / `FRONTEND_URL`.
+
 ### 1. Server packages
 
 ```bash
