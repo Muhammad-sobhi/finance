@@ -14,6 +14,8 @@ const PATHS: Record<string, string> = {
   settings: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
   bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"/>',
   notifications: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"/>',
+  income: '<path d="M12 20V8M7 13l5-5 5 5"/><path d="M4 4h16"/>',
+  incomeNav: '<path d="M12 20V8M7 13l5-5 5 5"/><path d="M4 4h16"/>',
   more: '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>',
   next: '<path d="M9 6l6 6-6 6"/>',
   prev: '<path d="M15 6l-6 6 6 6"/>',

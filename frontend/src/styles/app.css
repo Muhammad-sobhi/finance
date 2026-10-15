@@ -219,3 +219,25 @@ a.icon-btn.active { border-color: var(--accent); color: var(--accent); }
 @media (max-width: 720px) {
   .seg-wrap button { padding: 6px 8px; }
 }
+
+/* ---------- income ---------- */
+.tab-body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.tab-body > .list { flex: 1; min-height: 0; }
+.income-ov { flex: 1; min-height: 0; display: grid; gap: var(--gap); grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: auto minmax(0, 1fr); }
+.income-ov .ov-chart { grid-column: 1 / -1; }
+.income-ov .kpi .v { font-size: clamp(16px, 1.7vw, 26px); overflow: hidden; text-overflow: ellipsis; }
+.chart .stack { width: 100%; display: flex; flex-direction: column; min-height: 2px; }
+.chart .stack i { display: block; min-height: 0; }
+.seg-rec { background: var(--pos); }
+.seg-proj { background: var(--chart-2, var(--accent)); }
+[data-theme='ledger'] { --chart-2: #b08d57; }
+.seg-other { background: var(--line); }
+[data-theme='vault'] .seg-rec { background: var(--ink); }
+[data-theme='swiss'] .seg-rec { background: #111; }
+@media (max-width: 1100px) {
+  .income-ov { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto auto minmax(0, 1fr); }
+}
+@media (max-width: 720px) {
+  .income-ov { gap: 8px; }
+  .income-ov .card.kpi { padding: 10px 12px; }
+}

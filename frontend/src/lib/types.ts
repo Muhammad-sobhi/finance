@@ -207,3 +207,32 @@ export interface Report {
   net_worth_trend: { month: string; net_worth: number }[]
   advice: { code: string; level: 'danger' | 'warn' | 'info'; text: { ar: string; en: string } }[]
 }
+
+export interface IncomeSource extends RecurringBase { next_date: string; monthly: number }
+
+export interface Project {
+  id: number
+  client: string
+  name: string
+  amount: number
+  currency: string
+  start_date: string | null
+  due_date: string | null
+  status: 'active' | 'done' | 'cancelled'
+  category_id: number | null
+  remind_days: number | null
+  notes: string | null
+  received: number
+  outstanding: number
+  days: number | null
+  payments?: { id: number; amount: number; date: string; account_id: number | null; note: string | null }[]
+}
+
+export interface IncomeSummary {
+  month: string
+  base_currency: string
+  received: { recurring: number; projects: number; other: number; total: number }
+  expected: number
+  outstanding: number
+  series: { month: string; recurring: number; projects: number; other: number }[]
+}

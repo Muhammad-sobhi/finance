@@ -13,6 +13,7 @@ export const NAV: { path: string; key: Key; phone?: boolean }[] = [
   { path: '/accounts', key: 'accounts', phone: true },
   { path: '/transactions', key: 'transactions', phone: true },
   { path: '/bills', key: 'bills', phone: true },
+  { path: '/income', key: 'incomeNav' },
   { path: '/categories', key: 'categories' },
   { path: '/debts', key: 'debts' },
   { path: '/subscriptions', key: 'subscriptions' },

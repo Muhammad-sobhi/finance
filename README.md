@@ -12,6 +12,7 @@ Arabic-first (RTL) with English, four themes, and a strict no-scroll layout. See
 | 5 | Reports (month/year), growth vs previous period, net-worth trend, rule-based advice (AR + EN) | ✅ |
 | 6 | Heir access: dead-man switch + manual request with trusted-contact confirmation; read-only heirs | ✅ |
 | 7 | This README, deployment files in `deploy/` | ✅ |
+| + | Income: recurring income (salary, auto-record or one-tap "received"), freelance projects with payments and outstanding, overview | ✅ |
 
 **Database:** MySQL 8 in production (`DB_CONNECTION=mysql`). The test suite runs on SQLite in memory by default and also passes on MySQL/MariaDB (see *Checks*).
 
@@ -51,7 +52,7 @@ Locally `MAIL_MAILER=log` writes emails (alerts, heir links) to `backend/storage
 ## Checks
 
 ```bash
-cd backend && php artisan test                         # 77 feature tests, SQLite in memory
+cd backend && php artisan test                         # 84 feature tests, SQLite in memory
 # same suite on MySQL (uses a separate database):
 DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_DATABASE=finance_test DB_USERNAME=finance DB_PASSWORD=secret php artisan test
 
@@ -91,6 +92,9 @@ All under `/api/v1`, JSON, `Authorization: Bearer <token>` unless marked public.
 | CRUD | `/accounts`, `/categories`, `/transactions` | `?month=YYYY-MM&account_id&category_id&type`; `GET /transactions/quick-meta` |
 | CRUD | `/debts` | `POST /debts/{id}/payments`, `DELETE /debts/{id}/payments/{pid}` |
 | CRUD | `/bills`, `/subscriptions` | `POST /{type}/{id}/pay` — expense + roll due date |
+| GET | `/income/summary?month=YYYY-MM` | received this month by recurring / projects / other, expected, outstanding, 6-month series |
+| CRUD | `/income-sources` | recurring income (salary…); `POST /income-sources/{id}/receive` records the income and rolls the next date |
+| CRUD | `/projects` | freelance work; `POST /projects/{id}/payments` (income into an account), `DELETE /projects/{id}/payments/{pid}` |
 | CRUD | `/investments` | `POST/DELETE /investments/{id}/values` |
 | CRUD | `/assets` | gold/silver valued from settings price × grams × karat/24 |
 | GET/PATCH | `/settings` | metal prices, alert days, email alerts, auto rates; `POST/PATCH/DELETE /exchange-rates` |
@@ -211,7 +215,7 @@ Scheduled jobs (`php artisan schedule:list`):
 | --- | --- | --- |
 | `finance:alerts` | hourly | due / overdue alerts (in-app now; email + push via the queue) |
 | `finance:heir-check` | hourly | dead-man reminders/activation, confirmed requests whose window ended |
-| `finance:auto-pay` | 06:00 | pays due auto-pay bills and subscriptions |
+| `finance:auto-pay` | 06:00 | pays due auto-pay bills/subscriptions and records auto-record income |
 | `finance:fetch-rates` | 07:00 | updates exchange rates for owners who enabled it |
 | `finance:snapshot` | 23:50 | this month's net worth (trend charts, growth) |
 
