@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DebtController;
 use App\Http\Controllers\Api\V1\InvestmentController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\SettingsController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\TransactionController;
@@ -42,6 +43,14 @@ Route::prefix('v1')->group(function () {
         Route::delete('investments/{investment}/values/{value}', [InvestmentController::class, 'deleteValue'])->name('investments.values.destroy');
 
         Route::apiResource('assets', AssetController::class);
+
+        Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::get('notifications/unread', [NotificationController::class, 'unread'])->name('notifications.unread');
+        Route::post('notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+        Route::post('notifications/{id}/read', [NotificationController::class, 'read'])->name('notifications.read');
+        Route::get('push/key', [NotificationController::class, 'pushKey'])->name('push.key');
+        Route::post('push/subscribe', [NotificationController::class, 'subscribe'])->name('push.subscribe');
+        Route::post('push/unsubscribe', [NotificationController::class, 'unsubscribe'])->name('push.unsubscribe');
 
         Route::get('settings', [SettingsController::class, 'show'])->name('settings.show');
         Route::patch('settings', [SettingsController::class, 'update'])->name('settings.update');

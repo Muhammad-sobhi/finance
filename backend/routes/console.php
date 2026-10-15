@@ -2,6 +2,7 @@
 
 use App\Enums\UserRole;
 use App\Models\User;
+use App\Services\AlertScanner;
 use App\Services\RecurringService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -25,3 +26,9 @@ Artisan::command('finance:auto-pay', function (RecurringService $service) {
 })->purpose('Pay bills/subscriptions flagged auto-pay that are due');
 
 Schedule::command('finance:auto-pay')->dailyAt('06:00')->withoutOverlapping();
+
+Artisan::command('finance:alerts', function (AlertScanner $scanner) {
+    $this->info('Sent '.$scanner->run().' alert(s).');
+})->purpose('Send due/overdue alerts (in-app, email, web push), each item+stage once');
+
+Schedule::command('finance:alerts')->hourly()->withoutOverlapping();
