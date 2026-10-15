@@ -147,7 +147,7 @@ export function BarChart({ points, series, stacked = false, format, labelLast = 
                 })}
                 {(i % showEvery === 0 || i === points.length - 1) && <text x={cx} y={h - 6} textAnchor="middle" className="viz-x">{p.label}</text>}
                 {labelLast && i === points.length - 1 && totals[i] > 0 && (
-                  <text x={cx} y={yOf(totals[i]) - 5} textAnchor="middle" className="viz-val">{compact(totals[i])}</text>
+                  <text x={cx} y={Math.max(14, yOf(totals[i]) - 5)} textAnchor="middle" className="viz-val">{compact(totals[i])}</text>
                 )}
                 <rect x={xOf(i)} y={0} width={slot} height={h} fill="transparent" onMouseEnter={() => setHover(i)} onClick={() => setHover(hover === i ? null : i)} />
               </g>
@@ -228,7 +228,7 @@ export function LineChart({ points, format, ariaLabel }: LineProps) {
           {[...(hover !== null && hover !== last ? [hover] : []), last].map((i) => (
             <circle key={i} cx={xOf(i)} cy={yOf(points[i].value)} r={4} fill="var(--c1)" stroke="var(--surface)" strokeWidth={2} />
           ))}
-          <text x={xOf(last)} y={yOf(points[last].value) - 9} textAnchor={rtl ? 'start' : 'end'} className="viz-val">{compact(points[last].value)}</text>
+          <text x={xOf(last)} y={Math.max(14, yOf(points[last].value) - 9)} textAnchor={rtl ? 'start' : 'end'} className="viz-val">{compact(points[last].value)}</text>
           <rect x={0} y={0} width={w} height={h} fill="transparent" onMouseMove={onMove} onClick={onMove} />
         </svg>
       )}
