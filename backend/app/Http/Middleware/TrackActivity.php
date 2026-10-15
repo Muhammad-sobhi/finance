@@ -16,8 +16,12 @@ class TrackActivity
     {
         $user = $request->user();
 
-        if ($user?->isOwner() && ($user->last_activity_at === null || $user->last_activity_at->lt(now()->subMinute()))) {
-            $user->forceFill(['last_activity_at' => now()])->saveQuietly();
+        if ($user?->isOwner()) {
+            $stale = $user->last_activity_at === null || $user->last_activity_at->lt(now()->subMinute());
+            // Being active ends any running dead-man grace window.
+            if ($stale || $user->heir_warning_started_at !== null) {
+                $user->forceFill(['last_activity_at' => now(), 'heir_warning_started_at' => null, 'heir_last_reminder_at' => null])->saveQuietly();
+            }
         }
 
         return $next($request);

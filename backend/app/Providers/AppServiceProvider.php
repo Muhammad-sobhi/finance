@@ -38,6 +38,12 @@ class AppServiceProvider extends ServiceProvider
             Limit::perMinute(20)->by($request->ip()),
         ]);
 
+        // Heir requests: few per hour per IP and per email (and the response never reveals a match).
+        RateLimiter::for('heir-request', fn (Request $request) => [
+            Limit::perHour(5)->by('ip|'.$request->ip()),
+            Limit::perHour(3)->by('email|'.strtolower((string) $request->input('email'))),
+        ]);
+
         RateLimiter::for('api', fn (Request $request) => Limit::perMinute(600)->by($request->user()?->id ?: $request->ip()));
     }
 }

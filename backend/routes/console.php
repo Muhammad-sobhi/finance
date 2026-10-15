@@ -3,6 +3,7 @@
 use App\Enums\UserRole;
 use App\Models\User;
 use App\Services\AlertScanner;
+use App\Services\HeirService;
 use App\Services\NetWorth;
 use App\Services\RateFetcher;
 use App\Services\RecurringService;
@@ -46,3 +47,10 @@ Artisan::command('finance:fetch-rates', function (RateFetcher $fetcher) {
 
 Schedule::command('finance:snapshot')->dailyAt('23:50');
 Schedule::command('finance:fetch-rates')->dailyAt('07:00');
+
+Artisan::command('finance:heir-check', function (HeirService $heirs) {
+    $s = $heirs->run();
+    $this->info("Heir check: {$s['warned']} warning(s), {$s['activated']} activation(s).");
+})->purpose('Dead-man switch reminders/activation and confirmed heir requests');
+
+Schedule::command('finance:heir-check')->hourly()->withoutOverlapping();
