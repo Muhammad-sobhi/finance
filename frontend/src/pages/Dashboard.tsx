@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { BarChart } from '../components/Charts'
 import { DueTag } from '../components/Due'
 import { FitList } from '../components/FitList'
 import { useApi } from '../hooks/useApi'
@@ -26,7 +27,6 @@ export function Dashboard() {
   const balances = useMemo(() => data?.balances ?? [], [data])
   const upcoming = useMemo(() => data?.upcoming ?? [], [data])
   const spending = data?.spending ?? []
-  const max = Math.max(1, ...spending.map((s) => s.expense))
   const cur = spending[spending.length - 1]
   const monthNet = cur ? cur.income - cur.expense : 0
   const base = data?.base_currency ?? ''
@@ -65,15 +65,12 @@ export function Dashboard() {
       <div className={cls(2)}>
         <div className="card c-chart">
           <h3>{t('spending')}<small>{base}</small></h3>
-          <div className="chart" role="img" aria-label={spending.map((s) => `${d.months[monthIndex(s.month)]}: ${num(s.expense)}`).join(', ')}>
-            {spending.map((s) => (
-              <div className="col" key={s.month} title={`${num(s.expense)} ${base}`}>
-                <span className="val num">{s.expense ? num(s.expense) : ''}</span>
-                <div className={`bar${s.expense === max && s.expense > 0 ? ' hi' : ''}`} style={{ height: `${(s.expense / max) * 80}%` }} />
-                <div className="m">{d.months[monthIndex(s.month)]}</div>
-              </div>
-            ))}
-          </div>
+          <BarChart
+            points={spending.map((x) => ({ label: d.months[monthIndex(x.month)], values: { expense: x.expense } }))}
+            series={[{ key: 'expense', label: t('expense'), color: 1 }]}
+            format={(v) => `${num(v)} ${base}`}
+            ariaLabel={spending.map((x) => `${d.months[monthIndex(x.month)]}: ${num(x.expense)}`).join(', ')}
+          />
         </div>
       </div>
 

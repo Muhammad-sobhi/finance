@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { LineChart } from '../components/Charts'
 import { DetailModal, Facts } from '../components/DetailModal'
 import { currency, date, money, select, text } from '../components/fields'
 import { Icon } from '../components/Icon'
@@ -86,10 +87,6 @@ function InvestmentDetail({ id, onClose, onEdit }: { id: number; onClose: () => 
   const [adding, setAdding] = useState(false)
   const values = useMemo(() => [...(v?.values ?? [])].reverse(), [v])
   const chart = (v?.values ?? []).slice(-12)
-  // Scale from just below the lowest value so growth is visible, not a wall of equal bars.
-  const max = Math.max(1, ...chart.map((p) => p.value))
-  const lo = Math.min(...chart.map((p) => p.value)) * 0.9
-  const h = (v: number) => (max - lo > 0 ? 10 + ((v - lo) / (max - lo)) * 80 : 90)
 
   return (
     <DetailModal title={v?.name ?? t('loading')} onClose={onClose}
@@ -110,13 +107,12 @@ function InvestmentDetail({ id, onClose, onEdit }: { id: number; onClose: () => 
             [t('returnRate'), v.annual_return === null ? '—' : <span className="num">{n(v.annual_return, 2)}%</span>],
             [t('maturityDate'), v.maturity_date ? fmtDate(v.maturity_date) : '—'],
           ]} />
-          <div className="chart mini-chart" role="img" aria-label={t('valueHistory')}>
-            {chart.map((p) => (
-              <div className="col" key={p.id} title={`${fmtDate(p.date)}: ${n(p.value)}`}>
-                <div className="bar" style={{ height: `${h(p.value)}%` }} />
-                <div className="m">{dict.months[monthIndex(p.date.slice(0, 7))]}</div>
-              </div>
-            ))}
+          <div className="mini-chart">
+            <LineChart
+              points={chart.map((p) => ({ label: dict.months[monthIndex(p.date.slice(0, 7))], value: p.value, title: fmtDate(p.date) }))}
+              format={(x) => `${n(x)} ${v.currency}`}
+              ariaLabel={`${t('valueHistory')}: ${chart.map((p) => n(p.value)).join(', ')}`}
+            />
           </div>
           <Paged items={values} resetKey={String(id)}
             container={(c) => <div className="rows">{c}</div>}

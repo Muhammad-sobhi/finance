@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { BarChart } from '../components/Charts'
 import { DetailModal, Facts } from '../components/DetailModal'
 import { DueTag } from '../components/Due'
 import { currency, date, money, select, text } from '../components/fields'
@@ -45,31 +46,34 @@ export function Income() {
 function Overview() {
   const { t, num: n, d } = useI18n()
   const { data: s } = useApi<IncomeSummary>('/income/summary')
-  const max = Math.max(1, ...(s?.series ?? []).map((m) => m.recurring + m.projects + m.other))
+  const series = [
+    { key: 'recurring', label: t('fromRecurring'), color: 1 as const },
+    { key: 'projects', label: t('fromProjects'), color: 2 as const },
+    { key: 'other', label: t('otherIncome'), color: 3 as const },
+  ]
+  const base = s?.base_currency ?? ''
   return (
     <div className="income-ov">
-      <div className="card kpi"><div className="lbl">{t('receivedMonth')}</div><div className="v num pos">{s ? n(s.received.total) : '…'}</div><div className="d muted">{s?.base_currency}</div></div>
-      <div className="card kpi"><div className="lbl">{t('fromRecurring')} · {t('fromProjects')} · {t('otherIncome')}</div>
-        <div className="v num">{s ? `${n(s.received.recurring)} · ${n(s.received.projects)} · ${n(s.received.other)}` : '…'}</div></div>
-      <div className="card kpi"><div className="lbl">{t('expectedMonth')}</div><div className="v num">{s ? n(s.expected) : '…'}</div></div>
-      <div className="card kpi"><div className="lbl">{t('outstanding')}</div><div className="v num neg">{s ? n(s.outstanding) : '…'}</div></div>
-      <div className="card ov-chart">
-        <h3>{t('incomeNav')}<small>{s?.base_currency}</small></h3>
-        <div className="chart" role="img" aria-label={t('incomeNav')}>
-          {(s?.series ?? []).map((m) => (
-            <div className="col" key={m.month} title={`${t('fromRecurring')} ${n(m.recurring)} · ${t('fromProjects')} ${n(m.projects)} · ${t('otherIncome')} ${n(m.other)}`}>
-              <div className="stack" style={{ height: `${((m.recurring + m.projects + m.other) / max) * 88}%` }}>
-                <i className="seg-other" style={{ flexGrow: m.other }} />
-                <i className="seg-proj" style={{ flexGrow: m.projects }} />
-                <i className="seg-rec" style={{ flexGrow: m.recurring }} />
-              </div>
-              <div className="m">{d.months[monthIndex(m.month)]}</div>
-            </div>
+      <div className="card kpi"><div className="lbl">{t('receivedMonth')}</div><div className="v num pos">{s ? n(s.received.total) : '…'}</div><div className="d muted">{base}</div></div>
+      <div className="card kpi">
+        <div className="lbl">{t('bySource')}</div>
+        <div className="breakdown">
+          {series.map((x) => (
+            <span key={x.key}><i className="sw" style={{ background: `var(--c${x.color})` }} />{x.label}<b>{s ? n(s.received[x.key as 'recurring']) : '…'}</b></span>
           ))}
         </div>
-        <div className="legend">
-          <span><i className="sw seg-rec" />{t('fromRecurring')}</span><span><i className="sw seg-proj" />{t('fromProjects')}</span><span><i className="sw seg-other" />{t('otherIncome')}</span>
-        </div>
+      </div>
+      <div className="card kpi"><div className="lbl">{t('expectedMonth')}</div><div className="v num">{s ? n(s.expected) : '…'}</div><div className="d muted">{base}</div></div>
+      <div className="card kpi"><div className="lbl">{t('outstanding')}</div><div className={`v num${s && s.outstanding > 0 ? ' neg' : ''}`}>{s ? n(s.outstanding) : '…'}</div><div className="d muted">{base}</div></div>
+      <div className="card ov-chart">
+        <h3>{t('incomeNav')}<small>{base}</small></h3>
+        <BarChart
+          stacked
+          points={(s?.series ?? []).map((m) => ({ label: d.months[monthIndex(m.month)], values: { recurring: m.recurring, projects: m.projects, other: m.other } }))}
+          series={series}
+          format={(v) => `${n(v)} ${base}`}
+          ariaLabel={(s?.series ?? []).map((m) => `${d.months[monthIndex(m.month)]}: ${n(m.recurring + m.projects + m.other)}`).join(', ')}
+        />
       </div>
     </div>
   )

@@ -96,7 +96,6 @@ tr.day:hover { background: none; }
 .dots button { all: unset; cursor: pointer; width: 7px; height: 7px; border-radius: 50%; background: var(--line); }
 .dots button.on { background: var(--accent); width: 18px; border-radius: 4px; }
 .card .none { font-size: 14px; padding: 8px 0; }
-.chart .bar { transition: height 0.3s; }
 
 /* auth */
 .auth form.card { display: flex; flex-direction: column; }
@@ -147,7 +146,7 @@ tr.day:hover { background: none; }
 .icon-btn.sm svg { width: 14px; height: 14px; }
 .ic .acts { display: flex; justify-content: flex-end; gap: 6px; }
 td.acts { width: 1%; }
-.mini-chart { height: 120px; flex: none; }
+.mini-chart { height: 130px; flex: none; display: flex; flex-direction: column; }
 .split { height: 100%; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--gap); }
 .split > .card { min-height: 0; }
 .setting-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: var(--row-line); font-size: 14px; }
@@ -227,14 +226,6 @@ a.icon-btn.active { border-color: var(--accent); color: var(--accent); }
 .income-ov { flex: 1; min-height: 0; display: grid; gap: var(--gap); grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: auto minmax(0, 1fr); }
 .income-ov .ov-chart { grid-column: 1 / -1; }
 .income-ov .kpi .v { font-size: clamp(16px, 1.7vw, 26px); overflow: hidden; text-overflow: ellipsis; }
-.chart .stack { width: 100%; display: flex; flex-direction: column; min-height: 2px; }
-.chart .stack i { display: block; min-height: 0; }
-.seg-rec { background: var(--pos); }
-.seg-proj { background: var(--chart-2, var(--accent)); }
-[data-theme='ledger'] { --chart-2: #b08d57; }
-.seg-other { background: var(--line); }
-[data-theme='vault'] .seg-rec { background: var(--ink); }
-[data-theme='swiss'] .seg-rec { background: #111; }
 @media (max-width: 1100px) {
   .income-ov { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto auto minmax(0, 1fr); }
 }
@@ -242,3 +233,33 @@ a.icon-btn.active { border-color: var(--accent); color: var(--accent); }
   .income-ov { gap: 8px; }
   .income-ov .card.kpi { padding: 10px 12px; }
 }
+
+/* ---------- charts (components/Charts.tsx) ----------
+   Per-theme categorical chart colors, checked with the dataviz palette validator
+   (lightness band, chroma floor, color-blind separation, contrast vs the card surface). */
+[data-theme='ledger'] { --c1: #2f7d4a; --c2: #c27c2c; --c3: #4a78b0; }
+[data-theme='swiss']  { --c1: #e4572e; --c2: #3a6fd6; --c3: #1a9a6a; }
+[data-theme='geo']    { --c1: #3f6aaa; --c2: #c8673e; --c3: #1f9178; }
+[data-theme='vault']  { --c1: #b8873f; --c2: #4f8fd4; --c3: #3fa66a; }
+.viz { flex: 1; min-height: 0; position: relative; display: flex; flex-direction: column; }
+.viz-plot { flex: 1; min-height: 0; position: relative; overflow: hidden; }
+.viz-plot > svg { display: block; position: absolute; inset: 0; stroke: none; fill: none; stroke-width: 0; } /* undo the icon defaults */
+.viz-grid { stroke: var(--line); stroke-width: 1; shape-rendering: crispEdges; }
+.viz-axis { stroke: var(--muted); stroke-opacity: 0.45; stroke-width: 1; shape-rendering: crispEdges; }
+.viz-tick, .viz-x { fill: var(--muted); font-size: 10px; font-family: var(--font-body); }
+.viz-x { font-size: 11px; }
+.viz-val { fill: var(--ink); font-size: 11px; font-weight: 600; font-family: var(--font-body); }
+.viz-hover { fill: var(--ink); opacity: 0.05; }
+.viz-cross { stroke: var(--muted); stroke-width: 1; opacity: 0.6; }
+.viz-tip {
+  position: absolute; top: 0; z-index: 2; pointer-events: none; display: flex; flex-direction: column; gap: 2px;
+  background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14); padding: 6px 9px; font-size: 12px;
+}
+.viz-tip > span { display: flex; align-items: center; gap: 6px; }
+.viz-tip > span b { margin-inline-start: auto; }
+.viz-tip .sw, .legend .sw { width: 9px; height: 9px; border-radius: 2px; display: inline-block; flex: none; }
+.card .legend { flex: none; }
+.breakdown { display: flex; flex-direction: column; gap: 3px; margin-top: 4px; font-size: 13px; }
+.breakdown span { display: flex; align-items: center; gap: 6px; }
+.breakdown b { margin-inline-start: auto; font-family: var(--font-num); }
