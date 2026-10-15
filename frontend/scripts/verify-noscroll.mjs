@@ -167,4 +167,4 @@ if (failures.length) {
 }
 const views = process.env.ONLY ? `${process.env.ONLY.split(',').length} selected` : ROUTES.length + DIALOGS.length
 console.log(`✓ no scrolling: ${views} views × ${VIEWPORTS.length} viewports × ${COMBOS.length} theme/lang combos`
-  + (process.env.HEIR_EMAIL ? ` + read-only heir view (14 pages × ${VIEWPORTS.length} viewports)` : ''))
+  + (process.env.HEIR_EMAIL ? ` + read-only heir view (${ROUTES.filter((r) => !r.startsWith('/heir-request') && !r.startsWith('/link')).length} pages × ${VIEWPORTS.length} viewports)` : ''))
