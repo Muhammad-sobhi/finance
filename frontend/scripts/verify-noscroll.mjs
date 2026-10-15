@@ -2,7 +2,7 @@
 // For every page × viewport × theme/lang: the document must not exceed the viewport and
 // no element may have scrollHeight > clientHeight. Also opens the dialogs.
 //
-// Usage: API + `npm run preview` running, then
+// Usage: API + `npm run preview` running, then (add HEIR_EMAIL/HEIR_PASSWORD to also check the read-only heir view)
 //   BASE_URL=http://localhost:4173 EMAIL=demo@example.com PASSWORD=password npm run verify:noscroll
 // Set SHOTS=dir to save screenshots. Set CHROMIUM=/path/to/chrome if Playwright's browser isn't installed.
 import { chromium } from 'playwright-core'
@@ -13,7 +13,8 @@ const EMAIL = process.env.EMAIL ?? 'demo@example.com'
 const PASSWORD = process.env.PASSWORD ?? 'password'
 const SHOTS = process.env.SHOTS
 const VIEWPORTS = [[390, 780], [900, 700], [1440, 900]]
-const ROUTES = ['/', '/notifications', '/reports', '/accounts', '/transactions', '/categories', '/debts', '/bills', '/subscriptions', '/investments', '/assets', '/heir', '/settings']
+const ROUTES = ['/', '/notifications', '/reports', '/accounts', '/transactions', '/categories', '/debts', '/bills', '/subscriptions', '/investments', '/assets', '/heir', '/settings',
+  '/heir-request', '/link?to=%2Fapi%2Fv1%2Flinks%2Fcheck-in%2F1%3Fexpires%3D1%26signature%3Dx']
 const COMBOS = [['ledger', 'ar'], ['swiss', 'ar'], ['geo', 'ar'], ['vault', 'ar'], ['ledger', 'en'], ['vault', 'en']]
 // Dialogs: [route, selector(s) to click, label]
 const DIALOGS = [
@@ -30,6 +31,7 @@ const DIALOGS = [
   ['/investments', '.list-body [data-fi]', 'investment-detail'],
   ['/assets', '.list-head .btn', 'asset-form'],
   ['/settings', ['.show-sm .seg button:nth-child(2)', '.split .actions .btn[type=button]'], 'rate-form'],
+  ['/heir', ['.show-sm .seg button:nth-child(2)', '.split .card:last-child .actions .btn'], 'heir-form'],
 ]
 
 if (SHOTS) mkdirSync(SHOTS, { recursive: true })
@@ -73,7 +75,7 @@ for (const [w, h] of VIEWPORTS) {
 
     const visit = async (route, label, action) => {
       await page.goto(BASE + route)
-      await page.waitForSelector('.view', { timeout: 10000 })
+      await page.waitForSelector('.view, .auth', { timeout: 10000 })
       await page.waitForLoadState('networkidle')
       if (action) {
         // A list of selectors is clicked in order; steps that aren't visible at this size are skipped.
@@ -97,6 +99,29 @@ for (const [w, h] of VIEWPORTS) {
     await ctx.close()
   }
 }
+// Optional: the read-only heir view (HEIR_EMAIL / HEIR_PASSWORD of an activated heir).
+if (process.env.HEIR_EMAIL) {
+  const r = await fetch(`${BASE}/api/v1/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ email: process.env.HEIR_EMAIL, password: process.env.HEIR_PASSWORD }) })
+  if (!r.ok) throw new Error(`heir login failed: ${r.status}`)
+  const heirToken = (await r.json()).token
+  for (const [w, h] of VIEWPORTS) {
+    const ctx = await browser.newContext({ viewport: { width: w, height: h } })
+    await ctx.addInitScript((t) => localStorage.setItem('fin.token', t), heirToken)
+    const page = await ctx.newPage()
+    for (const route of ROUTES.slice(0, 13)) {
+      await page.goto(BASE + route)
+      await page.waitForSelector('.readonly-bar', { timeout: 10000 })
+      await page.waitForLoadState('networkidle')
+      await page.evaluate(() => document.fonts.ready)
+      if (await page.$('.fab')) failures.push(`${w}x${h} heir ${route}: quick-add button visible for read-only heir`)
+      const problems = await check(page)
+      if (problems.length) failures.push(`${w}x${h} heir ${route}\n    ${problems.join('\n    ')}`)
+      if (SHOTS && route === '/') await page.screenshot({ path: `${SHOTS}/${w}x${h}-heir-home.png` })
+    }
+    await ctx.close()
+  }
+}
+
 await browser.close()
 
 if (failures.length) {

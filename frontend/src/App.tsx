@@ -13,7 +13,8 @@ import { Settings } from './pages/Settings'
 import { Dashboard } from './pages/Dashboard'
 import { Login } from './pages/Login'
 import { Notifications } from './pages/Notifications'
-import { Placeholder } from './pages/Placeholder'
+import { HeirPage } from './pages/Heir'
+import { HeirRequestPage, LinkPage } from './pages/Public'
 import { Transactions } from './pages/Transactions'
 
 export default function App() {
@@ -21,12 +22,15 @@ export default function App() {
   const { t } = useI18n()
 
   if (booting) return <div className="empty">{t('loading')}</div>
-  if (!user) return <Login />
 
   return (
     <BrowserRouter>
       <Routes>
-        <Route element={<Shell />}>
+        {/* Public: emailed signed actions and the heir access request. */}
+        <Route path="link" element={<LinkPage />} />
+        <Route path="heir-request" element={<HeirRequestPage />} />
+        {!user && <Route path="*" element={<Login />} />}
+        {user && <Route element={<Shell />}>
           <Route index element={<Dashboard />} />
           <Route path="accounts" element={<Accounts />} />
           <Route path="transactions" element={<Transactions />} />
@@ -37,11 +41,11 @@ export default function App() {
           <Route path="investments" element={<Investments />} />
           <Route path="assets" element={<Assets />} />
           <Route path="reports" element={<Reports />} />
-          <Route path="heir" element={<Placeholder k="heir" />} />
+          <Route path="heir" element={<HeirPage />} />
           <Route path="settings" element={<Settings />} />
           <Route path="notifications" element={<Notifications />} />
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
+        </Route>}
       </Routes>
     </BrowserRouter>
   )

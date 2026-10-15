@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { useI18n } from '../i18n'
 import { ApiError } from '../lib/api'
 import { useSession } from '../lib/session'
@@ -44,6 +45,7 @@ export function Login() {
         </div>
         {error && <span className="err" role="alert">{error}</span>}
         <button type="submit" className="btn" disabled={busy}>{t('login')}</button>
+        <Link to="/heir-request" className="more">{t('heirRequest')}</Link>
       </form>
     </div>
   )

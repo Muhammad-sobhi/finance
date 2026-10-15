@@ -15,7 +15,13 @@ interface Note {
   id: string
   read_at: string | null
   created_at: string
-  data: { kind: string; name: string; stage: 'before' | 'due' | 'overdue'; days: number; amount: number; currency: string; path: string; due_date: string }
+  data: {
+    type?: 'heir'; kind: string; path: string
+    // due alerts
+    name: string; stage: 'before' | 'due' | 'overdue'; days: number; amount: number; currency: string; due_date: string
+    // heir-system messages carry their text in both languages
+    title?: { ar: string; en: string } | string; text?: { ar: string; en: string }
+  }
 }
 
 export function Notifications() {
@@ -48,12 +54,19 @@ export function Notifications() {
         container={(c) => <div className="rows note-list">{c}</div>}
         renderItem={(n) => (
           <button type="button" key={n.id} className={`li-btn note${n.read_at ? '' : ' unread'}`} onClick={() => open(n)}>
-            <span className="note-main">
-              <b>{t(`stage_${n.data.stage}`)}</b>
-              <span>{dueSubject(i, n.data.kind, n.data.name)} — <span className="num">{num(n.data.amount)}</span> {n.data.currency}</span>
-            </span>
+            {n.data.type === 'heir' && typeof n.data.title === 'object' ? (
+              <span className="note-main">
+                <b>{n.data.title[i.lang]}</b>
+                <span>{n.data.text?.[i.lang]}</span>
+              </span>
+            ) : (
+              <span className="note-main">
+                <b>{t(`stage_${n.data.stage}`)}</b>
+                <span>{dueSubject(i, n.data.kind, n.data.name)} — <span className="num">{num(n.data.amount)}</span> {n.data.currency}</span>
+              </span>
+            )}
             <span className="note-side">
-              <DueTag days={daysUntil(n.data.due_date)} />
+              {n.data.type === 'heir' ? <span className="tag late">{t('heir')}</span> : <DueTag days={daysUntil(n.data.due_date)} />}
               <small className="muted">{date(n.created_at.slice(0, 10), { day: 'numeric', month: 'short' })}</small>
             </span>
           </button>

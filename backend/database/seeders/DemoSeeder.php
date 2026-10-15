@@ -71,6 +71,11 @@ class DemoSeeder extends Seeder
             $account->update(['balance' => $targets[$i]]);
         }
 
+        // Heir setup (switch armed; access not active).
+        $owner->update(['heir_enabled' => true, 'heir_inactivity_days' => 60, 'heir_grace_days' => 14]);
+        $owner->heirs()->create(['name' => 'Omar', 'relation' => 'son', 'email' => 'heir@example.com', 'phone' => '01000000001']);
+        $owner->trustedContacts()->create(['name' => 'Hassan', 'email' => 'trusted@example.com', 'relation' => 'brother']);
+
         // Net-worth history for the trend chart: steady growth up to today's live value.
         $now = app(NetWorth::class)->snapshot($owner)->net_worth;
         for ($m = 6; $m >= 1; $m--) {
