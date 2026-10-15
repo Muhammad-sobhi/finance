@@ -1,0 +1,133 @@
+/* App-level additions on top of theme.css (which stays identical to design/theme.css). */
+
+svg { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.inp:focus-visible { outline: none; }
+.seg button:focus-visible, .btn:focus-visible, .icon-btn:focus-visible, .chip:focus-visible, .row-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.swatches button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.icon-btn .dot { pointer-events: none; }
+
+/* nav: "More" only exists on phones; logout lives at the bottom of the sidebar */
+.nav .mob { display: none; }
+.nav .bottom { margin-top: auto; }
+
+/* logo: the theme's ::first-letter trick breaks joined Arabic, so render a short form */
+.logo .short { display: none; }
+
+/* FAB: docked in the sidebar's free space on desktop/tablet so it never covers content */
+@media (min-width: 721px) {
+  .fab { inset-inline-end: auto; inset-inline-start: 82px; bottom: 76px; }
+}
+@media (min-width: 721px) and (max-width: 1100px) {
+  .logo { font-size: 24px; }
+  .logo .full { display: none; }
+  .logo .short { display: inline; }
+  .fab { inset-inline-start: 8px; width: 52px; height: 52px; bottom: 64px; }
+}
+
+/* modal: give the grid a definite row so max-height:100% constrains the dialog */
+.overlay { grid-template-rows: minmax(0, 1fr); grid-template-columns: minmax(0, 1fr); }
+.modal { justify-self: center; align-self: center; }
+.modal-h { gap: 10px; }
+.modal-h .seg { margin-inline-start: auto; }
+.modal-b .seg { align-self: flex-start; }
+
+/* lists */
+.list-head { flex-wrap: nowrap; min-width: 0; }
+.list-head .count { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.paged { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
+.list-body.measuring { visibility: hidden; }
+.pager .num { min-width: 64px; text-align: center; }
+.row-link { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+tr.off td, .card.off { opacity: 0.55; }
+button.card { font: inherit; color: inherit; text-align: start; cursor: pointer; width: 100%; }
+.ic .amt .num { font-size: inherit; }
+
+/* category badge */
+.cat-ic { width: 26px; height: 26px; border-radius: 50%; display: inline-grid; place-items: center; color: #fff; flex: none; }
+.cat-ic svg { width: 15px; height: 15px; stroke-width: 1.8; }
+.cat-name { display: inline-flex; align-items: center; gap: 8px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* transactions */
+.month-nav { display: flex; align-items: center; gap: 6px; flex: none; }
+.month-lbl { font-family: var(--font-display); font-weight: 700; font-size: 15px; min-width: 92px; text-align: center; white-space: nowrap; }
+.inline-filters { display: flex; gap: 8px; min-width: 0; }
+.inline-filters .inp { width: 170px; padding: 6px 8px; font-size: 13px; }
+.sumbar { display: flex; gap: 12px; align-items: baseline; font-size: 13px; flex: none; white-space: nowrap; overflow: hidden; }
+.sumbar b { font-weight: 700; }
+tr.day td { background: color-mix(in srgb, var(--accent) 6%, transparent); padding-block: 6px; font-size: 12px; font-weight: 600; cursor: default; }
+tr.day:hover { background: none; }
+.day-row { display: flex; justify-content: space-between; gap: 8px; }
+.tx-table td:nth-child(2) { max-width: 320px; }
+.tx-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 8px; }
+.day-h { grid-column: 1 / -1; display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; color: var(--muted); padding: 4px 2px 0; border-bottom: var(--row-line); }
+.card.tx { flex-direction: row; align-items: center; gap: 10px; padding: 9px 12px; }
+.tx-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.tx-t, .tx-m { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tx-t { font-weight: 600; font-size: 14px; }
+.tx-m { font-size: 12px; color: var(--muted); }
+.card.tx > .num { white-space: nowrap; font-weight: 700; }
+
+/* quick-add sheet */
+.quick { width: min(460px, 100%); }
+.quick-b { padding: 14px 18px; display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow: hidden; }
+.amount-row { display: flex; align-items: baseline; gap: 8px; }
+.amount-row .cur { color: var(--muted); font-size: 14px; flex: none; }
+.quick .amount { padding: 4px 0; }
+.quick .chips { height: 108px; align-content: flex-start; }
+.chip { display: inline-flex; align-items: center; gap: 6px; }
+.chip:focus-visible { outline-offset: 1px; }
+.chip-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.chip.on .chip-dot { box-shadow: 0 0 0 1.5px var(--accent-ink); }
+
+/* pickers */
+.icon-pick, .color-pick { display: flex; flex-wrap: wrap; gap: 6px; }
+.icon-pick button { all: unset; cursor: pointer; width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: var(--radius); }
+.icon-pick button svg { width: 18px; height: 18px; }
+.icon-pick button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.color-pick button { all: unset; cursor: pointer; width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--line); }
+.color-pick button.on { box-shadow: 0 0 0 2px var(--ink); }
+.color-pick input[type='color'] { width: 34px; height: 28px; border: 1px solid var(--line); background: none; padding: 0; border-radius: var(--radius); }
+
+/* dashboard */
+.cur-sm { font-size: 0.4em; font-weight: 400; }
+.kpi .v { line-height: 1.6; }
+[data-theme='ledger'] .kpi .v { line-height: normal; }
+.dots button { all: unset; cursor: pointer; width: 7px; height: 7px; border-radius: 50%; background: var(--line); }
+.dots button.on { background: var(--accent); width: 18px; border-radius: 4px; }
+.card .none { font-size: 14px; padding: 8px 0; }
+.chart .bar { transition: height 0.3s; }
+
+/* auth */
+.auth form.card { display: flex; flex-direction: column; }
+.auth-h { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.auth .btn { padding-block: 10px; }
+
+/* visibility helpers */
+.show-md { display: none; }
+@media (max-width: 1100px) {
+  .hide-md { display: none; }
+  .show-md { display: grid; }
+}
+@media (max-width: 720px) {
+  .nav .mob { display: flex; }
+  .nav a.x, .nav .bottom.x { display: none; }
+  .hide-sm { display: none; }
+  .ctrls { gap: 6px; }
+  .swatches { gap: 4px; }
+  .swatches button { width: 18px; height: 18px; }
+  .sheet .in button.on { background: var(--accent); color: var(--accent-ink); }
+  .sumbar { gap: 8px; font-size: 12px; }
+  .month-lbl { min-width: 80px; font-size: 14px; }
+  .tx-grid { grid-template-columns: 1fr; }
+  .list { gap: 8px; }
+  .paged { gap: 8px; }
+  .modal-b, .quick-b { padding: 12px 14px; }
+  .modal { align-self: end; justify-self: stretch; }
+  /* phone: FAB sits in the pager row (the pager is centered, its ends are free) */
+  .fab { width: 44px; height: 44px; bottom: calc(68px + env(safe-area-inset-bottom)); inset-inline-end: 14px; }
+  .fab svg { width: 22px; height: 22px; }
+  .pager { min-height: 44px; }
+  .dash > .panel { inset: 0 0 54px 0; }
+  .dots { bottom: 18px; }
+}

@@ -1,35 +1,40 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { Shell } from './components/Shell'
+import { useI18n } from './i18n'
+import { useSession } from './lib/session'
+import { Accounts } from './pages/Accounts'
+import { Categories } from './pages/Categories'
+import { Dashboard } from './pages/Dashboard'
+import { Login } from './pages/Login'
+import { Placeholder } from './pages/Placeholder'
+import { Transactions } from './pages/Transactions'
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const { user, booting } = useSession()
+  const { t } = useI18n()
+
+  if (booting) return <div className="empty">{t('loading')}</div>
+  if (!user) return <Login />
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <BrowserRouter>
+      <Routes>
+        <Route element={<Shell />}>
+          <Route index element={<Dashboard />} />
+          <Route path="accounts" element={<Accounts />} />
+          <Route path="transactions" element={<Transactions />} />
+          <Route path="categories" element={<Categories />} />
+          <Route path="debts" element={<Placeholder k="debts" />} />
+          <Route path="bills" element={<Placeholder k="bills" />} />
+          <Route path="subscriptions" element={<Placeholder k="subscriptions" />} />
+          <Route path="investments" element={<Placeholder k="investments" />} />
+          <Route path="assets" element={<Placeholder k="assets" />} />
+          <Route path="reports" element={<Placeholder k="reports" />} />
+          <Route path="heir" element={<Placeholder k="heir" />} />
+          <Route path="settings" element={<Placeholder k="settings" />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   )
 }
-
-export default App
