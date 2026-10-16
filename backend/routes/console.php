@@ -49,6 +49,17 @@ Artisan::command('finance:restore {file} {email}', function (BackupService $back
     $this->info("Restored into {$owner->email}.");
 })->purpose('Restore an encrypted backup into a new, empty owner account');
 
+Artisan::command('finance:admin {email} {--revoke}', function (string $email) {
+    $user = User::where('email', strtolower($email))->where('role', UserRole::Owner)->first();
+    if (! $user) {
+        $this->error('No owner with that email.');
+
+        return 1;
+    }
+    $user->forceFill(['is_admin' => ! $this->option('revoke')])->save();
+    $this->info($user->is_admin ? "{$user->email} can now invite users (Settings → Users)." : "{$user->email} is no longer an admin.");
+})->purpose('Let an owner invite new users by email (or --revoke)');
+
 Artisan::command('finance:auto-pay', function (RecurringService $service) {
     $this->info('Paid '.$service->runAutoPay().' due auto-pay item(s).');
 })->purpose('Pay bills/subscriptions flagged auto-pay that are due');

@@ -334,3 +334,11 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 @supports (-webkit-touch-callout: none) {
   input, select, textarea, .inp { font-size: max(16px, 1em) !important; }
 }
+
+/* admin: users & invitations */
+.member { gap: 12px; }
+.member-main { display: flex; flex-direction: column; min-width: 0; }
+.member-main b, .member-main small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.member-side { display: inline-flex; align-items: center; gap: 8px; flex: none; }
+.admin-note { flex: none; margin: 0; font-size: 12px; }
+@media (max-width: 720px) { .member-side small { display: none; } }

@@ -5,6 +5,7 @@ import { useI18n } from '../i18n'
 import { ApiError, fetchBlob, post, saveBlob } from '../lib/api'
 import { guessColumns, parseAmount, parseCsv, parseDate, type DateFormat } from '../lib/csv'
 import { isoDate } from '../lib/dates'
+import { useNavigate } from 'react-router-dom'
 import { useInstall } from '../lib/install'
 import { useSession } from '../lib/session'
 import type { Account } from '../lib/types'
@@ -17,6 +18,8 @@ export function DataTools({ className = '' }: { className?: string }) {
   const { readOnly, toast } = useSession()
   const [open, setOpen] = useState<'backup' | 'import' | null>(null)
   const { canInstall, iosHint, install } = useInstall()
+  const { user } = useSession()
+  const nav = useNavigate()
 
   const exportCsv = () => fetchBlob('/export/transactions')
     .then((b) => saveBlob(b, `transactions-${isoDate()}.csv`))
@@ -30,6 +33,7 @@ export function DataTools({ className = '' }: { className?: string }) {
         {!readOnly && <button type="button" className="btn ghost" onClick={() => setOpen('import')}>{t('importBank')}</button>}
         {!readOnly && <button type="button" className="btn ghost" onClick={() => setOpen('backup')}>{t('backupNow')}</button>}
         {canInstall && <button type="button" className="btn" onClick={install}>{t('installApp')}</button>}
+        {user?.is_admin && <button type="button" className="btn ghost" onClick={() => nav('/admin')}>{t('usersAdmin')}</button>}
       </div>
       <p className="muted hint">{iosHint ? t('iosInstall') : t('backupHint')}</p>
       {open === 'backup' && <BackupForm onClose={() => setOpen(null)} />}

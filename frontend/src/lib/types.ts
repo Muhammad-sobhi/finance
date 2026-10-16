@@ -13,6 +13,7 @@ export interface User {
   base_currency: string
   last_activity_at: string | null
   two_factor: boolean
+  is_admin?: boolean
 }
 
 export const ACCOUNT_TYPES = [

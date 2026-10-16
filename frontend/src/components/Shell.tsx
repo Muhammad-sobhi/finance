@@ -38,7 +38,9 @@ export function Shell() {
   const [sheet, setSheet] = useState(false)
   const [quick, setQuick] = useState(false)
   const [full, setFull] = useState(false)
-  const current = loc.pathname === '/notifications' ? { key: 'notifications' as Key } : NAV.find((n) => n.path === loc.pathname) ?? NAV[0]
+  const current = loc.pathname === '/notifications' ? { key: 'notifications' as Key }
+    : loc.pathname === '/admin' ? { key: 'usersAdmin' as Key }
+    : NAV.find((n) => n.path === loc.pathname) ?? NAV[0]
   const onMore = !NAV.find((n) => n.path === loc.pathname)?.phone
 
   const { canInstall, install } = useInstall()

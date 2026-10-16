@@ -102,6 +102,7 @@ All under `/api/v1`, JSON, `Authorization: Bearer <token>` unless marked public.
 | --- | --- | --- |
 | POST | `/auth/login` | public, rate-limited → `{token, user}` |
 | POST | `/auth/logout` · GET/PATCH `/auth/me` | PATCH saves `theme`, `locale`, `list_mode` |
+| GET/POST/DELETE | `/admin/users`, `/admin/invites`, `/admin/invites/{id}/resend`, `/admin/invites/{id}` | admin only (`finance:admin`): list owners, invite by email, resend / cancel pending |
 | POST | `/auth/forgot-password` · `/auth/reset-password` | **public**, rate-limited; same answer for any email; the reset signs out every device and emails a notice |
 | POST | `/auth/two-factor` | **public**, login step 2: `{challenge, code \| recovery_code}` → `{token, user}` |
 | PATCH/PUT/POST | `/auth/profile`, `/auth/password`, `/auth/logout-others` | name/email, password (signs out other devices), other devices |
@@ -175,7 +176,7 @@ No domain or paid email needed. Everything below sits next to your other project
    Use a **separate Gmail account for the app** (e.g. `dinar.app@gmail.com`), not your personal one: the sender's name and profile photo show in every recipient's inbox, and mail sent to yourself shows as "me". Set `MAIL_FROM_NAME="دينار"` and give that account the app icon as its photo. Emails are written in each user's language (Arabic ones right-to-left).
 
    Test it: `php artisan tinker --execute "Mail::raw('test', fn (\$m) => \$m->to('you@example.com')->subject('Dinar test'));"`. Later, with your own domain, only these lines change.
-5. **Testers** — each tester gets their own owner account: `php artisan finance:owner tester@example.com "Name"`. Their data is fully separate (every record is scoped to its owner).
+5. **Clients and testers** — make yourself the admin once: `php artisan finance:admin you@gmail.com`. Then *Settings → Your data → Users & invitations → Invite user*: they get an email (in their language) with a link valid for 7 days to choose their own password, and the account activates. You can resend or cancel pending invitations; the page shows names, emails and dates only — never anyone's financial data. (CLI alternative: `php artisan finance:owner tester@example.com "Name"`, then they use *Forgot password?*.) Every account's data is fully separate.
 
 Cost: nothing. When you buy a domain, point it at the server, add it to `server_name`, run certbot for it, and update `APP_URL` / `FRONTEND_URL`.
 

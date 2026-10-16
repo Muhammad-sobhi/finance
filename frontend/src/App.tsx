@@ -23,6 +23,7 @@ const pages = {
   Income: () => import('./pages/Income'),
   Planning: () => import('./pages/Planning'),
   Public: () => import('./pages/Public'),
+  Admin: () => import('./pages/Admin'),
 }
 const Accounts = lazy(() => pages.Accounts().then((m) => ({ default: m.Accounts })))
 const Assets = lazy(() => pages.Assets().then((m) => ({ default: m.Assets })))
@@ -36,6 +37,7 @@ const Notifications = lazy(() => pages.Notifications().then((m) => ({ default: m
 const HeirPage = lazy(() => pages.Heir().then((m) => ({ default: m.HeirPage })))
 const Income = lazy(() => pages.Income().then((m) => ({ default: m.Income })))
 const Planning = lazy(() => pages.Planning().then((m) => ({ default: m.Planning })))
+const Admin = lazy(() => pages.Admin().then((m) => ({ default: m.Admin })))
 const LinkPage = lazy(() => pages.Public().then((m) => ({ default: m.LinkPage })))
 const HeirRequestPage = lazy(() => pages.Public().then((m) => ({ default: m.HeirRequestPage })))
 const ForgotPasswordPage = lazy(() => pages.Public().then((m) => ({ default: m.ForgotPasswordPage })))
@@ -79,6 +81,7 @@ export default function App() {
           <Route path="reports" element={<Reports />} />
           <Route path="heir" element={<HeirPage />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="admin" element={<Admin />} />
           <Route path="notifications" element={<Notifications />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>}

@@ -32,6 +32,8 @@ class User extends Authenticatable implements HasLocalePreference
         'zakat_nisab', 'zakat_calendar', 'zakat_date', 'zakat_deduct_debts',
     ];
 
+    // is_admin / invited_at / invited_by are set explicitly (forceFill), never mass-assigned.
+
     protected $hidden = ['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'];
 
     protected $attributes = [
@@ -84,6 +86,8 @@ class User extends Authenticatable implements HasLocalePreference
             'two_factor_confirmed_at' => 'datetime',
             'zakat_date' => 'date:Y-m-d',
             'zakat_deduct_debts' => 'boolean',
+            'is_admin' => 'boolean',
+            'invited_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
         ];
@@ -99,6 +103,12 @@ class User extends Authenticatable implements HasLocalePreference
     public function preferredLocale(): string
     {
         return $this->locale ?: 'ar';
+    }
+
+    /** Invited but hasn't set a password yet. */
+    public function invitePending(): bool
+    {
+        return $this->invited_at !== null && $this->email_verified_at === null;
     }
 
     public function isOwner(): bool

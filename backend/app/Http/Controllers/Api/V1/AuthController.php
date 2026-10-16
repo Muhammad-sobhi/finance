@@ -70,14 +70,21 @@ class AuthController extends Controller
             'token' => ['required', 'string', 'max:200'],
             'email' => ['required', 'email', 'max:255'],
             'password' => ['required', 'confirmed', PasswordRule::min(10)],
+            'invite' => ['sometimes', 'boolean'],
         ]);
-        $status = Password::broker()->reset(
+        // Invitation links last a week, but only for accounts that were invited and never activated.
+        $target = User::where('email', strtolower($data['email']))->first();
+        $invite = $request->boolean('invite') && $target?->invitePending();
+        $status = Password::broker($invite ? 'invites' : 'users')->reset(
             ['email' => strtolower($data['email']), 'token' => $data['token'], 'password' => $data['password'], 'password_confirmation' => $request->input('password_confirmation')],
-            function (User $user, string $password) {
-                $user->forceFill(['password' => $password, 'remember_token' => null])->save();
+            function (User $user, string $password) use ($invite) {
+                // Choosing a password from an emailed link also proves the address (activates invites).
+                $user->forceFill(['password' => $password, 'remember_token' => null, 'email_verified_at' => $user->email_verified_at ?? now()])->save();
                 $user->tokens()->delete();
                 $this->twoFactor->forgetDevices($user);
-                $user->notify(new InfoAlert('password_reset', [], '/settings', always: true));
+                if (! $invite) {
+                    $user->notify(new InfoAlert('password_reset', [], '/settings', always: true));
+                }
             },
         );
         if ($status !== Password::PASSWORD_RESET) {

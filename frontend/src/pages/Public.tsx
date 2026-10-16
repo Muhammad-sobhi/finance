@@ -176,6 +176,7 @@ export function ResetPasswordPage() {
   const [params] = useSearchParams()
   const token = params.get('token') ?? ''
   const email = params.get('email') ?? ''
+  const invite = params.get('invite') === '1' // opened from an invitation email: first password = activation
   const [pw, setPw] = useState({ password: '', password_confirmation: '' })
   const [state, setState] = useState<'idle' | 'busy' | 'done'>('idle')
   const [err, setErr] = useState<string | null>(null)
@@ -185,7 +186,7 @@ export function ResetPasswordPage() {
     setState('busy')
     setErr(null)
     try {
-      await post('/auth/reset-password', { token, email, ...pw })
+      await post('/auth/reset-password', { token, email, invite, ...pw })
       setState('done')
     } catch (e) {
       setState('idle')
@@ -197,14 +198,15 @@ export function ResetPasswordPage() {
     return <AuthCard title={t('resetPassword')}><p role="alert">{t('resetLinkInvalid')}</p><Link to="/forgot-password" className="more">{t('sendResetLink')}</Link></AuthCard>
   }
   return (
-    <AuthCard title={t('resetPassword')}>
+    <AuthCard title={invite ? t('activateAccount') : t('resetPassword')}>
       {state === 'done' ? (
         <>
-          <p role="status">{t('resetDone')}</p>
+          <p role="status">{invite ? t('activatedDone') : t('resetDone')}</p>
           <Link to="/" className="btn">{t('login')}</Link>
         </>
       ) : (
         <form className="auth-form" onSubmit={submit}>
+          {invite && <p className="muted">{t('activateHint')}</p>}
           <p className="muted" dir="ltr">{email}</p>
           <div className="field">
             <label htmlFor="rp-password">{t('newPassword')}</label>

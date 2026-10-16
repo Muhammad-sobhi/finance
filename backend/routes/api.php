@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AccountController;
+use App\Http\Controllers\Api\V1\AdminController;
 use App\Http\Controllers\Api\V1\AssetController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BillController;
@@ -130,6 +131,11 @@ Route::prefix('v1')->group(function () {
         Route::patch('trusted-contacts/{contact}', [HeirController::class, 'updateContact'])->name('contacts.update');
         Route::delete('trusted-contacts/{contact}', [HeirController::class, 'destroyContact'])->name('contacts.destroy');
         Route::post('heir-requests/{heirRequest}/cancel', [HeirController::class, 'cancelRequest'])->name('heir-requests.cancel');
+
+        Route::get('admin/users', [AdminController::class, 'users'])->name('admin.users');
+        Route::post('admin/invites', [AdminController::class, 'invite'])->middleware('throttle:account-security')->name('admin.invite');
+        Route::post('admin/invites/{user}/resend', [AdminController::class, 'resend'])->middleware('throttle:account-security')->name('admin.resend');
+        Route::delete('admin/invites/{user}', [AdminController::class, 'cancel'])->name('admin.cancel');
 
         Route::get('settings', [SettingsController::class, 'show'])->name('settings.show');
         Route::patch('settings', [SettingsController::class, 'update'])->name('settings.update');
