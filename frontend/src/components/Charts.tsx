@@ -36,12 +36,30 @@ function niceTicks(lo: number, hi: number, count = 4): number[] {
   if (hi <= lo) hi = lo + 1
   const raw = (hi - lo) / count
   const mag = 10 ** Math.floor(Math.log10(raw))
-  const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= raw) ?? raw
+  // Money axes never need fractional steps (an empty chart shows 0 and 1, not 0.25, 0.5…).
+  const step = Math.max(1, [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= raw) ?? raw)
   const start = Math.floor(lo / step) * step
   const ticks: number[] = []
   for (let v = start; v <= hi + step * 0.001; v += step) ticks.push(Number(v.toFixed(6)))
   if (ticks[ticks.length - 1] < hi) ticks.push(ticks[ticks.length - 1] + step)
   return ticks
+}
+
+/**
+ * Which x labels to draw so none overlap: every k-th one, counted back from the
+ * latest (the most important), where k comes from the widest label vs the slot width.
+ */
+function labelEvery(labels: string[], slot: number): (i: number) => boolean {
+  const widest = Math.max(1, ...labels.map((l) => l.length)) * 6.5 + 10 // ~11px text + gap
+  const k = Math.max(1, Math.ceil(widest / Math.max(1, slot)))
+  const last = labels.length - 1
+  return (i) => (last - i) % k === 0
+}
+
+/** Keep an x label (centered at x) fully inside a chart `w` wide. */
+const clampLabel = (x: number, label: string, w: number) => {
+  const half = (label.length * 6.5) / 2 + 2
+  return Math.min(Math.max(x, half), w - half)
 }
 
 function useCompact() {
@@ -111,7 +129,7 @@ export function BarChart({ points, series, stacked = false, format, labelLast = 
   const groupN = stacked ? 1 : series.length
   const barW = Math.max(3, Math.min(BAR_MAX, (slot * 0.62 - (groupN - 1) * 2) / groupN))
   const groupW = groupN * barW + (groupN - 1) * 2
-  const showEvery = slot < 30 ? 2 : 1
+  const showLabel = labelEvery(points.map((p) => p.label), slot)
 
   return (
     <div className="viz">
@@ -145,7 +163,7 @@ export function BarChart({ points, series, stacked = false, format, labelLast = 
                   const x = cx - groupW / 2 + order * (barW + 2)
                   return <path key={s.key} d={barPath(x, yOf(v), barW, PAD_TOP + plotH - yOf(v))} fill={`var(--c${s.color})`} />
                 })}
-                {(i % showEvery === 0 || i === points.length - 1) && <text x={cx} y={h - 6} textAnchor="middle" className="viz-x">{p.label}</text>}
+                {showLabel(i) && <text x={clampLabel(cx, p.label, w)} y={h - 6} textAnchor="middle" className="viz-x">{p.label}</text>}
                 {labelLast && i === points.length - 1 && totals[i] > 0 && (
                   <text x={cx} y={Math.max(14, yOf(totals[i]) - 5)} textAnchor="middle" className="viz-val">{compact(totals[i])}</text>
                 )}
@@ -198,7 +216,7 @@ export function LineChart({ points, format, ariaLabel }: LineProps) {
   const line = points.map((p, i) => `${i ? 'L' : 'M'}${xOf(i)},${yOf(p.value)}`).join('')
   const area = n > 1 ? `${line}L${xOf(n - 1)},${PAD_TOP + plotH}L${xOf(0)},${PAD_TOP + plotH}Z` : ''
   const last = n - 1
-  const showEvery = plotW / Math.max(1, n) < 34 ? 2 : 1
+  const showLabel = labelEvery(points.map((p) => p.label), plotW / Math.max(1, n))
 
   const onMove = (e: React.MouseEvent<SVGRectElement>) => {
     const box = (e.currentTarget.ownerSVGElement as SVGSVGElement).getBoundingClientRect()
@@ -221,8 +239,8 @@ export function LineChart({ points, format, ariaLabel }: LineProps) {
           ))}
           {area && <path d={area} fill="var(--c1)" opacity={0.1} />}
           <path d={line} fill="none" stroke="var(--c1)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
-          {points.map((p, i) => (i % showEvery === 0 || i === last) && (
-            <text key={p.label + i} x={xOf(i)} y={h - 6} textAnchor="middle" className="viz-x">{p.label}</text>
+          {points.map((p, i) => showLabel(i) && (
+            <text key={p.label + i} x={clampLabel(xOf(i), p.label, w)} y={h - 6} textAnchor="middle" className="viz-x">{p.label}</text>
           ))}
           {hover !== null && <line x1={xOf(hover)} x2={xOf(hover)} y1={PAD_TOP} y2={PAD_TOP + plotH} className="viz-cross" />}
           {[...(hover !== null && hover !== last ? [hover] : []), last].map((i) => (
