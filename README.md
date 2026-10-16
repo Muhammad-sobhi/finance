@@ -172,6 +172,8 @@ No domain or paid email needed. Everything below sits next to your other project
    MAIL_FROM_NAME="Treasury"
    ```
 
+   Use a **separate Gmail account for the app** (e.g. `khazinty.app@gmail.com`), not your personal one: the sender's name and profile photo show in every recipient's inbox, and mail sent to yourself shows as "me". Set `MAIL_FROM_NAME="خزينتي"` and give that account the app icon as its photo. Emails are written in each user's language (Arabic ones right-to-left).
+
    Test it: `php artisan tinker --execute "Mail::raw('test', fn (\$m) => \$m->to('you@example.com')->subject('Treasury test'));"`. Later, with your own domain, only these lines change.
 5. **Testers** — each tester gets their own owner account: `php artisan finance:owner tester@example.com "Name"`. Their data is fully separate (every record is scoped to its owner).
 

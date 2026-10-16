@@ -59,4 +59,21 @@ class PasswordResetTest extends TestCase
         }
         $this->postJson('/api/v1/auth/forgot-password', ['email' => 'me@example.com'])->assertStatus(429);
     }
+
+    public function test_emails_are_in_the_users_language_and_right_to_left(): void
+    {
+        config(['mail.default' => 'array']);
+        $ar = User::factory()->create(['locale' => 'ar']);
+        $ar->notifyNow(new ResetPasswordMail('tok'));
+        $en = User::factory()->create(['locale' => 'en']);
+        $en->notifyNow(new ResetPasswordMail('tok'));
+
+        [$mAr, $mEn] = app('mailer')->getSymfonyTransport()->messages()->map(fn ($m) => $m->getOriginalMessage()->getHtmlBody())->all();
+        foreach (['مرحبًا', 'مع التحية', 'انسخ الرابط', 'direction: rtl', 'اختر كلمة مرور جديدة', 'جميع الحقوق محفوظة'] as $text) {
+            $this->assertStringContainsString($text, $mAr);
+        }
+        $this->assertStringContainsString('Hello!', $mEn);
+        $this->assertStringNotContainsString('direction: rtl', $mEn);
+        $this->assertSame('en', app()->getLocale()); // the app locale is restored after sending
+    }
 }

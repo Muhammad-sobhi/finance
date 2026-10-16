@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Notifications\ResetPasswordMail;
 use App\Services\DefaultCategories;
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -14,7 +15,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use NotificationChannels\WebPush\HasPushSubscriptions;
 
-class User extends Authenticatable
+class User extends Authenticatable implements HasLocalePreference
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, HasPushSubscriptions, Notifiable;
@@ -92,6 +93,12 @@ class User extends Authenticatable
     public function sendPasswordResetNotification($token): void
     {
         $this->notify(new ResetPasswordMail($token));
+    }
+
+    /** Emails are written in the user's own language (Arabic by default). */
+    public function preferredLocale(): string
+    {
+        return $this->locale ?: 'ar';
     }
 
     public function isOwner(): bool
