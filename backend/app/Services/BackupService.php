@@ -18,7 +18,10 @@ use RuntimeException;
  */
 class BackupService
 {
-    public const FORMAT = 'treasury-backup';
+    public const FORMAT = 'dinar-backup';
+
+    /** Files made before the app was renamed. */
+    private const OLD_FORMATS = ['treasury-backup'];
 
     public const ITERATIONS = 210000;
 
@@ -108,7 +111,7 @@ class BackupService
     public function open(string $file, string $passphrase): array
     {
         $box = json_decode($file, true);
-        if (! is_array($box) || ($box['format'] ?? null) !== self::FORMAT) {
+        if (! is_array($box) || ! in_array($box['format'] ?? null, [self::FORMAT, ...self::OLD_FORMATS], true)) {
             throw new RuntimeException('Not a backup file.');
         }
         $key = hash_pbkdf2('sha256', $passphrase, base64_decode($box['salt']), (int) $box['iterations'], 32, true);

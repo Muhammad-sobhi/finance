@@ -47,7 +47,7 @@ function BackupForm({ onClose }: { onClose: () => void }) {
     if (form.f.passphrase !== form.f.passphrase2) { setErrors({ passphrase2: t('passMismatch') }); return }
     try {
       const blob = await fetchBlob('/backup', { method: 'POST', body: { current_password: form.f.current_password, passphrase: form.f.passphrase } })
-      saveBlob(blob, `treasury-backup-${isoDate()}.json`)
+      saveBlob(blob, `dinar-backup-${isoDate()}.json`)
       toast(t('backupSaved'))
       onClose()
     } catch (err) {

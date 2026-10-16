@@ -3,7 +3,7 @@ import { createContext, useContext } from 'react'
 export type Lang = 'ar' | 'en'
 
 const ar = {
-  app: 'خزينتي',
+  app: 'دينار',
   // nav
   home: 'الرئيسية', accounts: 'الحسابات', transactions: 'المصروفات اليومية', debts: 'الديون', bills: 'الفواتير',
   subscriptions: 'الاشتراكات', investments: 'الاستثمارات', assets: 'الممتلكات', reports: 'التقارير', people: 'الأشخاص',
@@ -160,7 +160,7 @@ const ar = {
 }
 
 const en: typeof ar = {
-  app: 'Treasury',
+  app: 'Dinar',
   home: 'Home', accounts: 'Accounts', transactions: 'Daily expenses', debts: 'Debts', bills: 'Bills',
   subscriptions: 'Subscriptions', investments: 'Investments', assets: 'Assets', reports: 'Reports', people: 'People',
   heir: 'Heir & security', settings: 'Settings', notifications: 'Alerts', more: 'More', logout: 'Log out', categories: 'Categories',

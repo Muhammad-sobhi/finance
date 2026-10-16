@@ -26,5 +26,5 @@ return [
         'overdue' => ':days days late',
     ],
     'body' => ':subject — :amount :currency, :when',
-    'open' => 'Open Treasury',
+    'open' => 'Open Dinar',
 ];

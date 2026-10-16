@@ -26,5 +26,5 @@ return [
         'overdue' => 'متأخر :days يوم',
     ],
     'body' => ':subject — :amount :currency، :when',
-    'open' => 'افتح خزينتي',
+    'open' => 'افتح دينار',
 ];

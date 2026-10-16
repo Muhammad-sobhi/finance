@@ -98,8 +98,8 @@ function CodesView({ codes, onClose }: { codes: string[]; onClose: () => void })
   const txt = codes.join('\n')
   const download = () => {
     const a = document.createElement('a')
-    a.href = URL.createObjectURL(new Blob([`Treasury recovery codes\n\n${txt}\n`], { type: 'text/plain' }))
-    a.download = 'treasury-recovery-codes.txt'
+    a.href = URL.createObjectURL(new Blob([`Dinar recovery codes\n\n${txt}\n`], { type: 'text/plain' }))
+    a.download = 'dinar-recovery-codes.txt'
     a.click()
     URL.revokeObjectURL(a.href)
   }

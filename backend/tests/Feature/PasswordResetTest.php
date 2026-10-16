@@ -30,7 +30,7 @@ class PasswordResetTest extends TestCase
             $mail = $n->toMail($u);
 
             return str_contains($mail->actionUrl, '/reset-password?token=') && str_contains($mail->actionUrl, 'email=me%40example.com')
-                && $mail->subject === 'تغيير كلمة مرور خزينتي';
+                && $mail->subject === 'تغيير كلمة مرور دينار';
         });
 
         $this->postJson('/api/v1/auth/reset-password', ['token' => 'wrong', 'email' => 'me@example.com', 'password' => 'new-password-1', 'password_confirmation' => 'new-password-1'])

@@ -1,4 +1,4 @@
-# Treasury · خزينتي
+# Dinar · دينار
 
 Personal finance app for one owner and their heirs — Laravel 12 API (`backend/`) + React/TypeScript SPA (`frontend/`).
 Arabic-first (RTL) with English, four themes, and a strict no-scroll layout. See `CLAUDE.md` for the brief and `design/` for the visual source of truth.
@@ -169,12 +169,12 @@ No domain or paid email needed. Everything below sits next to your other project
    MAIL_USERNAME=yourname@gmail.com
    MAIL_PASSWORD=<16-char app password>
    MAIL_FROM_ADDRESS=yourname@gmail.com
-   MAIL_FROM_NAME="Treasury"
+   MAIL_FROM_NAME="دينار"
    ```
 
-   Use a **separate Gmail account for the app** (e.g. `khazinty.app@gmail.com`), not your personal one: the sender's name and profile photo show in every recipient's inbox, and mail sent to yourself shows as "me". Set `MAIL_FROM_NAME="خزينتي"` and give that account the app icon as its photo. Emails are written in each user's language (Arabic ones right-to-left).
+   Use a **separate Gmail account for the app** (e.g. `dinar.app@gmail.com`), not your personal one: the sender's name and profile photo show in every recipient's inbox, and mail sent to yourself shows as "me". Set `MAIL_FROM_NAME="دينار"` and give that account the app icon as its photo. Emails are written in each user's language (Arabic ones right-to-left).
 
-   Test it: `php artisan tinker --execute "Mail::raw('test', fn (\$m) => \$m->to('you@example.com')->subject('Treasury test'));"`. Later, with your own domain, only these lines change.
+   Test it: `php artisan tinker --execute "Mail::raw('test', fn (\$m) => \$m->to('you@example.com')->subject('Dinar test'));"`. Later, with your own domain, only these lines change.
 5. **Testers** — each tester gets their own owner account: `php artisan finance:owner tester@example.com "Name"`. Their data is fully separate (every record is scoped to its owner).
 
 Cost: nothing. When you buy a domain, point it at the server, add it to `server_name`, run certbot for it, and update `APP_URL` / `FRONTEND_URL`.
@@ -229,7 +229,7 @@ MAIL_PORT=465
 MAIL_USERNAME=alerts@example.com
 MAIL_PASSWORD=<mail-password>
 MAIL_FROM_ADDRESS=alerts@example.com
-MAIL_FROM_NAME="Treasury"
+MAIL_FROM_NAME="دينار"
 VAPID_SUBJECT=mailto:you@example.com           # VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY set by webpush:vapid
 ```
 

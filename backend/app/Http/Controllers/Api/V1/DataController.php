@@ -61,7 +61,7 @@ class DataController extends Controller
         ]);
 
         return response()->streamDownload(fn () => print ($backups->seal($user, $request->input('passphrase'))),
-            'treasury-backup-'.now()->format('Y-m-d').'.json', ['Content-Type' => 'application/json']);
+            'dinar-backup-'.now()->format('Y-m-d').'.json', ['Content-Type' => 'application/json']);
     }
 
     /**

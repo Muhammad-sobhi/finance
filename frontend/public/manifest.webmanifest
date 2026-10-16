@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "خزينتي — Treasury",
-  "short_name": "خزينتي",
+  "name": "دينار — Dinar",
+  "short_name": "دينار",
   "description": "مصروفاتك وحساباتك وديونك في مكان واحد — Your money in one place",
   "start_url": "/",
   "scope": "/",
