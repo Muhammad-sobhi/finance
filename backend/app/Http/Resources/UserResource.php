@@ -20,6 +20,7 @@ class UserResource extends JsonResource
             'locale' => $this->locale,
             'theme' => $this->theme,
             'list_mode' => $this->list_mode,
+            'phone_nav' => $this->phone_nav ?: User::PHONE_NAV_DEFAULT,
             'base_currency' => $this->dataOwner()->base_currency,
             'last_activity_at' => $this->last_activity_at?->toIso8601String(),
             'two_factor' => $this->two_factor_confirmed_at !== null,

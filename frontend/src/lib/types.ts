@@ -14,6 +14,7 @@ export interface User {
   last_activity_at: string | null
   two_factor: boolean
   is_admin?: boolean
+  phone_nav?: string[]
 }
 
 export const ACCOUNT_TYPES = [

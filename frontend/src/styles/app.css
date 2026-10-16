@@ -342,3 +342,21 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 .member-side { display: inline-flex; align-items: center; gap: 8px; flex: none; }
 .admin-note { flex: none; margin: 0; font-size: 12px; }
 @media (max-width: 720px) { .member-side small { display: none; } }
+
+/* header: one theme button (opens the four) and one language button */
+.theme-pick { position: relative; }
+.swatch-btn i { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--line); display: block; }
+.pop-shield { position: fixed; inset: 0; z-index: 40; }
+.theme-pop { position: fixed; z-index: 41; width: 156px; box-sizing: border-box; justify-content: space-between; display: flex; gap: 8px; padding: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18); }
+.theme-pop button { width: 26px; height: 26px; }
+.lang-btn { font: 600 15px/1 var(--font-body); color: var(--ink); }
+
+/* phone bottom bar: the user's four pages in their order, then More */
+@media (max-width: 720px) {
+  .nav > a { order: var(--po, 50); }
+  .nav > .mob { order: 98; }
+  .nav > .bottom { order: 99; }
+}
+
+/* iPhone notch / status bar and rounded corners (installed app and landscape) */
+.app, .auth { box-sizing: border-box; padding-top: env(safe-area-inset-top); padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }

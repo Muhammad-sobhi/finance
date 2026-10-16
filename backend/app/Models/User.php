@@ -24,9 +24,15 @@ class User extends Authenticatable implements HasLocalePreference
 
     public const LOCALES = ['ar', 'en'];
 
+    /** Pages that can sit on the phone's bottom bar (the "More" button is always there). */
+    public const PHONE_NAV = ['/', '/accounts', '/transactions', '/bills', '/income', '/categories', '/planning', '/debts',
+        '/subscriptions', '/investments', '/assets', '/reports', '/heir', '/settings'];
+
+    public const PHONE_NAV_DEFAULT = ['/', '/accounts', '/transactions', '/bills'];
+
     protected $fillable = [
         'name', 'email', 'password', 'role', 'owner_id',
-        'locale', 'theme', 'list_mode', 'base_currency', 'last_activity_at',
+        'locale', 'theme', 'list_mode', 'phone_nav', 'base_currency', 'last_activity_at',
         'gold_price_24k', 'silver_price', 'alert_days', 'email_alerts', 'auto_fetch_rates', 'auto_metal_prices',
         'heir_enabled', 'heir_inactivity_days', 'heir_grace_days',
         'zakat_nisab', 'zakat_calendar', 'zakat_date', 'zakat_deduct_debts',
@@ -87,6 +93,7 @@ class User extends Authenticatable implements HasLocalePreference
             'zakat_date' => 'date:Y-m-d',
             'zakat_deduct_debts' => 'boolean',
             'is_admin' => 'boolean',
+            'phone_nav' => 'array',
             'invited_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,

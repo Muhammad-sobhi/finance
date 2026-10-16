@@ -50,6 +50,8 @@ const DIALOGS = [
   ['/planning', ['.planning > .list-head .seg button:nth-child(3)', '.z-parts h3 .more'], 'zakat-history'],
   ['/settings', ['.show-sm .seg button:nth-child(3)'], 'settings-data'],
   ['/admin', ['.list-head .btn'], 'invite-form'],
+  ['/', ['.swatch-btn'], 'theme-pop'],
+  ['/', ['.nav .mob', '.sheet button:has(svg) >> text=/تخصيص|Customize/'], 'bar-picker'],
   ['/settings', ['.show-sm .seg button:nth-child(3)', '.data-acts .btn:nth-child(3)'], 'backup-form'],
   ['/settings', ['.show-sm .seg button:nth-child(3)', '.data-acts .btn:nth-child(2)'], 'import-form'],
   ['/transactions', ['.list-body .row-link, .list-body .card.tx'], 'transaction-edit-form'],
