@@ -1,5 +1,4 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import QRCode from 'qrcode'
 import { useApi } from '../hooks/useApi'
 import { useForm } from '../hooks/useForm'
 import { useI18n } from '../i18n'
@@ -58,7 +57,8 @@ function ScanStep({ setup, onClose, onDone }: { setup: { secret: string; otpauth
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   // QR is drawn locally from our own otpauth URL; nothing is sent to a third party.
-  useEffect(() => { QRCode.toString(setup.otpauth_url, { type: 'svg', margin: 1, width: 168 }).then(setSvg) }, [setup.otpauth_url])
+  // The QR library is only needed here, so it loads on demand.
+  useEffect(() => { import('qrcode').then((q) => q.default.toString(setup.otpauth_url, { type: 'svg', margin: 1, width: 168 })).then(setSvg) }, [setup.otpauth_url])
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()

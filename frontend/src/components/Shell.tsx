@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useI18n, type Key } from '../i18n'
 import { useInstall } from '../lib/install'
@@ -93,7 +93,10 @@ export function Shell() {
           </div>
         </header>
         <section className="view">
-          <Outlet />
+          {/* Pages load on first visit; the shell stays put meanwhile. */}
+          <Suspense fallback={<div className="empty">{t('loading')}</div>}>
+            <Outlet />
+          </Suspense>
         </section>
       </main>
 

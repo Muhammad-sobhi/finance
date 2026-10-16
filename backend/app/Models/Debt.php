@@ -47,7 +47,10 @@ class Debt extends Model
 
     public function paid(): float
     {
-        return round((float) ($this->payments_sum_amount ?? $this->payments()->sum('amount')), 2);
+        // withSum() leaves NULL when there are no payments; only query when the sum wasn't loaded at all.
+        $sum = array_key_exists('payments_sum_amount', $this->attributes) ? $this->payments_sum_amount : $this->payments()->sum('amount');
+
+        return round((float) $sum, 2);
     }
 
     public function remaining(): float

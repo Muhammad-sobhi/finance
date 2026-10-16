@@ -38,12 +38,15 @@ class ReportService
 
     private User $owner;
 
+    private ?array $live = null;
+
     public function __construct(private readonly NetWorth $netWorth) {}
 
     public function build(User $user, string $period, string $value, ?CarbonImmutable $today = null): array
     {
         $today ??= CarbonImmutable::today();
         $this->owner = $user->dataOwner();
+        $this->live = null;
         $this->fx = CurrencyConverter::for($this->owner);
 
         [$start, $end] = $this->range($period, $value);
@@ -155,7 +158,7 @@ class ReportService
     private function netWorthAt(CarbonImmutable $date, CarbonImmutable $today): ?float
     {
         if ($date->format('Y-m') === $today->format('Y-m')) {
-            return $this->netWorth->compute($this->owner)['net_worth'];
+            return $this->liveNetWorth()['net_worth'];
         }
         if ($date->gt($today)) {
             return null;
@@ -174,11 +177,17 @@ class ReportService
         // Make the current month live even before tonight's snapshot.
         if ($end->gte($today->startOfMonth())) {
             $points = $points->reject(fn ($p) => $p['month'] === $today->format('Y-m'))
-                ->push(['month' => $today->format('Y-m'), 'net_worth' => $this->netWorth->compute($this->owner)['net_worth']])
+                ->push(['month' => $today->format('Y-m'), 'net_worth' => $this->liveNetWorth()['net_worth']])
                 ->take(-12)->values();
         }
 
         return $points->all();
+    }
+
+    /** Today's net worth, computed once per report (it reads every account, debt, asset…). */
+    private function liveNetWorth(): array
+    {
+        return $this->live ??= $this->netWorth->compute($this->owner);
     }
 
     private function pct(float $now, float $before): ?float
@@ -238,7 +247,7 @@ class ReportService
             $add('subscriptions_high', 'info', ['pct' => round($subs / $monthlyIncome * 100)]);
         }
 
-        $nw = $this->netWorth->compute($this->owner);
+        $nw = $this->liveNetWorth();
         $avgSpend = $this->totals($today->startOfMonth()->subMonthsNoOverflow(3), $today->startOfMonth()->subDay())['expense'] / 3;
         if ($avgSpend > 0 && $nw['liquid'] > $avgSpend * self::IDLE_CASH_MONTHS) {
             $add('idle_cash', 'info', ['months' => (int) floor($nw['liquid'] / $avgSpend)]);
