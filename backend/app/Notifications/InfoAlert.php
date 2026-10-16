@@ -58,7 +58,7 @@ class InfoAlert extends Notification implements ShouldQueue
         return (new WebPushMessage)
             ->title($this->line('title', $user->locale))
             ->body($this->line('body', $user->locale))
-            ->icon('/icon.svg')
+            ->icon('/icon-192.png')
             ->tag("{$this->kind}-".md5(json_encode($this->params)))
             ->data(['url' => $this->path]);
     }
