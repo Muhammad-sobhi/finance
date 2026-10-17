@@ -22,4 +22,16 @@ return [
         'title' => 'تجاوزت الميزانية: :category',
         'body' => 'صرفت :spent :currency على :category هذا الشهر — بزيادة :over عن ميزانية :limit.',
     ],
+    'gameya_invite' => [
+        'title' => 'دعوة لجمعية: :gameya',
+        'body' => ':manager أضافك إلى جمعية «:gameya». افتح الجمعيات في دينار لقبول الدعوة ومتابعة دورك ودفعاتك.',
+    ],
+    'gameya_reminder' => [
+        'title' => 'تذكير بقسط الجمعية: :gameya',
+        'body' => 'قسط الدورة :round في جمعية «:gameya» (:amount :currency) موعده :date ولم يُسجَّل بعد.',
+    ],
+    'gameya_claim' => [
+        'title' => 'عضو سجّل دفعة: :gameya',
+        'body' => ':member قال إنه دفع قسط الدورة :round في جمعية «:gameya». راجعها وأكّدها.',
+    ],
 ];

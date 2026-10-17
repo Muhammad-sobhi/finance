@@ -333,12 +333,49 @@ export interface InstallmentPlan {
   payments?: { id: number; number: number; amount: number; date: string; account_id: number | null }[]
 }
 
+export interface GameyaSlot {
+  id: number
+  turn: number
+  is_me: boolean
+  name: string | null
+  phone: string | null
+  email: string | null
+  notes: string | null
+  link: 'none' | 'invited' | 'linked'
+  payout_date: string | null
+  payout_amount: number | null
+  turn_date: string
+  payments: { id: number | null; round: number; date: string; amount: number; confirmed: boolean }[]
+}
+
+export interface SharedGameya {
+  gameya: string
+  manager: string
+  amount: number
+  currency: string
+  cycle: string
+  members: number
+  start_date: string
+  end_date: string
+  turns: { member_id: number; turn: number; payout: number; payout_date: string; received: boolean; received_date: string | null }[]
+  paid: { turn: number; round: number; date: string; amount: number; confirmed: boolean }[]
+  paid_count: number
+  rounds_total: number
+  next: { member_id: number; round: number; date: string; days: number } | null
+}
+
+export interface SharedGameyas {
+  invites: { id: number; gameya: string; manager: string; turn: number; amount: number; currency: string }[]
+  data: SharedGameya[]
+}
+
 export interface Gameya {
   id: number
   name: string
   organizer: string | null
+  role: 'member' | 'manager'
   members: number
-  my_turn: number
+  my_turn: number | null
   amount: number
   currency: string
   start_date: string
@@ -353,9 +390,17 @@ export interface Gameya {
   next_round: number | null
   next_date: string | null
   days: number | null
-  payout_date: string
+  payout_date: string | null
   payout_days: number | null
   end_date: string
   done: boolean
   payments?: { id: number; kind: 'contribution' | 'payout'; round: number; amount: number; date: string; account_id: number | null }[]
+  // When I manage it:
+  current_round?: number
+  current_date?: string
+  paid_this_round?: number
+  claims?: number
+  linked?: number
+  round_dates?: string[]
+  slots?: GameyaSlot[]
 }

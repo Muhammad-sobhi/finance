@@ -19,6 +19,8 @@ return [
         'gameya' => ':name gameya payment',
         'gameya_payout' => 'Your :name gameya turn',
         'vault' => 'A vault item needs renewal',
+        'gameya_shared' => ':name gameya payment',
+        'gameya_shared_payout' => 'Your turn in :name',
         'maturity' => ':name matures',
     ],
     'when' => [

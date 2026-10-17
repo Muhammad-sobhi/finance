@@ -6,6 +6,7 @@ use App\Enums\AccountType;
 use App\Enums\DebtStatus;
 use App\Enums\UserRole;
 use App\Models\Bill;
+use App\Models\GameyaMember;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Models\VaultItem;
@@ -102,7 +103,7 @@ class AlertScanner
             ->each(fn ($p) => $out->push(new DueItem(
                 $owner->id, 'installment', $p->id, $p->name, $p->nextDue(), (float) $p->installment_amount, $p->currency, $p->remind_days, '/debts',
             )));
-        $owner->gameyas()->with('payments')->get()->each(function ($g) use ($out, $owner) {
+        $owner->gameyas()->with('payments')->get()->filter->hasMyTurn()->each(function ($g) use ($out, $owner) {
             if ($round = $g->nextRound()) {
                 $out->push(new DueItem($owner->id, 'gameya', $g->id, $g->name, $g->roundDate($round), (float) $g->amount, $g->currency, $g->remind_days, '/debts'));
             }
@@ -110,6 +111,20 @@ class AlertScanner
                 $out->push(new DueItem($owner->id, 'gameya_payout', $g->id, $g->name, $g->roundDate($g->my_turn), $g->payout(), $g->currency, $g->remind_days, '/debts'));
             }
         });
+
+        // Gameyas someone else runs, where this owner holds a turn: their next unpaid round and their payout.
+        GameyaMember::where('linked_user_id', $owner->id)->whereNotNull('accepted_at')->with(['gameya', 'payments'])->get()
+            ->each(function (GameyaMember $m) use ($out, $owner) {
+                $g = $m->gameya;
+                $paid = $m->paidRounds();
+                $round = collect(range(1, $g->members))->first(fn ($r) => ! in_array($r, $paid, true));
+                if ($round) {
+                    $out->push(new DueItem($owner->id, 'gameya_shared', $m->id, $g->name, $g->roundDate($round), (float) $g->amount, $g->currency, $g->remind_days, '/debts'));
+                }
+                if ($m->payout_date === null) {
+                    $out->push(new DueItem($owner->id, 'gameya_shared_payout', $m->id, $g->name, $g->roundDate($m->turn), $g->payout(), $g->currency, $g->remind_days, '/debts'));
+                }
+            });
 
         // Vault renewals (insurance, ID, passport…): the item itself is sealed, so the alert is generic.
         VaultItem::where('user_id', $owner->id)->whereNotNull('remind_on')->get()

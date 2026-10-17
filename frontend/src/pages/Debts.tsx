@@ -22,7 +22,8 @@ type Tab = 'debts' | 'installments' | 'gameyas'
 /** Debts hub: personal debts, installment plans (taqseet) and gameyas. */
 export function Debts() {
   const { t } = useI18n()
-  const [tab, setTab] = useState<Tab>('debts')
+  // Notifications about gameyas link to /debts?tab=gameyas.
+  const [tab, setTab] = useState<Tab>(() => (new URLSearchParams(window.location.search).get('tab') === 'gameyas' ? 'gameyas' : 'debts'))
   return (
     <div className="list debts-page">
       <div className="list-head">

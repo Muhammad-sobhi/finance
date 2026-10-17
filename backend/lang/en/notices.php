@@ -22,4 +22,16 @@ return [
         'title' => 'Over budget: :category',
         'body' => 'You have spent :spent :currency on :category this month — :over over your :limit budget.',
     ],
+    'gameya_invite' => [
+        'title' => 'Gameya invitation: :gameya',
+        'body' => ':manager added you to the gameya “:gameya”. Open Gameyas in Dinar to accept and follow your turn and payments.',
+    ],
+    'gameya_reminder' => [
+        'title' => 'Gameya payment reminder: :gameya',
+        'body' => 'Round :round of “:gameya” (:amount :currency) is due on :date and isn\'t recorded yet.',
+    ],
+    'gameya_claim' => [
+        'title' => 'A member recorded a payment: :gameya',
+        'body' => ':member says they paid round :round of “:gameya”. Check it and confirm.',
+    ],
 ];

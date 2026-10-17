@@ -19,6 +19,8 @@ return [
         'gameya' => 'دفعة جمعية :name',
         'gameya_payout' => 'دورك في جمعية :name',
         'vault' => 'تجديد عنصر في الخزنة',
+        'gameya_shared' => 'دفعة جمعية :name',
+        'gameya_shared_payout' => 'دورك في جمعية :name',
         'maturity' => 'استحقاق :name',
     ],
     'when' => [

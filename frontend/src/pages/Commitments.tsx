@@ -13,7 +13,8 @@ import { ApiError, del, patch, post } from '../lib/api'
 import { isoDate } from '../lib/dates'
 import { catName } from '../lib/labels'
 import { useSession } from '../lib/session'
-import type { Account, Category, Gameya, InstallmentPlan, Listed } from '../lib/types'
+import type { Account, Category, Gameya, InstallmentPlan, Listed, SharedGameyas } from '../lib/types'
+import { ManagedSlots, SharedList } from './GameyaManaged'
 
 const active = (accounts: Account[], keep?: number | null) => accounts.filter((a) => a.is_active || a.id === keep)
 
@@ -210,37 +211,62 @@ export function Gameyas() {
   const { t, num: n, date: fmtDate } = useI18n()
   const { readOnly } = useSession()
   const { data } = useApi<Listed<Gameya, { base_currency: string; position: number }>>('/gameyas')
+  const shared = useApi<SharedGameyas>('/shared-gameyas')
   const accounts = useApi<Account[]>('/accounts')
+  const act = useAction()
   const rows = useMemo(() => data?.data ?? [], [data])
   const [edit, setEdit] = useState<Gameya | null | undefined>(undefined)
   const [view, setView] = useState<number | null>(null)
+  const [scope, setScope] = useState<'mine' | 'shared'>('mine')
   const pos = data?.meta.position ?? 0
+  const invites = shared.data?.invites.length ?? 0
+  const sharedCount = (shared.data?.data.length ?? 0) + invites
 
   return (
     <div className="list">
       <ListHead>
-        <span className="count">
-          {t('netPosition')}: <span className={`num${pos > 0 ? ' pos' : pos < 0 ? ' neg' : ''}`}>{n(pos)}</span> {data?.meta.base_currency}
-        </span>
+        {sharedCount > 0 && (
+          <div className="seg" role="radiogroup" aria-label={t('gameyas')}>
+            <button type="button" role="radio" aria-checked={scope === 'mine'} className={scope === 'mine' ? 'on' : ''} onClick={() => setScope('mine')}>{t('myGameyas')}</button>
+            <button type="button" role="radio" aria-checked={scope === 'shared'} className={scope === 'shared' ? 'on' : ''} onClick={() => setScope('shared')}>
+              {t('sharedWithMe')}{invites > 0 && <span className="dot-count">{n(invites)}</span>}
+            </button>
+          </div>
+        )}
+        {scope === 'mine' && (
+          <span className="count">
+            {t('netPosition')}: <span className={`num${pos > 0 ? ' pos' : pos < 0 ? ' neg' : ''}`}>{n(pos)}</span> {data?.meta.base_currency}
+          </span>
+        )}
         <span className="grow" />
-        {!readOnly && <button type="button" className="btn" onClick={() => setEdit(null)}><Icon name="plus" /><span className="hide-sm">{t('add')}</span></button>}
+        {!readOnly && scope === 'mine' && <button type="button" className="btn" onClick={() => setEdit(null)}><Icon name="plus" /><span className="hide-sm">{t('add')}</span></button>}
       </ListHead>
-      <Paged
+      {scope === 'shared' ? <SharedList data={shared.data} act={act} /> : <Paged
         items={rows}
         empty={<div className="empty"><Icon name="family" /><p>{t('noGameyas')}</p></div>}
         container={(c) => <div className="grid">{c}</div>}
-        renderItem={(g) => (
+        renderItem={(g) => g.role === 'manager' ? (
+          <button type="button" key={g.id} className={`card ic${g.done ? ' off' : ''}`} onClick={() => setView(g.id)}>
+            <div className="t"><span>{g.name}</span><span className="tag quiet">{t('managerLbl')}</span>{!!g.claims && <span className="tag">{t('claimsN', { n: g.claims })}</span>}</div>
+            <div className="amt"><span className="num">{n(g.amount)}</span> <small className="cur-sm">{g.currency} · {t('roundN', { n: g.current_round ?? 1 })}</small></div>
+            <Steps done={g.paid_this_round ?? 0} of={g.members} />
+            <div className="meta">
+              <span>{t('paidThisRound')}: {t('paidOf', { a: g.paid_this_round ?? 0, b: g.members })}</span>
+              <span>{g.my_turn ? `${t('myTurn')}: ${n(g.my_turn)}` : t('noTurnLbl')}</span>
+            </div>
+          </button>
+        ) : (
           <button type="button" key={g.id} className={`card ic${g.done ? ' off' : ''}`} onClick={() => setView(g.id)}>
             <div className="t"><span>{g.name}</span>{g.done ? <span className="tag quiet">{t('finished')}</span> : <DueTag days={g.days} />}</div>
             <div className="amt"><span className="num">{n(g.amount)}</span> <small className="cur-sm">{g.currency} · {t('roundN', { n: g.next_round ?? g.members })}</small></div>
             <Steps done={g.paid_rounds} of={g.members} />
             <div className="meta">
-              <span>{t('payoutDate')}: {g.received ? t('gotPayout') : fmtDate(g.payout_date)}</span>
+              <span>{t('payoutDate')}: {g.received || !g.payout_date ? t('gotPayout') : fmtDate(g.payout_date)}</span>
               <span>{t('payoutAmt')}: <span className="num">{n(g.payout)}</span></span>
             </div>
           </button>
         )}
-      />
+      />}
       {view !== null && <GameyaDetail id={view} accounts={accounts.data ?? []} onClose={() => setView(null)} onEdit={(g) => { setView(null); setEdit(g) }} />}
       {edit !== undefined && <GameyaForm gameya={edit} accounts={accounts.data ?? []} onClose={() => setEdit(undefined)} />}
     </div>
@@ -262,18 +288,32 @@ function GameyaDetail({ id, accounts, onClose, onEdit }: { id: number; accounts:
         <>
           <button type="button" className="btn ghost" onClick={() => onEdit(g)}>{t('edit')}</button>
           <span className="grow" />
-          {!g.received && <button type="button" className="btn ghost" onClick={() => setMove('receive')}>{t('gotPayout')}</button>}
+          {g.role === 'manager' && !!g.linked && <button type="button" className="btn ghost" onClick={() => act(() => post(`/gameyas/${g.id}/remind`, {}))}>{t('remindUnpaid')}</button>}
+          {g.my_turn !== null && !g.received && <button type="button" className="btn ghost" onClick={() => setMove('receive')}>{t('gotPayout')}</button>}
           {g.next_round !== null && <button type="button" className="btn" onClick={() => setMove('pay')}>{t('payRound')}</button>}
         </>
       ) : undefined}>
-      {g && (
+      {g && g.role === 'manager' && (
+        <>
+          <Facts items={[
+            [t('perRound'), <span className="num">{n(g.amount, 2)} {g.currency}</span>],
+            [t('members'), <span className="num">{n(g.members)}</span>],
+            [t('currentRound'), `${t('roundN', { n: g.current_round ?? 1 })} · ${fmtDate(g.current_date ?? g.start_date)}`],
+            [t('payoutAmt'), <span className="num">{n(g.payout, 2)}</span>],
+            [t('myTurn'), g.my_turn ? t('roundN', { n: g.my_turn }) : t('noTurnLbl')],
+            [t('endDate'), fmtDate(g.end_date)],
+          ]} />
+          <ManagedSlots g={g} act={act} />
+        </>
+      )}
+      {g && g.role !== 'manager' && (
         <>
           <Facts items={[
             [t('perRound'), <span className="num">{n(g.amount, 2)} {g.currency}</span>],
             [t('members'), <span className="num">{n(g.members)}</span>],
             [t('paid'), g.next_round === null ? t('allRoundsPaid') : t('paidOf', { a: g.paid_rounds, b: g.members })],
-            [t('myTurn'), t('roundN', { n: g.my_turn })],
-            [t('payoutDate'), g.received ? t('gotPayout') : fmtDate(g.payout_date)],
+            [t('myTurn'), t('roundN', { n: g.my_turn ?? 0 })],
+            [t('payoutDate'), g.received || !g.payout_date ? t('gotPayout') : fmtDate(g.payout_date)],
             [t('payoutAmt'), <span className="num">{n(g.payout, 2)}</span>],
             [t('netPosition'), <span className={`num${g.position > 0 ? ' pos' : g.position < 0 ? ' neg' : ''}`} title={t(g.position >= 0 ? 'groupOwesYou' : 'youOweGroup')}>{n(g.position, 2)}</span>],
           ]} />
@@ -313,13 +353,14 @@ function GameyaForm({ gameya, accounts, onClose }: { gameya: Gameya | null; acco
   const { t } = useI18n()
   const s = (v: number | null | undefined) => (v === null || v === undefined ? '' : String(v))
   const form = useForm({
-    name: gameya?.name ?? '', organizer: gameya?.organizer ?? '', members: s(gameya?.members ?? 10), my_turn: s(gameya?.my_turn ?? 1),
+    role: gameya?.role ?? 'member', name: gameya?.name ?? '', organizer: gameya?.organizer ?? '', members: s(gameya?.members ?? 10), my_turn: s(gameya ? gameya.my_turn : 1),
     amount: s(gameya?.amount), currency: gameya?.currency ?? 'EGP', start_date: gameya?.start_date ?? isoDate(), cycle: gameya?.cycle ?? 'monthly',
     account_id: s(gameya?.account_id), remind_days: s(gameya?.remind_days), notes: gameya?.notes ?? '',
   }, onClose)
   const f = form.f
   const submit = () => form.run(() => {
     const body = {
+      ...(gameya ? {} : { role: f.role }),
       name: f.name, organizer: orNull(f.organizer), members: num(f.members), my_turn: num(f.my_turn), amount: num(f.amount), currency: f.currency,
       start_date: f.start_date, cycle: f.cycle, account_id: num(f.account_id), remind_days: num(f.remind_days), notes: orNull(f.notes),
     }
@@ -329,12 +370,13 @@ function GameyaForm({ gameya, accounts, onClose }: { gameya: Gameya | null; acco
     <FormModal title={gameya ? t('editGameya') : t('newGameya')} errors={form.errors} busy={form.busy} onClose={onClose} onSubmit={submit}
       extra={gameya ? <DeleteButton busy={form.busy} onConfirm={() => form.run(() => del(`/gameyas/${gameya.id}`))} /> : undefined}
       fields={[
+        select(form, 'role', t('gameyaRole'), [['member', t('roleMember')], ['manager', t('roleManager')]], { full: true, hidden: !!gameya }),
         text(form, 'name', t('name'), { maxLength: 120 }),
-        text(form, 'organizer', t('organizer'), { maxLength: 120 }),
+        text(form, 'organizer', t('organizer'), { maxLength: 120, hidden: f.role === 'manager' }),
         money(form, 'amount', t('perRound')),
         currency(form, 'currency', t('currency')),
         text(form, 'members', t('members'), { inputMode: 'numeric', num: true }),
-        text(form, 'my_turn', t('myTurn'), { inputMode: 'numeric', num: true }),
+        text(form, 'my_turn', t('myTurn'), { inputMode: 'numeric', num: true, placeholder: f.role === 'manager' ? t('noTurnHint') : undefined }),
         date(form, 'start_date', t('startDate')),
         select(form, 'cycle', t('cycle'), [['monthly', t('monthly')], ['weekly', t('weekly')]]),
         select(form, 'account_id', t('moneyAccount'), active(accounts, gameya?.account_id).map((a) => [a.id, `${a.name} · ${a.currency}`]), { empty: t('noAccount') }),

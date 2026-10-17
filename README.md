@@ -58,7 +58,7 @@ Locally `MAIL_MAILER=log` writes emails (alerts, heir links) to `backend/storage
 ## Checks
 
 ```bash
-cd backend && php artisan test                         # 148 feature tests, SQLite in memory
+cd backend && php artisan test                         # 153 feature tests, SQLite in memory
 # same suite on MySQL (uses a separate database):
 DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_DATABASE=finance_test DB_USERNAME=finance DB_PASSWORD=secret php artisan test
 
@@ -334,6 +334,14 @@ php artisan vault:check --ask    # same, for a saved copy you type in (hidden)
 Rotating the master key: generate a new one, put it in `/etc/finance/master.key`, set `DATA_MASTER_KEY_PREVIOUS=<old key>` in `.env`, `php artisan config:cache`, run `php artisan vault:rotate`, check with `vault:check`, then remove `DATA_MASTER_KEY_PREVIOUS`, cache the config again, and destroy the old key's copies only after new copies are saved.
 
 **Upgrading an existing install** to this version: take a backup first, create the master key file as above and set `DATA_MASTER_KEY_FILE`, then deploy. `php artisan migrate` encrypts all existing data in place (it uses `APP_KEY` to read the fields that were encrypted the old way).
+
+## Gameyas you run
+
+A gameya is either one you're **a member** of (your share: pay each round, take your turn) or one you **manage**:
+
+- One row per turn: the member's name, phone, email and notes (encrypted with the manager's key). Your own turn is optional; if you have one, it uses the normal pay / payout flow on your accounts. Other members' money is only tracked, never booked on your accounts.
+- Per round: who paid (✓), who says they paid (waiting for you to confirm), who hasn't; when each turn's payout was handed over. A WhatsApp reminder link for members without an account.
+- **Linking**: add a member's email and press *Invite*. If that email has a Dinar account they get an invitation (the manager only ever sees "invitation sent", so it doesn't reveal who uses the app). Once accepted they see, under *Gameyas → Shared with me*, **only their own turn(s), payout date and payments** — never the other members. They get alerts before each round and their payout, can press *I paid round N* (you confirm it), and you can remind everyone who hasn't paid.
 
 ## Vault
 

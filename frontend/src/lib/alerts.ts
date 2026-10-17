@@ -16,11 +16,13 @@ export function dueSubject(i: I18n, kind: string, rawName: string): string {
     case 'gameya': return i.t('gameyaDue', { name })
     case 'gameya_payout': return i.t('gameyaTurn', { name })
     case 'vault': return i.t('vaultDue')
+    case 'gameya_shared': return i.t('gameyaDue', { name })
+    case 'gameya_shared_payout': return i.t('gameyaTurn', { name })
     default: return name
   }
 }
 
 export const DUE_ROUTE: Record<string, string> = {
   bill: '/bills', income: '/income', project: '/income', subscription: '/subscriptions', owed_to_me: '/debts', i_owe: '/debts', maturity: '/investments', credit_card: '/accounts', zakat: '/planning',
-  installment: '/debts', gameya: '/debts', gameya_payout: '/debts', vault: '/vault',
+  installment: '/debts', gameya: '/debts', gameya_payout: '/debts', vault: '/vault', gameya_shared: '/debts?tab=gameyas', gameya_shared_payout: '/debts?tab=gameyas',
 }
