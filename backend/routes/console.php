@@ -5,11 +5,14 @@ use App\Models\User;
 use App\Services\AlertScanner;
 use App\Services\BackupService;
 use App\Services\DataVault;
+use App\Services\Heartbeat;
 use App\Services\HeirService;
 use App\Services\MetalPriceFetcher;
 use App\Services\NetWorth;
 use App\Services\RateFetcher;
 use App\Services\RecurringService;
+use App\Services\ServerBackup;
+use App\Services\Watchdog;
 use Illuminate\Encryption\Encrypter;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -100,6 +103,53 @@ Artisan::command('finance:heir-check', function (HeirService $heirs) {
 Schedule::command('finance:heir-check')->hourly()->withoutOverlapping();
 
 Schedule::command('sanctum:prune-expired --hours=24')->daily();
+
+// Nightly encrypted backup of the database + receipts to the "backups" disk (off-server in production).
+Artisan::command('finance:backup', function (ServerBackup $backup, Heartbeat $heartbeat, Watchdog $watchdog) {
+    if (! $backup->enabled()) {
+        $this->warn('Backups are off: set BACKUP_KEY (php artisan finance:backup-key).');
+
+        return 0;
+    }
+    try {
+        $r = $backup->run();
+    } catch (Throwable $e) {
+        report($e);
+        $watchdog->backupFailed($e->getMessage());
+        $this->error('Backup failed: '.$e->getMessage());
+
+        return 1;
+    }
+    $heartbeat->ok('backup');
+    $this->info(sprintf('Saved %s (%s KB) on the "%s" disk; removed %d old backup(s).', $r['path'], number_format($r['bytes'] / 1024), config('filesystems.disks.backups.driver'), $r['pruned']));
+})->purpose('Encrypted backup of the database and receipts to the backups disk');
+
+Schedule::command('finance:backup')->dailyAt('03:15')->withoutOverlapping();
+
+Artisan::command('finance:backup-key', function () {
+    $this->line(ServerBackup::newKey());
+    $this->warn('Put it in .env as BACKUP_KEY=… and keep a copy away from the server (not with the backups). Without it the backups cannot be opened.');
+})->purpose('Generate a key for the nightly backups (prints it, changes nothing)');
+
+Artisan::command('finance:backup-open {file} {out} {--ask : Type the backup key instead of using BACKUP_KEY}', function (ServerBackup $backup, string $file, string $out) {
+    $key = $this->option('ask') ? password('BACKUP_KEY (base64:…)', required: true) : null;
+    try {
+        $backup->open($file, $out, $key);
+    } catch (RuntimeException $e) {
+        $this->error($e->getMessage());
+
+        return 1;
+    }
+    $this->info("Decrypted into {$out} (a zip: database dump, receipts/, manifest.json).");
+})->purpose('Decrypt a nightly backup file into its zip');
+
+// Every 5 minutes: scheduler + queue heartbeats, email the admins when a part stops or recovers.
+Artisan::command('finance:watchdog', function (Watchdog $watchdog) {
+    $sent = $watchdog->run();
+    $this->info($sent ? 'Alerts: '.implode(', ', $sent) : 'All good.');
+})->purpose('Check the queue, backups and encryption key; email the admins about problems');
+
+Schedule::command('finance:watchdog')->everyFiveMinutes()->withoutOverlapping();
 // Data master key (config/vault.php). Store it outside the project and the backups, with two offline copies.
 Artisan::command('vault:key', function (DataVault $vault) {
     $key = 'base64:'.base64_encode(Encrypter::generateKey('aes-256-gcm'));

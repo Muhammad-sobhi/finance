@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\V1\DebtController;
 use App\Http\Controllers\Api\V1\GameyaController;
 use App\Http\Controllers\Api\V1\GameyaMemberController;
 use App\Http\Controllers\Api\V1\GoalController;
+use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\HeirController;
 use App\Http\Controllers\Api\V1\HeirRequestController;
 use App\Http\Controllers\Api\V1\IncomeController;
@@ -32,6 +33,9 @@ use App\Http\Controllers\Api\V1\ZakatController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
+    // Server status for an uptime monitor (no login; states only).
+    Route::get('health', HealthController::class)->middleware('throttle:60,1')->name('health');
+
     Route::post('auth/login', [AuthController::class, 'login'])->middleware('throttle:login')->name('auth.login');
     Route::post('auth/two-factor', [AuthController::class, 'twoFactorChallenge'])->middleware('throttle:two-factor')->name('auth.two-factor');
     Route::post('auth/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:password-reset')->name('auth.forgot');

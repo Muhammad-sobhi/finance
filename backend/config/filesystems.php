@@ -60,6 +60,26 @@ return [
             'report' => false,
         ],
 
+        // Nightly server backups (config/ops.php). Local by default; set BACKUP_DRIVER=s3 with any
+        // S3-compatible bucket (Backblaze B2, Cloudflare R2, Wasabi, AWS) to keep them off the server.
+        'backups' => env('BACKUP_DRIVER', 'local') === 's3' ? [
+            'driver' => 's3',
+            'key' => env('BACKUP_S3_KEY'),
+            'secret' => env('BACKUP_S3_SECRET'),
+            'region' => env('BACKUP_S3_REGION', 'auto'),
+            'bucket' => env('BACKUP_S3_BUCKET'),
+            'endpoint' => env('BACKUP_S3_ENDPOINT'),
+            'root' => env('BACKUP_S3_PREFIX', 'dinar'),
+            'use_path_style_endpoint' => (bool) env('BACKUP_S3_PATH_STYLE', false),
+            'throw' => true,
+            'report' => false,
+        ] : [
+            'driver' => 'local',
+            'root' => env('BACKUP_LOCAL_PATH', storage_path('app/backups')),
+            'throw' => true,
+            'report' => false,
+        ],
+
     ],
 
     /*

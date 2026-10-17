@@ -17,6 +17,7 @@ Arabic-first (RTL) with English, four themes, and a strict no-scroll layout. See
 | + | Debts hub: installment plans (taqseet) and gameyas next to personal debts | ✅ |
 | + | Smart: month-end forecast, unusual-expense alerts, optional daily gold/silver spot prices | ✅ |
 | + | Data: CSV export, printable report, encrypted backup + restore, bank statement import, receipt photos | ✅ |
+| + | Operations: nightly encrypted off-server backup, health URL for uptime monitors, watchdog emails, Sentry error reports | ✅ |
 | + | Security & app: optional 2FA (trusted devices), sign-in activity with new-device alerts, installable PWA with offline page | ✅ |
 
 **Database:** MySQL 8 in production (`DB_CONNECTION=mysql`). The test suite runs on SQLite in memory by default and also passes on MySQL/MariaDB (see *Checks*).
@@ -58,7 +59,7 @@ Locally `MAIL_MAILER=log` writes emails (alerts, heir links) to `backend/storage
 ## Checks
 
 ```bash
-cd backend && php artisan test                         # 153 feature tests, SQLite in memory
+cd backend && php artisan test                         # 163 feature tests, SQLite in memory
 # same suite on MySQL (uses a separate database):
 DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_DATABASE=finance_test DB_USERNAME=finance DB_PASSWORD=secret php artisan test
 
@@ -285,6 +286,8 @@ Scheduled jobs (`php artisan schedule:list`):
 
 | Command | When | What |
 | --- | --- | --- |
+| `finance:watchdog` | every 5 min | scheduler + queue heartbeats; emails admins when a part stops (see *Monitoring*) |
+| `finance:backup` | 03:15 | encrypted backup of the database + receipts to the backups disk (see *Backups*) |
 | `finance:alerts` | hourly | due / overdue alerts (in-app now; email + push via the queue) |
 | `finance:heir-check` | hourly | dead-man reminders/activation, confirmed requests whose window ended |
 | `finance:auto-pay` | 06:00 | pays due auto-pay bills/subscriptions and records auto-record income |
@@ -298,19 +301,51 @@ Scheduled jobs (`php artisan schedule:list`):
 cd /var/www/finance && ./deploy/deploy.sh    # pull, composer, migrate, caches, queue restart, SPA build
 ```
 
-### 7. Backups (recommended)
+### 7. Backups (off the server)
+
+`finance:backup` runs every night at 03:15: it dumps the database (`mysqldump --single-transaction`), adds the receipt files and a manifest, encrypts the zip with `BACKUP_KEY` (libsodium XChaCha20-Poly1305) and uploads it to the **backups** disk. Files older than `BACKUP_KEEP_DAYS` (30) are deleted. If a backup fails, the admins get an email at once.
+
+A backup on the same VPS is lost with the VPS, so use an S3-compatible bucket. **Backblaze B2** (10 GB free) or **Cloudflare R2** (10 GB free) are enough for years of data:
+
+1. Create a private bucket (e.g. `dinar-backups`) and an application key that can only access that bucket.
+2. In `backend/.env`:
+
+   ```dotenv
+   BACKUP_KEY=base64:...                # php artisan finance:backup-key — save a copy off the server, NOT with the backups
+   BACKUP_DRIVER=s3
+   BACKUP_S3_KEY=<key id>
+   BACKUP_S3_SECRET=<application key>
+   BACKUP_S3_BUCKET=dinar-backups
+   BACKUP_S3_REGION=eu-central-003      # B2: the region in the endpoint; R2: auto
+   BACKUP_S3_ENDPOINT=https://s3.eu-central-003.backblazeb2.com   # R2: https://<account id>.r2.cloudflarestorage.com
+   ```
+
+3. `php artisan config:cache && php artisan finance:backup`. It should print the saved file name. Check that the file is in the bucket.
+
+For extra safety, turn on the bucket's object lock or versioning, so a hacked server can't delete the old backups.
+
+**What you need to restore**, each kept in a different place: a backup file, `BACKUP_KEY`, the data master key (`/etc/finance/master.key`) and `backend/.env` (`APP_KEY` for sessions and signed links). The manifest inside every backup shows the fingerprint of the master key the data needs.
+
+**Restore** (new server or after a failure): install as above and put the saved master key back in `/etc/finance/master.key`. Then:
 
 ```bash
-# /etc/cron.daily/finance-backup
-mysqldump --single-transaction finance | gzip > /var/backups/finance-$(date +%F).sql.gz
-find /var/backups -name 'finance-*.sql.gz' -mtime +30 -delete
+php artisan finance:backup-open dinar-2026-10-17-031500.dinarbak /tmp/restore.zip   # uses BACKUP_KEY; --ask to type it
+cd /tmp && unzip restore.zip                     # database.sql, receipts/, manifest.json
+mysql finance < database.sql
+cp -r receipts /var/www/finance/backend/storage/app/private/ && sudo chown -R www-data:www-data /var/www/finance/backend/storage
+php artisan vault:check                          # every user key must open
+rm -rf /tmp/restore.zip /tmp/database.sql /tmp/receipts
 ```
 
-Also copy `backend/storage/app/private/receipts` (receipt photos) with the same job, and keep an in-app *Encrypted backup* file somewhere off the server.
+The in-app *Encrypted backup* (one owner's data, your own passphrase) is separate. It is still worth downloading now and then.
 
-The dumps contain only encrypted financial data. **Never store the master key with them** — whoever has both can read everything. Keep `backend/.env` backed up separately too (it holds `APP_KEY` for sessions and signed links).
+## Monitoring
 
-**Restore** (new server or after a failure): install as above, put the saved master key back in `/etc/finance/master.key`, import the dump (`gunzip -c finance-YYYY-MM-DD.sql.gz | mysql finance`), then `php artisan vault:check` must report that every user key opens.
+The scheduler, the queue worker and the backups run when nobody is looking. If one stops, bill alerts, push notifications and heir emails stop without any visible error. Three things watch them:
+
+- **Health URL**: `GET /api/v1/health` returns `200` when everything works and `503` when a part has stopped. The response lists the state of each part (`database`, `encryption`, `scheduler`, `queue`, `failed_jobs`, `backup`) as `ok`, `fail`, `warn`, `pending` or `off`. It contains no data and no error messages. Add it to a free uptime monitor such as **UptimeRobot** (HTTP(s) monitor, every 5 minutes, alert by email/Telegram/app). This is the only check that also catches a dead server or a stopped cron.
+- **Watchdog**: `finance:watchdog` runs every 5 minutes. It records that the scheduler is alive and sends a test job through the queue. Admins get an email (in their language) when the queue stops, a backup fails or is older than 26 hours, the master key can't be read, or jobs fail. The email repeats every 12 hours while the problem lasts, and another email says when it works again. `OPS_ALERT_EMAIL` adds one more address. These emails are sent directly, not through the queue.
+- **Sentry**: set `SENTRY_LARAVEL_DSN` (free plan at sentry.io → new Laravel project) and every server error is reported with its stack trace. Request bodies, cookies, IPs, SQL values and user data are never sent.
 
 ## Data encryption
 
