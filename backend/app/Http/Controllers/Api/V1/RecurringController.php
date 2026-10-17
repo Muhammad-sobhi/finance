@@ -12,6 +12,7 @@ use App\Services\RecurringService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
@@ -26,12 +27,14 @@ abstract class RecurringController extends Controller
 
     public function __construct(protected readonly RecurringService $service) {}
 
-    protected function query(Request $request)
+    /** Active first, then by due date and name (names are encrypted, so sorted here). */
+    protected function items(Request $request): Collection
     {
-        $class = $this->model();
-
-        return $class::ownedBy($request->user())
-            ->orderByDesc('is_active')->orderBy($class::DUE_COLUMN)->orderBy('name');
+        return $this->model()::ownedBy($request->user())->get()->sortBy([
+            fn (Model $a, Model $b) => $b->is_active <=> $a->is_active,
+            fn (Model $a, Model $b) => $a->dueDate() <=> $b->dueDate(),
+            fn (Model $a, Model $b) => strnatcasecmp($a->name, $b->name),
+        ])->values();
     }
 
     protected function rules(Request $request, bool $create): array

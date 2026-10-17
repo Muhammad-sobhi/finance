@@ -4,12 +4,16 @@ namespace App\Models;
 
 use App\Enums\AssetType;
 use App\Models\Concerns\BelongsToOwner;
+use App\Models\Concerns\EncryptedForOwner;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Asset extends Model
 {
-    use BelongsToOwner, HasFactory;
+    use BelongsToOwner, EncryptedForOwner, HasFactory;
+
+    /** Stored encrypted with the owner's data key (see EncryptedForOwner). */
+    public const ENCRYPTED = ['name', 'purchase_price', 'current_value', 'grams', 'location', 'notes'];
 
     protected $fillable = ['name', 'type', 'currency', 'purchase_price', 'purchase_date', 'current_value', 'grams', 'karat', 'location', 'notes'];
 

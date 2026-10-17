@@ -6,6 +6,7 @@ use App\Models\Bill;
 use App\Models\Debt;
 use App\Models\DebtPayment;
 use App\Models\Subscription;
+use App\Services\DataVault;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
@@ -17,7 +18,8 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        // One per process so each owner's key is unwrapped once.
+        $this->app->singleton(DataVault::class);
     }
 
     public function boot(): void

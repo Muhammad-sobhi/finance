@@ -91,11 +91,11 @@ class RecurringTest extends TestCase
 
     public function test_auto_pay_catches_up_due_items(): void
     {
-        Bill::forceCreate(['user_id' => $this->owner->id, 'name' => 'Internet', 'amount' => 450, 'currency' => 'EGP', 'due_date' => '2026-08-20', 'cycle' => 'monthly', 'auto_pay' => true, 'account_id' => $this->bank->id]);
+        $internet = Bill::forceCreate(['user_id' => $this->owner->id, 'name' => 'Internet', 'amount' => 450, 'currency' => 'EGP', 'due_date' => '2026-08-20', 'cycle' => 'monthly', 'auto_pay' => true, 'account_id' => $this->bank->id]);
         Bill::forceCreate(['user_id' => $this->owner->id, 'name' => 'Manual', 'amount' => 1, 'currency' => 'EGP', 'due_date' => '2026-10-01', 'cycle' => 'monthly', 'account_id' => $this->bank->id]);
 
         $this->assertSame(2, app(RecurringService::class)->runAutoPay()); // Aug 20 + Sep 20
-        $this->assertSame('2026-10-20', Bill::where('name', 'Internet')->first()->due_date->format('Y-m-d'));
+        $this->assertSame('2026-10-20', $internet->fresh()->due_date->format('Y-m-d'));
         $this->assertSame(4100.0, (float) $this->bank->fresh()->balance);
         $this->artisan('finance:auto-pay')->assertSuccessful();
     }

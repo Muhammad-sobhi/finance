@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\DebtDirection;
 use App\Enums\DebtStatus;
 use App\Models\Concerns\BelongsToOwner;
+use App\Models\Concerns\EncryptedForOwner;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,7 +14,10 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Debt extends Model
 {
-    use BelongsToOwner, HasFactory;
+    use BelongsToOwner, EncryptedForOwner, HasFactory;
+
+    /** Stored encrypted with the owner's data key (see EncryptedForOwner). */
+    public const ENCRYPTED = ['person', 'phone', 'amount', 'notes'];
 
     protected $fillable = ['person', 'phone', 'direction', 'amount', 'currency', 'date', 'due_date', 'notes', 'status', 'account_id', 'remind_days'];
 
@@ -25,7 +29,6 @@ class Debt extends Model
             'amount' => 'decimal:2',
             'date' => 'date:Y-m-d',
             'due_date' => 'date:Y-m-d',
-            'notes' => 'encrypted',
         ];
     }
 
@@ -47,7 +50,7 @@ class Debt extends Model
 
     public function paid(): float
     {
-        return round((float) ($this->payments_sum_amount ?? $this->payments()->sum('amount')), 2);
+        return round($this->payments->sum(fn (DebtPayment $p) => (float) $p->amount), 2);
     }
 
     public function remaining(): float

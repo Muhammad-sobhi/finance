@@ -60,28 +60,29 @@ class AlertScanner
 
         foreach ([Bill::class => ['bill', '/bills'], Subscription::class => ['subscription', '/subscriptions']] as $class => [$kind, $path]) {
             $class::where('user_id', $owner->id)->where('is_active', true)->get()->each(fn ($r) => $out->push(new DueItem(
-                $kind, $r->id, $r->name, $r->dueDate(), (float) $r->amount, $r->currency, $r->remind_days, $path,
+                $owner->id, $kind, $r->id, $r->name, $r->dueDate(), (float) $r->amount, $r->currency, $r->remind_days, $path,
             )));
         }
 
-        $owner->debts()->where('status', DebtStatus::Open)->whereNotNull('due_date')->withSum('payments', 'amount')->get()
+        $owner->debts()->where('status', DebtStatus::Open)->whereNotNull('due_date')->with('payments')->get()
             ->each(fn ($d) => $out->push(new DueItem(
-                $d->direction->value, $d->id, $d->person, CarbonImmutable::parse($d->due_date), $d->remaining(), $d->currency, $d->remind_days, '/debts',
+                $owner->id, $d->direction->value, $d->id, $d->person, CarbonImmutable::parse($d->due_date), $d->remaining(), $d->currency, $d->remind_days, '/debts',
             )));
 
         $owner->investments()->whereNotNull('maturity_date')->where('maturity_date', '>=', $today->toDateString())->get()
             ->each(fn ($i) => $out->push(new DueItem(
-                'maturity', $i->id, $i->name, CarbonImmutable::parse($i->maturity_date), (float) $i->current_value, $i->currency, $i->remind_days, '/investments',
+                $owner->id, 'maturity', $i->id, $i->name, CarbonImmutable::parse($i->maturity_date), (float) $i->current_value, $i->currency, $i->remind_days, '/investments',
             )));
 
-        $owner->accounts()->where('type', AccountType::CreditCard)->where('is_active', true)->whereNotNull('due_day')->where('balance', '<', 0)->get()
-            ->each(function ($a) use ($out, $today) {
+        $owner->accounts()->where('type', AccountType::CreditCard)->where('is_active', true)->whereNotNull('due_day')->get()
+            ->filter(fn ($a) => (float) $a->balance < 0)
+            ->each(function ($a) use ($out, $today, $owner) {
                 $due = $today->setDay(min($a->due_day, $today->daysInMonth));
                 if ($due->lt($today)) {
                     $next = $today->startOfMonth()->addMonth();
                     $due = $next->setDay(min($a->due_day, $next->daysInMonth));
                 }
-                $out->push(new DueItem('credit_card', $a->id, $a->name, $due, abs((float) $a->balance), $a->currency, null, '/accounts'));
+                $out->push(new DueItem($owner->id, 'credit_card', $a->id, $a->name, $due, abs((float) $a->balance), $a->currency, null, '/accounts'));
             });
 
         return $out;

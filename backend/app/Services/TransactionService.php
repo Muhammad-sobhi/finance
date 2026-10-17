@@ -6,6 +6,7 @@ use App\Enums\TransactionType;
 use App\Models\Account;
 use App\Models\Transaction;
 use App\Models\User;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -70,21 +71,28 @@ class TransactionService
     private function apply(Transaction $tx, int $sign): void
     {
         $ids = array_filter([$tx->account_id, $tx->to_account_id]);
-        // Lock in id order to avoid deadlocks between concurrent writes.
-        Account::whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get();
+        // Lock in id order to avoid deadlocks between concurrent writes. Balances are
+        // encrypted, so they're read, adjusted and written back under that lock.
+        $accounts = Account::whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
 
         $amount = (float) $tx->amount * $sign;
 
         match ($tx->type) {
-            TransactionType::Expense => Account::whereKey($tx->account_id)->decrement('balance', $amount),
-            TransactionType::Income => Account::whereKey($tx->account_id)->increment('balance', $amount),
-            TransactionType::Transfer => $this->transfer($tx, $amount, (float) $tx->to_amount * $sign),
+            TransactionType::Expense => $this->adjust($accounts[$tx->account_id], -$amount),
+            TransactionType::Income => $this->adjust($accounts[$tx->account_id], $amount),
+            TransactionType::Transfer => $this->transfer($accounts, $tx, $amount, (float) $tx->to_amount * $sign),
         };
     }
 
-    private function transfer(Transaction $tx, float $out, float $in): void
+    private function transfer(Collection $accounts, Transaction $tx, float $out, float $in): void
     {
-        Account::whereKey($tx->account_id)->decrement('balance', $out);
-        Account::whereKey($tx->to_account_id)->increment('balance', $in);
+        $this->adjust($accounts[$tx->account_id], -$out);
+        $this->adjust($accounts[$tx->to_account_id], $in);
+    }
+
+    private function adjust(Account $account, float $delta): void
+    {
+        $account->balance = round((float) $account->balance + $delta, 2);
+        $account->save();
     }
 }

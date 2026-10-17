@@ -23,8 +23,8 @@ class HeirController extends Controller
 
         return response()->json([
             'settings' => $this->status($owner),
-            'heirs' => $owner->heirs()->orderBy('name')->get()->map(fn (Heir $h) => $this->heir($h)),
-            'trusted' => $owner->trustedContacts()->orderBy('name')->get()->map(fn (TrustedContact $c) => $c->only(['id', 'name', 'email', 'phone', 'relation'])),
+            'heirs' => $owner->heirs()->get()->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)->values()->map(fn (Heir $h) => $this->heir($h)),
+            'trusted' => $owner->trustedContacts()->get()->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)->values()->map(fn (TrustedContact $c) => $c->only(['id', 'name', 'email', 'phone', 'relation'])),
             'requests' => $owner->heirRequests()->with(['heir', 'contact'])->latest()->limit(50)->get()->map(fn (HeirRequest $r) => [
                 'id' => $r->id, 'heir' => $r->heir?->name, 'status' => $r->status, 'contact' => $r->contact?->name,
                 'created_at' => $r->created_at->toIso8601String(), 'activates_at' => $r->activates_at?->toIso8601String(),

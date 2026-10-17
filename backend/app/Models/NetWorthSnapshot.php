@@ -3,11 +3,15 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToOwner;
+use App\Models\Concerns\EncryptedForOwner;
 use Illuminate\Database\Eloquent\Model;
 
 class NetWorthSnapshot extends Model
 {
-    use BelongsToOwner;
+    use BelongsToOwner, EncryptedForOwner;
+
+    /** Stored encrypted with the owner's data key (see EncryptedForOwner). */
+    public const ENCRYPTED = ['net_worth', 'breakdown'];
 
     protected $fillable = ['month', 'net_worth', 'breakdown'];
 

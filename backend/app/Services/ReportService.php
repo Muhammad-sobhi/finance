@@ -98,7 +98,7 @@ class ReportService
         return Transaction::ownedBy($this->owner)->cashflow()
             ->where('type', '!=', TransactionType::Transfer->value)
             ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
-            ->get(['type', 'amount', 'currency', 'date', 'category_id']);
+            ->get(['user_id', 'type', 'amount', 'currency', 'date', 'category_id']);
     }
 
     /** @return array{income: float, expense: float, savings: float, savings_rate: float|null} */
@@ -161,7 +161,7 @@ class ReportService
             return null;
         }
         $value = NetWorthSnapshot::ownedBy($this->owner)->where('month', '<=', $date->startOfMonth()->toDateString())
-            ->orderByDesc('month')->value('net_worth');
+            ->orderByDesc('month')->first()?->net_worth;
 
         return $value !== null ? (float) $value : null;
     }
@@ -236,7 +236,8 @@ class ReportService
             $add('idle_cash', 'info', ['months' => (int) floor($nw['liquid'] / $avgSpend)]);
         }
 
-        Account::ownedBy($this->owner)->where('type', AccountType::CreditCard)->where('is_active', true)->where('credit_limit', '>', 0)->get()
+        Account::ownedBy($this->owner)->where('type', AccountType::CreditCard)->where('is_active', true)->get()
+            ->filter(fn (Account $a) => (float) $a->credit_limit > 0)
             ->each(function (Account $a) use ($add) {
                 $used = max(0, -(float) $a->balance) / (float) $a->credit_limit * 100;
                 if ($used > self::CARD_UTILIZATION) {
@@ -245,7 +246,7 @@ class ReportService
             });
 
         Debt::ownedBy($this->owner)->where('status', DebtStatus::Open)->whereNotNull('due_date')
-            ->where('due_date', '<', $today->toDateString())->withSum('payments', 'amount')->get()
+            ->where('due_date', '<', $today->toDateString())->with('payments')->get()
             ->each(fn (Debt $d) => $add(
                 $d->direction === DebtDirection::IOwe ? 'debt_overdue' : 'collect_debt',
                 $d->direction === DebtDirection::IOwe ? 'danger' : 'info',

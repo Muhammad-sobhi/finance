@@ -20,7 +20,7 @@ class AccountController extends Controller
         $fx = CurrencyConverter::for($request->user());
         $accounts = Account::ownedBy($request->user())
             ->when($request->boolean('active_only'), fn ($q) => $q->where('is_active', true))
-            ->orderBy('sort')->orderBy('name')->get()
+            ->get()->sortBy([['sort', 'asc'], fn (Account $a, Account $b) => strnatcasecmp($a->name, $b->name)])->values()
             ->each(fn (Account $a) => $a->base_balance = $fx->toBase($a->balance, $a->currency));
 
         return AccountResource::collection($accounts);

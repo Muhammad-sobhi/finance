@@ -5,13 +5,17 @@ namespace App\Models;
 use App\Enums\InvestmentType;
 use App\Enums\PayoutCycle;
 use App\Models\Concerns\BelongsToOwner;
+use App\Models\Concerns\EncryptedForOwner;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Investment extends Model
 {
-    use BelongsToOwner, HasFactory;
+    use BelongsToOwner, EncryptedForOwner, HasFactory;
+
+    /** Stored encrypted with the owner's data key (see EncryptedForOwner). */
+    public const ENCRYPTED = ['name', 'platform', 'invested_amount', 'current_value', 'quantity', 'annual_return', 'notes'];
 
     protected $fillable = [
         'name', 'type', 'platform', 'invested_amount', 'current_value', 'currency', 'quantity', 'unit',

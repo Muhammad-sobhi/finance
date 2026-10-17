@@ -3,11 +3,13 @@
 namespace App\Models;
 
 use App\Enums\UserRole;
+use App\Services\DataVault;
 use App\Services\DefaultCategories;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -29,7 +31,7 @@ class User extends Authenticatable
         'heir_enabled', 'heir_inactivity_days', 'heir_grace_days',
     ];
 
-    protected $hidden = ['password', 'remember_token'];
+    protected $hidden = ['password', 'remember_token', 'data_key'];
 
     protected $attributes = [
         'role' => 'owner',
@@ -49,6 +51,8 @@ class User extends Authenticatable
 
     protected static function booted(): void
     {
+        // Every user gets their own data key, wrapped by the master key (see DataVault).
+        static::creating(fn (User $user) => $user->data_key ??= app(DataVault::class)->newWrappedKey());
         static::created(function (User $user) {
             if ($user->isOwner()) {
                 DefaultCategories::seedFor($user);
@@ -75,6 +79,12 @@ class User extends Authenticatable
             'password' => 'hashed',
             'role' => UserRole::class,
         ];
+    }
+
+    /** In-app notifications are stored encrypted with this user's key. */
+    public function notifications(): MorphMany
+    {
+        return $this->morphMany(SealedNotification::class, 'notifiable')->latest();
     }
 
     public function isOwner(): bool

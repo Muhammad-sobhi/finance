@@ -31,11 +31,11 @@ class DashboardController extends Controller
             ->each(fn (Account $a) => $a->base_balance = $fx->toBase($a->balance, $a->currency));
 
         $nw = app(NetWorth::class)->compute($user);
-        $debts = Debt::ownedBy($user)->where('status', DebtStatus::Open)->withSum('payments', 'amount')->get();
+        $debts = Debt::ownedBy($user)->where('status', DebtStatus::Open)->with('payments')->get();
         $investments = Investment::ownedBy($user)->get();
 
         // Change vs the end of last month, from the monthly snapshots.
-        $prev = NetWorthSnapshot::ownedBy($user)->where('month', $today->startOfMonth()->subMonth()->toDateString())->value('net_worth');
+        $prev = NetWorthSnapshot::ownedBy($user)->where('month', $today->startOfMonth()->subMonth()->toDateString())->first()?->net_worth;
         $change = $prev !== null && (float) $prev != 0.0 ? round(($nw['net_worth'] - (float) $prev) / abs((float) $prev) * 100, 1) : null;
 
         return response()->json([
@@ -72,7 +72,7 @@ class DashboardController extends Controller
         Transaction::ownedBy($user)->cashflow()
             ->where('date', '>=', $from->toDateString())
             ->where('type', '!=', TransactionType::Transfer->value)
-            ->get(['type', 'amount', 'currency', 'date'])
+            ->get(['user_id', 'type', 'amount', 'currency', 'date'])
             ->each(function (Transaction $tx) use (&$months, $fx) {
                 $key = $tx->date->format('Y-m');
                 if (isset($months[$key])) {

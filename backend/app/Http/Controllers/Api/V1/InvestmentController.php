@@ -18,7 +18,7 @@ class InvestmentController extends Controller
     public function index(Request $request): JsonResponse
     {
         $fx = CurrencyConverter::for($request->user());
-        $items = Investment::ownedBy($request->user())->orderByDesc('current_value')->get();
+        $items = Investment::ownedBy($request->user())->get()->sortByDesc(fn (Investment $i) => (float) $i->current_value)->values();
         $invested = $items->sum(fn (Investment $i) => $fx->toBase($i->invested_amount, $i->currency));
         $current = $items->sum(fn (Investment $i) => $fx->toBase($i->current_value, $i->currency));
 
@@ -90,7 +90,7 @@ class InvestmentController extends Controller
         abort_unless($value->investment_id === $investment->id, 404);
         abort_if($investment->values()->count() <= 1, 422, 'Keep at least one value.');
         $value->delete();
-        $investment->current_value = $investment->values()->reorder()->orderByDesc('date')->value('value');
+        $investment->current_value = $investment->values()->reorder()->orderByDesc('date')->first()?->value;
         $investment->saveQuietly();
 
         return $this->show($request, $investment->fresh());

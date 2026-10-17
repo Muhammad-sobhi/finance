@@ -25,7 +25,7 @@ class NetWorth
         $accTotal = $accounts->sum(fn (Account $a) => $fx->toBase($a->balance, $a->currency));
         $liquid = $accounts->filter(fn (Account $a) => $a->type->isLiquid() && $a->balance > 0)->sum(fn (Account $a) => $fx->toBase($a->balance, $a->currency));
 
-        $debts = Debt::ownedBy($owner)->where('status', DebtStatus::Open)->withSum('payments', 'amount')->get();
+        $debts = Debt::ownedBy($owner)->where('status', DebtStatus::Open)->with('payments')->get();
         $owed = $debts->where('direction', DebtDirection::OwedToMe)->sum(fn (Debt $d) => $fx->toBase($d->remaining(), $d->currency));
         $owe = $debts->where('direction', DebtDirection::IOwe)->sum(fn (Debt $d) => $fx->toBase($d->remaining(), $d->currency));
 

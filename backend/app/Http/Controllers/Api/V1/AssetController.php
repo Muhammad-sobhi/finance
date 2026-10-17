@@ -18,7 +18,8 @@ class AssetController extends Controller
     {
         $owner = $request->user()->dataOwner();
         $fx = CurrencyConverter::for($owner);
-        $items = Asset::ownedBy($request->user())->orderBy('type')->orderBy('name')->get()
+        $items = Asset::ownedBy($request->user())->get()
+            ->sortBy([fn (Asset $a, Asset $b) => $a->type->value <=> $b->type->value, fn (Asset $a, Asset $b) => strnatcasecmp($a->name, $b->name)])
             ->map(fn (Asset $a) => $this->present($a, $owner, $fx));
 
         return response()->json([
