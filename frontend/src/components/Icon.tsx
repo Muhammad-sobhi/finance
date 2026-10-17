@@ -22,6 +22,7 @@ const PATHS: Record<string, string> = {
   next: '<path d="M9 6l6 6-6 6"/>',
   prev: '<path d="M15 6l-6 6 6 6"/>',
   close: '<path d="M6 6l12 12M18 6L6 18"/>',
+  trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   logout: '<path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h11"/>',
   filter: '<path d="M4 5h16l-6 8v6l-4-2v-4z"/>',

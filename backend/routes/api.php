@@ -136,6 +136,7 @@ Route::prefix('v1')->group(function () {
         Route::post('admin/invites', [AdminController::class, 'invite'])->middleware('throttle:account-security')->name('admin.invite');
         Route::post('admin/invites/{user}/resend', [AdminController::class, 'resend'])->middleware('throttle:account-security')->name('admin.resend');
         Route::delete('admin/invites/{user}', [AdminController::class, 'cancel'])->name('admin.cancel');
+        Route::delete('admin/users/{user}', [AdminController::class, 'destroy'])->middleware('throttle:account-security')->name('admin.destroy');
 
         Route::get('settings', [SettingsController::class, 'show'])->name('settings.show');
         Route::patch('settings', [SettingsController::class, 'update'])->name('settings.update');

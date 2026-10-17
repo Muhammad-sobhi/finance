@@ -320,7 +320,7 @@ Users' financial data is encrypted in the database, so it can't be read from MyS
 - **What stays readable** (needed for queries, scheduling and login): ids, owner links, dates, currencies, types, statuses, categories, exchange rates, user settings, emails.
 - **How:** every user has a random data key (AES-256-GCM), stored in `users.data_key` wrapped by the master key. One user's key can't open another's rows. The API decrypts only while handling that user's request, calculates on the server, and returns results to that user alone.
 - **Password reset by email keeps working.** The keys don't depend on passwords, so users never lose data by forgetting a password, and the admin can restore backups at any time.
-- **Data is lost only if** the master key and every copy of it are lost (all users), or all database backups are lost. A user who deletes their account loses their own data, by design.
+- **Data is lost only if** the master key and every copy of it are lost (all users), or all database backups are lost. When the admin deletes a user (*Admin → delete*, needs the admin's password and the user's email typed in), their rows, receipts, heir logins and data key are removed from the live server; copies inside older database dumps stay readable with the master key until those dumps expire (30 days with the backup cron above).
 - **Limit:** whoever controls the running server (root plus the code) could technically decrypt. The protection is against database and backup access, not against a hostile root user.
 
 Key commands:

@@ -7,7 +7,7 @@ import { Paged } from '../components/Paged'
 import { useApi } from '../hooks/useApi'
 import { useForm } from '../hooks/useForm'
 import { useI18n } from '../i18n'
-import { ApiError, del, post } from '../lib/api'
+import { api, ApiError, del, post } from '../lib/api'
 import { useSession } from '../lib/session'
 
 interface Member {
@@ -28,6 +28,7 @@ export function Admin() {
   const { data } = useApi<{ data: Member[] }>('/admin/users')
   const rows = useMemo(() => data?.data ?? [], [data])
   const [inviting, setInviting] = useState(false)
+  const [deleting, setDeleting] = useState<Member | null>(null)
   const pending = rows.filter((r) => r.status === 'pending').length
 
   if (!user?.is_admin) return <div className="empty"><p>{t('error')}</p></div>
@@ -64,12 +65,17 @@ export function Admin() {
                     onClick={() => act(() => del(`/admin/invites/${m.id}`), t('saved'))}><Icon name="close" /></button>
                 </>
               )}
+              {m.status === 'active' && !m.is_admin && (
+                <button type="button" className="icon-btn sm danger" aria-label={t('deleteUser')} title={t('deleteUser')}
+                  onClick={() => setDeleting(m)}><Icon name="trash" /></button>
+              )}
             </span>
           </div>
         )}
       />
       <p className="muted hint admin-note">{t('adminPrivacy')}</p>
       {inviting && <InviteForm onClose={() => setInviting(false)} />}
+      {deleting && <DeleteUserForm member={deleting} onClose={() => setDeleting(null)} />}
     </div>
   )
 }
@@ -90,6 +96,26 @@ function InviteForm({ onClose }: { onClose: () => void }) {
       text(form, 'email', t('email'), { type: 'email', dir: 'ltr', full: true }),
       select(form, 'locale', t('language'), [['ar', 'العربية'], ['en', 'English']], { full: true }),
       { name: 'hint', label: t('important'), full: true, control: <p className="muted hint" id="f-hint">{t('inviteHint')}</p> },
+    ]} />
+  )
+}
+
+/** Deleting an account is final: the admin types the user's email and their own password. */
+function DeleteUserForm({ member, onClose }: { member: Member; onClose: () => void }) {
+  const { t } = useI18n()
+  const { toast, refresh } = useSession()
+  const form = useForm({ confirm_email: '', current_password: '' }, onClose)
+  const submit = () => form.run(async () => {
+    await api(`/admin/users/${member.id}`, { method: 'DELETE', body: { confirm_email: String(form.f.confirm_email).trim(), current_password: form.f.current_password } })
+    toast(t('userDeleted'))
+    refresh()
+    onClose()
+  }, {}, true)
+  return (
+    <FormModal title={t('deleteUser')} errors={form.errors} busy={form.busy} onClose={onClose} onSubmit={submit} submitLabel={t('deleteForever')} fields={[
+      { name: 'warning', label: member.name, full: true, control: <p className="hint neg" id="f-warning">{t('deleteUserWarning', { email: member.email })}</p> },
+      text(form, 'confirm_email', t('typeEmailToConfirm'), { type: 'email', dir: 'ltr', full: true, placeholder: member.email }),
+      text(form, 'current_password', t('yourPassword'), { type: 'password', dir: 'ltr', full: true }),
     ]} />
   )
 }
