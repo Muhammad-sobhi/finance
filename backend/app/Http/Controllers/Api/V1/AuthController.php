@@ -6,35 +6,193 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateProfileRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Notifications\InfoAlert;
+use App\Services\SignInLog;
+use App\Services\TwoFactor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password as PasswordRule;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    public function __construct(private readonly TwoFactor $twoFactor, private readonly SignInLog $log) {}
+
     public function login(Request $request): JsonResponse
     {
         $data = $request->validate([
             'email' => ['required', 'email', 'max:255'],
             'password' => ['required', 'string', 'max:255'],
             'device_name' => ['nullable', 'string', 'max:100'],
+            'device_token' => ['nullable', 'string', 'max:100'],
         ]);
 
         $user = User::where('email', strtolower($data['email']))->first();
+        // Hash even when the email is unknown so response time doesn't reveal which emails exist.
+        $valid = Hash::check($data['password'], $user?->password ?? self::dummyHash());
 
-        if (! $user || ! Hash::check($data['password'], $user->password) || ! $this->canLogIn($user)) {
+        if (! $user || ! $valid || ! $this->canLogIn($user)) {
+            if ($user && ! $valid) {
+                $this->log->failure($user, $request, 'password');
+            }
             throw ValidationException::withMessages(['email' => __('auth.failed')]);
         }
 
+        // Second step required: hand back a short-lived challenge instead of a token.
+        $twoFactor = $this->twoFactor->enabled($user);
+        if ($twoFactor && ! $this->twoFactor->isTrusted($user, $data['device_token'] ?? null)) {
+            return response()->json(['two_factor' => true, 'challenge' => $this->twoFactor->challengeFor($user)]);
+        }
+        $this->log->success($user, $request, $twoFactor ? 'trusted_device' : 'password');
+
+        return $this->issueToken($user, $data['device_name'] ?? 'web');
+    }
+
+    /** Email a reset link. Same answer whether or not the address is registered. */
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $request->validate(['email' => ['required', 'email', 'max:255']]);
+        // Status (sent / throttled / unknown user) is deliberately not revealed.
+        Password::broker()->sendResetLink(['email' => strtolower($request->input('email'))]);
+
+        return response()->json(['message' => __('passwords.sent')]);
+    }
+
+    /** Set a new password from the emailed token; signs out every device and forgets trusted ones. */
+    public function resetPassword(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'token' => ['required', 'string', 'max:200'],
+            'email' => ['required', 'email', 'max:255'],
+            'password' => ['required', 'confirmed', PasswordRule::min(10)],
+            'invite' => ['sometimes', 'boolean'],
+        ]);
+        // Invitation links last a week, but only for accounts that were invited and never activated.
+        $target = User::where('email', strtolower($data['email']))->first();
+        $invite = $request->boolean('invite') && $target?->invitePending();
+        $status = Password::broker($invite ? 'invites' : 'users')->reset(
+            ['email' => strtolower($data['email']), 'token' => $data['token'], 'password' => $data['password'], 'password_confirmation' => $request->input('password_confirmation')],
+            function (User $user, string $password) use ($invite) {
+                // Choosing a password from an emailed link also proves the address (activates invites).
+                $user->forceFill(['password' => $password, 'remember_token' => null, 'email_verified_at' => $user->email_verified_at ?? now()])->save();
+                $user->tokens()->delete();
+                $this->twoFactor->forgetDevices($user);
+                if (! $invite) {
+                    $user->notify(new InfoAlert('password_reset', [], '/settings', always: true));
+                }
+            },
+        );
+        if ($status !== Password::PASSWORD_RESET) {
+            throw ValidationException::withMessages(['token' => __('passwords.token')]);
+        }
+
+        return response()->json(['message' => __('passwords.reset')]);
+    }
+
+    /** Login step 2: authenticator code (or a recovery code) for the challenge from step 1. */
+    public function twoFactorChallenge(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'challenge' => ['required', 'string', 'max:2000'],
+            'code' => ['nullable', 'string', 'max:10'],
+            'recovery_code' => ['nullable', 'string', 'max:30'],
+            'device_name' => ['nullable', 'string', 'max:100'],
+            'remember' => ['sometimes', 'boolean'],
+        ]);
+        $user = $this->twoFactor->userForChallenge($data['challenge']);
+        if (! $user) {
+            throw ValidationException::withMessages(['challenge' => 'Sign-in expired. Enter your password again.']);
+        }
+        $method = ! empty($data['recovery_code']) ? 'recovery_code' : 'authenticator';
+        if (! $this->twoFactor->verify($user, $data['code'] ?? null, $data['recovery_code'] ?? null)) {
+            $this->log->failure($user, $request, $method);
+            throw ValidationException::withMessages(['code' => 'Invalid code.']);
+        }
+        $this->log->success($user, $request, $method);
+
+        $response = $this->issueToken($user, $data['device_name'] ?? 'web');
+        if ($request->boolean('remember')) {
+            $response->setData($response->getData(true) + ['device_token' => $this->twoFactor->trustDevice($user, $data['device_name'] ?? null)]);
+        }
+
+        return $response;
+    }
+
+    /** Start enabling 2FA (needs the current password). */
+    public function twoFactorSetup(Request $request): JsonResponse
+    {
+        $request->validate(['current_password' => ['required', 'current_password:sanctum']]);
+        abort_if($this->twoFactor->enabled($request->user()), 409, 'Two-factor is already enabled.');
+
+        return response()->json($this->twoFactor->begin($request->user()));
+    }
+
+    public function twoFactorConfirm(Request $request): JsonResponse
+    {
+        $request->validate(['code' => ['required', 'string', 'max:10']]);
+        $codes = $this->twoFactor->confirm($request->user(), $request->input('code'));
+        if ($codes === null) {
+            throw ValidationException::withMessages(['code' => 'Invalid code.']);
+        }
+
+        return response()->json(['recovery_codes' => $codes]);
+    }
+
+    public function twoFactorDisable(Request $request): JsonResponse
+    {
+        $request->validate(['current_password' => ['required', 'current_password:sanctum'], 'code' => ['required', 'string', 'max:30']]);
+        $user = $request->user();
+        $code = $request->input('code');
+        if (! $this->twoFactor->verify($user, strlen(preg_replace('/\D/', '', $code)) === 6 ? $code : null, $code)) {
+            throw ValidationException::withMessages(['code' => 'Invalid code.']);
+        }
+        $this->twoFactor->disable($user);
+
+        return response()->json(['ok' => true]);
+    }
+
+    public function twoFactorRecoveryCodes(Request $request): JsonResponse
+    {
+        $request->validate(['current_password' => ['required', 'current_password:sanctum']]);
+        abort_unless($this->twoFactor->enabled($request->user()), 409, 'Two-factor is not enabled.');
+
+        return response()->json(['recovery_codes' => $this->twoFactor->newRecoveryCodes($request->user())]);
+    }
+
+    public function twoFactorStatus(Request $request): JsonResponse
+    {
+        return response()->json([
+            'enabled' => $this->twoFactor->enabled($request->user()),
+            'recovery_codes_left' => $this->twoFactor->recoveryCodesLeft($request->user()),
+        ]);
+    }
+
+    private function issueToken(User $user, string $device): JsonResponse
+    {
         $abilities = $user->isHeir() ? ['read'] : ['*'];
-        $token = $user->createToken($data['device_name'] ?? 'web', $abilities)->plainTextToken;
+        $token = $user->createToken($device, $abilities)->plainTextToken;
 
         if ($user->isOwner()) {
             $user->forceFill(['last_activity_at' => now()])->saveQuietly();
         }
 
         return response()->json(['token' => $token, 'user' => new UserResource($user)]);
+    }
+
+    /** The last sign-ins and failed attempts on this account. */
+    public function activity(Request $request): JsonResponse
+    {
+        $rows = DB::table('login_events')->where('user_id', $request->user()->id)->orderByDesc('id')->limit(50)
+            ->get(['id', 'success', 'method', 'device', 'ip', 'created_at'])
+            ->map(fn ($e) => ['id' => $e->id, 'success' => (bool) $e->success, 'method' => $e->method, 'device' => $e->device,
+                'ip' => $e->ip, 'at' => Carbon::parse($e->created_at)->toIso8601String()]);
+
+        return response()->json(['data' => $rows]);
     }
 
     public function logout(Request $request): JsonResponse
@@ -55,6 +213,59 @@ class AuthController extends Controller
         $user->fill($request->validated())->save();
 
         return new UserResource($user);
+    }
+
+    /** Change name / email. Changing the login email needs the current password. */
+    public function updateProfile(Request $request): UserResource
+    {
+        $user = $request->user();
+        $data = $request->validate([
+            'name' => ['sometimes', 'string', 'max:120'],
+            'email' => ['sometimes', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'current_password' => [Rule::requiredIf(fn () => $request->filled('email') && strtolower($request->input('email')) !== $user->email), 'nullable', 'current_password:sanctum'],
+        ]);
+        unset($data['current_password']);
+        if (isset($data['email'])) {
+            $data['email'] = strtolower($data['email']);
+        }
+        $user->fill($data)->save();
+
+        return new UserResource($user);
+    }
+
+    /** Change password; every other device is signed out. */
+    public function updatePassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'current_password' => ['required', 'current_password:sanctum'],
+            'password' => ['required', 'confirmed', PasswordRule::min(10), 'different:current_password'],
+        ]);
+        $user = $request->user();
+        $user->forceFill(['password' => $request->input('password')])->save();
+        $this->revokeOthers($request);
+        $this->twoFactor->forgetDevices($user);
+
+        return response()->json(['ok' => true]);
+    }
+
+    /** Sign out everywhere except this device. */
+    public function logoutOthers(Request $request): JsonResponse
+    {
+        $this->twoFactor->forgetDevices($request->user());
+
+        return response()->json(['revoked' => $this->revokeOthers($request)]);
+    }
+
+    private function revokeOthers(Request $request): int
+    {
+        return $request->user()->tokens()->whereKeyNot($request->user()->currentAccessToken()->id)->delete();
+    }
+
+    private static function dummyHash(): string
+    {
+        static $hash;
+
+        return $hash ??= Hash::make('timing-equaliser');
     }
 
     /** Heir accounts only work once heir access is activated (heir module). */

@@ -23,6 +23,7 @@ class TransactionService
             $this->fill($tx, $data);
             $tx->save();
             $this->apply($tx, 1);
+            $this->syncFee($tx);
 
             return $tx;
         });
@@ -35,6 +36,7 @@ class TransactionService
             $this->fill($tx, $data);
             $tx->save();
             $this->apply($tx, 1);
+            $this->syncFee($tx);
 
             return $tx;
         });
@@ -43,6 +45,7 @@ class TransactionService
     public function delete(Transaction $tx): void
     {
         DB::transaction(function () use ($tx) {
+            $this->dropFee($tx);
             $this->apply($tx, -1);
             $tx->delete();
         });
@@ -64,7 +67,39 @@ class TransactionService
         } else {
             $tx->to_account_id = null;
             $tx->to_amount = null;
+            $tx->fee = null;
         }
+        if ($tx->fee !== null && (float) $tx->fee <= 0) {
+            $tx->fee = null;
+        }
+    }
+
+    /** A transfer's fee is its own expense row (so reports count it), kept in step with the transfer. */
+    private function syncFee(Transaction $tx): void
+    {
+        $this->dropFee($tx);
+        if ($tx->type !== TransactionType::Transfer || ! $tx->fee) {
+            return;
+        }
+        $fee = new Transaction;
+        $fee->user_id = $tx->user_id;
+        $fee->fill([
+            'type' => TransactionType::Expense, 'account_id' => $tx->account_id, 'amount' => $tx->fee,
+            'category_id' => DefaultCategories::ensure(User::findOrFail($tx->user_id), 'fees'),
+            'date' => $tx->date, 'note' => $tx->note, 'source_type' => 'transfer_fee', 'source_id' => $tx->id,
+        ]);
+        $fee->currency = $tx->currency;
+        $fee->save();
+        $this->apply($fee, 1);
+    }
+
+    private function dropFee(Transaction $tx): void
+    {
+        Transaction::where('source_type', 'transfer_fee')->where('source_id', $tx->id)->get()
+            ->each(function (Transaction $fee) {
+                $this->apply($fee, -1);
+                $fee->delete();
+            });
     }
 
     /** Apply (+1) or reverse (-1) a transaction's effect on balances. */

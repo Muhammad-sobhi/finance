@@ -3,22 +3,19 @@
 namespace App\Models;
 
 use App\Models\Concerns\EncryptedForOwner;
+use App\Models\Concerns\OwnedThroughParent;
 use Illuminate\Database\Eloquent\Model;
 
 class InvestmentValue extends Model
 {
-    use EncryptedForOwner;
+    use EncryptedForOwner, OwnedThroughParent;
+
+    public const PARENT = [Investment::class, 'investment_id'];
 
     /** Stored encrypted with the owner's data key (see EncryptedForOwner). */
     public const ENCRYPTED = ['value'];
 
     protected $fillable = ['date', 'value'];
-
-    /** Rows carry the owner's id (from the investment) so they can be decrypted on their own. */
-    protected static function booted(): void
-    {
-        static::creating(fn (InvestmentValue $v) => $v->user_id ??= Investment::whereKey($v->investment_id)->value('user_id'));
-    }
 
     protected function casts(): array
     {

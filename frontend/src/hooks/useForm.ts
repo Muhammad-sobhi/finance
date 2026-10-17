@@ -14,13 +14,16 @@ export function useForm<T extends Record<string, unknown>>(initial: T, onDone: (
   const put = (k: keyof T, v: unknown) => setF((prev) => ({ ...prev, [k]: v }))
   const set = (k: keyof T) => (e: { target: { value: string } }) => put(k, e.target.value)
 
-  const run = async (fn: () => Promise<unknown>, codes: Record<string, string> = {}) => {
+  /** `quiet`: a step inside a flow — map errors, but no toast/refresh/close on success. */
+  const run = async (fn: () => Promise<unknown>, codes: Record<string, string> = {}, quiet = false) => {
     setBusy(true)
     try {
       await fn()
-      toast(t('saved'))
-      refresh()
-      onDone()
+      if (!quiet) {
+        toast(t('saved'))
+        refresh()
+        onDone()
+      }
     } catch (err) {
       if (err instanceof ApiError && err.data.code && codes[err.data.code]) toast(codes[err.data.code])
       else if (err instanceof ApiError && err.data.errors) setErrors(err.fieldErrors)

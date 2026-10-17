@@ -57,7 +57,7 @@ class DueAlert extends Notification implements ShouldQueue
         return (new WebPushMessage)
             ->title($this->title($user))
             ->body($this->body($user))
-            ->icon('/icon.svg')
+            ->icon('/icon-192.png')
             ->tag("{$this->item->kind}-{$this->item->id}-{$this->stage}")
             ->data(['url' => $this->item->path]);
     }

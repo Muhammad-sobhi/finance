@@ -40,4 +40,9 @@ return [
         'url' => env('RATES_URL', 'https://open.er-api.com/v6/latest/{base}'),
     ],
 
+    // Gold/silver spot price (USD per troy ounce) for finance:fetch-metals ({symbol} = XAU | XAG). Free, no key.
+    'metals' => [
+        'url' => env('METALS_URL', 'https://api.gold-api.com/price/{symbol}'),
+    ],
+
 ];

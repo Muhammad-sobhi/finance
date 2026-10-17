@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
+import { BarChart, LineChart } from '../components/Charts'
 import { DetailModal } from '../components/DetailModal'
 import { FitList } from '../components/FitList'
 import { Icon } from '../components/Icon'
@@ -7,6 +8,7 @@ import { useApi } from '../hooks/useApi'
 import { useSwipe } from '../hooks/useSwipe'
 import { useI18n } from '../i18n'
 import { monthIndex, shiftMonth, thisMonth } from '../lib/dates'
+import { printReport } from '../lib/print'
 import type { Report } from '../lib/types'
 
 const PANELS = 5
@@ -38,11 +40,7 @@ export function Reports() {
     return <div className={`d ${good ? 'pos' : 'neg'}`}>{v >= 0 ? '▲' : '▼'} <span className="num">{num(Math.abs(v), 1)}%</span> {t('vsPrev')}</div>
   }
   const catLabel = (c: Cat) => (c.key ? i.e(c.key === 'uncategorized' ? 'noCategory' : c.key) : c.name ?? '—')
-  const maxPair = Math.max(1, ...(r?.series ?? []).flatMap((s) => [s.income, s.expense]))
   const trend = r?.net_worth_trend ?? []
-  const tMax = Math.max(1, ...trend.map((p) => p.net_worth))
-  const tMin = Math.min(...trend.map((p) => p.net_worth)) * 0.9
-  const tH = (v: number) => (tMax - tMin > 0 ? 10 + ((v - tMin) / (tMax - tMin)) * 80 : 90)
   const cls = (n: number) => `panel${panel === n ? ' on' : ''}`
   const maxCat = Math.max(1, ...cats.map((c) => c.amount))
 
@@ -74,6 +72,7 @@ export function Reports() {
           <button type="button" className="icon-btn" onClick={() => shift(1)} disabled={isCurrent} aria-label={t('nextPeriod')}><Icon name="next" className="flip" /></button>
         </div>
         <span className="grow" />
+        {r && <button type="button" className="icon-btn" onClick={() => printReport(r, i, label, catLabel)} aria-label={t('printReport')} title={t('printReport')}><Icon name="print" /></button>}
         {r && (
           <span className={`tag ${r.growth.growing ? 'quiet grow-tag' : 'late'}`}>
             {r.growth.growing ? t('growing') : t('notGrowing')}{r.growth.pct !== null ? ` ${r.growth.pct >= 0 ? '▲' : '▼'} ${num(Math.abs(r.growth.pct), 1)}%` : ''}
@@ -96,32 +95,24 @@ export function Reports() {
         <div className={cls(1)}>
           <div className="card">
             <h3>{t('incomeVsExpense')}<small>{r?.base_currency}</small></h3>
-            <div className="chart" role="img" aria-label={t('incomeVsExpense')}>
-              {(r?.series ?? []).map((s) => (
-                <div className="col" key={s.month} title={`${t('income')} ${num(s.income)} · ${t('expense')} ${num(s.expense)}`}>
-                  <div className="pair">
-                    <div className="bar" style={{ height: `${(s.income / maxPair) * 90}%` }} />
-                    <div className="bar hi" style={{ height: `${(s.expense / maxPair) * 90}%` }} />
-                  </div>
-                  <div className="m">{d.months[monthIndex(s.month)]}</div>
-                </div>
-              ))}
-            </div>
-            <div className="legend"><span><i className="sw pos-bg" />{t('income')}</span><span><i className="sw neg-bg" />{t('expense')}</span></div>
+            <BarChart
+              points={(r?.series ?? []).map((x) => ({ label: d.months[monthIndex(x.month)], values: { income: x.income, expense: x.expense } }))}
+              series={[{ key: 'income', label: t('income'), color: 1 }, { key: 'expense', label: t('expense'), color: 2 }]}
+              format={(v) => `${num(v)} ${r?.base_currency ?? ''}`}
+              labelLast={false}
+              ariaLabel={t('incomeVsExpense')}
+            />
           </div>
         </div>
 
         <div className={cls(2)}>
           <div className="card">
             <h3>{t('netWorthTrend')}<small>{r?.base_currency}</small></h3>
-            <div className="chart" role="img" aria-label={t('netWorthTrend')}>
-              {trend.map((p) => (
-                <div className="col" key={p.month} title={num(p.net_worth)}>
-                  <div className="bar" style={{ height: `${tH(p.net_worth)}%` }} />
-                  <div className="m">{d.months[monthIndex(p.month)]}</div>
-                </div>
-              ))}
-            </div>
+            <LineChart
+              points={trend.map((x) => ({ label: d.months[monthIndex(x.month)], value: x.net_worth }))}
+              format={(v) => `${num(v)} ${r?.base_currency ?? ''}`}
+              ariaLabel={`${t('netWorthTrend')}: ${trend.map((x) => num(x.net_worth)).join(', ')}`}
+            />
           </div>
         </div>
 

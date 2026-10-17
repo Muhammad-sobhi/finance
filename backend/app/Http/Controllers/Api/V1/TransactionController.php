@@ -7,16 +7,21 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\TransactionRequest;
 use App\Http\Resources\TransactionResource;
 use App\Models\Transaction;
+use App\Services\BudgetService;
 use App\Services\CurrencyConverter;
+use App\Services\DataVault;
 use App\Services\TransactionService;
+use App\Services\UnusualSpend;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class TransactionController extends Controller
 {
-    public function __construct(private readonly TransactionService $service) {}
+    public function __construct(private readonly TransactionService $service, private readonly BudgetService $budgets, private readonly UnusualSpend $unusual) {}
 
     /**
      * One month of transactions (newest first) with month and per-day totals in base currency.
@@ -84,6 +89,8 @@ class TransactionController extends Controller
     public function store(TransactionRequest $request): JsonResponse
     {
         $tx = $this->service->create($request->user(), $request->validated());
+        $this->budgets->watch($request->user());
+        $this->unusual->check($request->user(), $tx);
 
         return (new TransactionResource($tx->refresh()))->response()->setStatusCode(201);
     }
@@ -99,7 +106,10 @@ class TransactionController extends Controller
     {
         $this->guardManaged($transaction);
 
-        return new TransactionResource($this->service->update($transaction, $request->validated())->refresh());
+        $tx = $this->service->update($transaction, $request->validated())->refresh();
+        $this->budgets->watch($request->user());
+
+        return new TransactionResource($tx);
     }
 
     public function destroy(Transaction $transaction): JsonResponse
@@ -111,11 +121,50 @@ class TransactionController extends Controller
         return response()->json(null, 204);
     }
 
-    /** Loan and repayment transactions are owned by their debt; edit them there. */
+    /** Attach (or replace) a receipt photo / PDF. Stored encrypted with the owner's key on the private disk, never public. */
+    public function storeReceipt(Request $request, Transaction $transaction, DataVault $vault): TransactionResource
+    {
+        Gate::authorize('update', $transaction);
+        $request->validate(['file' => ['required', 'file', 'max:5120', 'mimetypes:image/jpeg,image/png,image/webp,application/pdf']]);
+        $file = $request->file('file');
+        $path = "receipts/{$transaction->user_id}/".Str::uuid().'.'.$file->guessExtension().'.enc';
+        Storage::disk('local')->put($path, $vault->encrypt($transaction->user_id, $file->getContent()));
+        $old = $transaction->receipt_path;
+        $transaction->forceFill(['receipt_path' => $path, 'receipt_mime' => $file->getMimeType()])->save();
+        if ($old) {
+            Storage::disk('local')->delete($old);
+        }
+
+        return new TransactionResource($transaction);
+    }
+
+    public function showReceipt(Transaction $transaction, DataVault $vault)
+    {
+        Gate::authorize('view', $transaction);
+        abort_unless($transaction->receipt_path && Storage::disk('local')->exists($transaction->receipt_path), 404);
+
+        return response($vault->decrypt($transaction->user_id, Storage::disk('local')->get($transaction->receipt_path)), 200, [
+            'Content-Type' => $transaction->receipt_mime, 'Cache-Control' => 'private, no-store', 'X-Content-Type-Options' => 'nosniff',
+            'Content-Disposition' => 'inline',
+        ]);
+    }
+
+    public function destroyReceipt(Transaction $transaction): TransactionResource
+    {
+        Gate::authorize('update', $transaction);
+        if ($transaction->receipt_path) {
+            Storage::disk('local')->delete($transaction->receipt_path);
+            $transaction->forceFill(['receipt_path' => null, 'receipt_mime' => null])->save();
+        }
+
+        return new TransactionResource($transaction);
+    }
+
+    /** Loan/repayment and project-payment transactions are owned by their record; edit them there. */
     private function guardManaged(Transaction $transaction): void
     {
-        if ($transaction->isDebtMovement()) {
-            abort(response()->json(['message' => 'Edit this from its debt.', 'code' => 'managed_by_debt'], 409));
+        if ($code = $transaction->managedCode()) {
+            abort(response()->json(['message' => 'Edit this from the record it belongs to.', 'code' => $code], 409));
         }
     }
 }

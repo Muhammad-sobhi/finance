@@ -69,6 +69,31 @@ class EncryptionTest extends TestCase
         $this->getJson("/api/v1/debts/{$debt}")->assertJsonPath('person', 'Khaled Mahmoud')->assertJsonPath('remaining', 6543);
     }
 
+    public function test_income_planning_installments_and_gameyas_are_encrypted_too(): void
+    {
+        $o = $this->owner;
+        $rows = [
+            'income_sources' => $o->incomeSources()->create(['name' => 'Salary ACME', 'amount' => 45678, 'currency' => 'EGP', 'next_date' => '2026-10-25', 'cycle' => 'monthly']),
+            'projects' => $o->projects()->create(['client' => 'Client Zed', 'name' => 'Site', 'amount' => 45678, 'currency' => 'EGP']),
+            'goals' => $o->goals()->create(['name' => 'Hajj fund', 'target_amount' => 45678, 'currency' => 'EGP']),
+            'installment_plans' => $o->installmentPlans()->create(['name' => 'Fridge valU', 'currency' => 'EGP', 'installment_amount' => 45678, 'count' => 6, 'first_due_date' => '2026-10-01']),
+            'gameyas' => $o->gameyas()->create(['name' => 'Office gameya', 'organizer' => 'Umm Ahmed', 'members' => 10, 'my_turn' => 3, 'amount' => 45678, 'currency' => 'EGP', 'start_date' => '2026-10-01']),
+        ];
+        $rows['projects']->payments()->create(['amount' => 45678, 'date' => '2026-10-02']);
+        $rows['goals']->contributions()->create(['amount' => 45678, 'date' => '2026-10-02']);
+        $rows['gameyas']->payments()->create(['kind' => 'contribution', 'round' => 1, 'amount' => 45678, 'date' => '2026-10-01']);
+
+        foreach (['income_sources', 'projects', 'goals', 'installment_plans', 'gameyas', 'project_payments', 'goal_contributions', 'gameya_payments'] as $table) {
+            $raw = json_encode(DB::table($table)->get());
+            $this->assertStringNotContainsString('45678', $raw, $table);
+            foreach (['Salary', 'Zed', 'Hajj', 'valU', 'Umm Ahmed'] as $word) {
+                $this->assertStringNotContainsString($word, $raw, $table);
+            }
+        }
+        $this->assertSame(45678.0, $rows['gameyas']->fresh()->load('payments')->position());
+        $this->assertSame('Umm Ahmed', $rows['gameyas']->fresh()->organizer);
+    }
+
     public function test_one_owner_key_cannot_open_another_owners_rows(): void
     {
         $other = User::factory()->create();

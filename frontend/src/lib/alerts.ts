@@ -9,10 +9,17 @@ export function dueSubject(i: I18n, kind: string, rawName: string): string {
     case 'i_owe': return i.t('debtTo', { name })
     case 'maturity': return i.t('matures', { name })
     case 'subscription': return i.t('subDue', { name })
+    case 'income': return i.t('incomeDue', { name })
+    case 'project': return i.t('projectDue', { name })
+    case 'zakat': return i.t('zakatDaySub')
+    case 'installment': return i.t('installmentDue', { name })
+    case 'gameya': return i.t('gameyaDue', { name })
+    case 'gameya_payout': return i.t('gameyaTurn', { name })
     default: return name
   }
 }
 
 export const DUE_ROUTE: Record<string, string> = {
-  bill: '/bills', subscription: '/subscriptions', owed_to_me: '/debts', i_owe: '/debts', maturity: '/investments', credit_card: '/accounts',
+  bill: '/bills', income: '/income', project: '/income', subscription: '/subscriptions', owed_to_me: '/debts', i_owe: '/debts', maturity: '/investments', credit_card: '/accounts', zakat: '/planning',
+  installment: '/debts', gameya: '/debts', gameya_payout: '/debts',
 }

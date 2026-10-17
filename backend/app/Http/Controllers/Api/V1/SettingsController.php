@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\ExchangeRate;
 use App\Models\User;
+use App\Services\CurrencyConverter;
+use App\Services\MetalPriceFetcher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -29,6 +31,7 @@ class SettingsController extends Controller
             'alert_days' => ['sometimes', 'integer', 'between:0,60'],
             'email_alerts' => ['sometimes', 'boolean'],
             'auto_fetch_rates' => ['sometimes', 'boolean'],
+            'auto_metal_prices' => ['sometimes', 'boolean'],
         ]);
         if (isset($data['base_currency'])) {
             $data['base_currency'] = strtoupper($data['base_currency']);
@@ -38,6 +41,21 @@ class SettingsController extends Controller
             }
         }
         $owner->update($data);
+
+        return response()->json($this->present($owner->fresh()));
+    }
+
+    /** Fetch gold/silver prices now (needs a USD rate unless the base is USD). */
+    public function refreshMetals(Request $request, MetalPriceFetcher $fetcher): JsonResponse
+    {
+        $owner = $request->user();
+        abort_unless($owner->isOwner(), 403);
+        if (! CurrencyConverter::for($owner)->hasRate('USD')) {
+            return response()->json(['message' => 'Add a USD exchange rate first.', 'code' => 'usd_rate_missing'], 422);
+        }
+        if (! $fetcher->forOwner($owner)) {
+            return response()->json(['message' => 'The price service did not answer. Try again later.', 'code' => 'metals_unavailable'], 503);
+        }
 
         return response()->json($this->present($owner->fresh()));
     }
@@ -85,6 +103,8 @@ class SettingsController extends Controller
             'alert_days' => $owner->alert_days,
             'email_alerts' => $owner->email_alerts,
             'auto_fetch_rates' => $owner->auto_fetch_rates,
+            'auto_metal_prices' => $owner->auto_metal_prices,
+            'metal_prices_updated_at' => $owner->metal_prices_updated_at?->toIso8601String(),
             'rates' => $owner->exchangeRates()->orderBy('currency')->get()->map(fn ($r) => $this->rate($r)),
         ];
     }

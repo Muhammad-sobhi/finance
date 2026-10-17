@@ -33,7 +33,7 @@ class AlertScanner
 
     public function scanOwner(User $owner, CarbonImmutable $today): int
     {
-        $sent = 0;
+        $sent = app(BudgetService::class)->watch($owner, $today);
         foreach ($this->items($owner, $today) as $item) {
             $stage = $item->stage($today, $owner->alert_days);
             if ($stage === null) {
@@ -64,6 +64,17 @@ class AlertScanner
             )));
         }
 
+        // Expected income: no early warning unless the source asks for one; auto-recorded ones need no prompt.
+        $owner->incomeSources()->where('is_active', true)->where('auto_pay', false)->get()
+            ->each(fn ($r) => $out->push(new DueItem(
+                $owner->id, 'income', $r->id, $r->name, $r->dueDate(), (float) $r->amount, $r->currency, $r->remind_days ?? 0, '/income',
+            )));
+        $owner->projects()->where('status', 'active')->whereNotNull('due_date')->with('payments')->get()
+            ->filter(fn ($p) => $p->outstanding() > 0)
+            ->each(fn ($p) => $out->push(new DueItem(
+                $owner->id, 'project', $p->id, "{$p->client} — {$p->name}", CarbonImmutable::parse($p->due_date), $p->outstanding(), $p->currency, $p->remind_days, '/income',
+            )));
+
         $owner->debts()->where('status', DebtStatus::Open)->whereNotNull('due_date')->with('payments')->get()
             ->each(fn ($d) => $out->push(new DueItem(
                 $owner->id, $d->direction->value, $d->id, $d->person, CarbonImmutable::parse($d->due_date), $d->remaining(), $d->currency, $d->remind_days, '/debts',
@@ -84,6 +95,28 @@ class AlertScanner
                 }
                 $out->push(new DueItem($owner->id, 'credit_card', $a->id, $a->name, $due, abs((float) $a->balance), $a->currency, null, '/accounts'));
             });
+
+        $owner->installmentPlans()->withCount('payments')->get()
+            ->filter(fn ($p) => $p->nextDue() !== null)
+            ->each(fn ($p) => $out->push(new DueItem(
+                $owner->id, 'installment', $p->id, $p->name, $p->nextDue(), (float) $p->installment_amount, $p->currency, $p->remind_days, '/debts',
+            )));
+        $owner->gameyas()->with('payments')->get()->each(function ($g) use ($out, $owner) {
+            if ($round = $g->nextRound()) {
+                $out->push(new DueItem($owner->id, 'gameya', $g->id, $g->name, $g->roundDate($round), (float) $g->amount, $g->currency, $g->remind_days, '/debts'));
+            }
+            if (! $g->received()) {
+                $out->push(new DueItem($owner->id, 'gameya_payout', $g->id, $g->name, $g->roundDate($g->my_turn), $g->payout(), $g->currency, $g->remind_days, '/debts'));
+            }
+        });
+
+        // Zakat day (a week's notice at least, to prepare the money), only when something is due.
+        if ($owner->zakat_date) {
+            $zakat = app(ZakatService::class)->compute($owner, $today);
+            if ($zakat['due'] > 0) {
+                $out->push(new DueItem($owner->id, 'zakat', $owner->id, '', CarbonImmutable::parse($owner->zakat_date), $zakat['due'], $owner->base_currency, max(7, $owner->alert_days), '/planning'));
+            }
+        }
 
         return $out;
     }

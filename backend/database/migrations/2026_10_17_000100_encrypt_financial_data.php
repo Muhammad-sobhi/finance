@@ -6,6 +6,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Per-owner encryption of financial data (see DataVault / EncryptedForOwner).
@@ -23,7 +24,10 @@ return new class extends Migration
             'balance' => ['decimal', [15, 2], false, 0], 'credit_limit' => ['decimal', [15, 2], true],
             'last4' => ['string', [4], true], 'account_number' => ['text', [], true, null, 'app_key'], 'notes' => ['text', [], true, null, 'app_key'],
         ],
-        'transactions' => ['amount' => ['decimal', [15, 2], false], 'to_amount' => ['decimal', [15, 2], true], 'note' => ['string', [500], true]],
+        'transactions' => [
+            'amount' => ['decimal', [15, 2], false], 'to_amount' => ['decimal', [15, 2], true],
+            'fee' => ['decimal', [15, 2], true], 'note' => ['string', [500], true],
+        ],
         'debts' => [
             'person' => ['string', [], false], 'phone' => ['string', [32], true],
             'amount' => ['decimal', [15, 2], false], 'notes' => ['text', [], true, null, 'app_key'],
@@ -47,10 +51,34 @@ return new class extends Migration
             'national_id' => ['text', [], true, null, 'app_key'], 'address' => ['text', [], true, null, 'app_key'], 'notes' => ['text', [], true, null, 'app_key'],
         ],
         'trusted_contacts' => ['name' => ['string', [], false], 'phone' => ['string', [32], true], 'relation' => ['string', [60], true]],
+        'income_sources' => ['name' => ['string', [], false], 'amount' => ['decimal', [15, 2], false], 'notes' => ['text', [], true]],
+        'projects' => [
+            'client' => ['string', [], false], 'name' => ['string', [], false],
+            'amount' => ['decimal', [15, 2], false], 'notes' => ['text', [], true, null, 'app_key'],
+        ],
+        'project_payments' => ['amount' => ['decimal', [15, 2], false], 'note' => ['string', [500], true]],
+        'budgets' => ['amount' => ['decimal', [15, 2], false]],
+        'goals' => ['name' => ['string', [], false], 'target_amount' => ['decimal', [15, 2], false], 'notes' => ['text', [], true]],
+        'goal_contributions' => ['amount' => ['decimal', [15, 2], false], 'note' => ['string', [300], true]],
+        'zakat_payments' => ['amount' => ['decimal', [15, 2], false], 'zakatable_wealth' => ['decimal', [16, 2], false], 'note' => ['string', [300], true]],
+        'installment_plans' => [
+            'name' => ['string', [], false], 'provider' => ['string', [120], true],
+            'installment_amount' => ['decimal', [15, 2], false], 'down_payment' => ['decimal', [15, 2], true], 'notes' => ['text', [], true],
+        ],
+        'installment_payments' => ['amount' => ['decimal', [15, 2], false]],
+        'gameyas' => [
+            'name' => ['string', [], false], 'organizer' => ['string', [120], true],
+            'amount' => ['decimal', [15, 2], false], 'notes' => ['text', [], true],
+        ],
+        'gameya_payments' => ['amount' => ['decimal', [15, 2], false]],
     ];
 
     /** Child tables get their owner's id so each row can be decrypted on its own. */
-    private const CHILDREN = ['debt_payments' => ['debts', 'debt_id'], 'investment_values' => ['investments', 'investment_id']];
+    private const CHILDREN = [
+        'debt_payments' => ['debts', 'debt_id'], 'investment_values' => ['investments', 'investment_id'],
+        'project_payments' => ['projects', 'project_id'], 'goal_contributions' => ['goals', 'goal_id'],
+        'installment_payments' => ['installment_plans', 'installment_plan_id'], 'gameya_payments' => ['gameyas', 'gameya_id'],
+    ];
 
     public function up(): void
     {
@@ -78,6 +106,7 @@ return new class extends Migration
             });
         }
         $this->convert('notifications', 'notifiable_id', ['data'], fn ($value, $owner) => $vault->encrypt($owner, $value), true);
+        $this->sealReceipts(fn ($bytes, $owner) => $vault->encrypt($owner, $bytes), true);
     }
 
     public function down(): void
@@ -91,6 +120,7 @@ return new class extends Migration
             });
         }
         $this->convert('notifications', 'notifiable_id', ['data'], fn ($value, $owner) => $vault->decrypt($owner, $value), true);
+        $this->sealReceipts(fn ($bytes, $owner) => $vault->decrypt($owner, $bytes), false);
 
         foreach (self::COLUMNS as $table => $columns) {
             Schema::table($table, function (Blueprint $t) use ($columns) {
@@ -108,6 +138,23 @@ return new class extends Migration
             Schema::table($table, fn (Blueprint $t) => $t->dropConstrainedForeignId('user_id'));
         }
         Schema::table('users', fn (Blueprint $t) => $t->dropColumn('data_key'));
+    }
+
+    /** Receipt files: encrypt into `<path>.enc` (or back), then point the transaction at the new file. */
+    private function sealReceipts(callable $fn, bool $seal): void
+    {
+        $disk = Storage::disk('local');
+        DB::table('transactions')->whereNotNull('receipt_path')->orderBy('id')->chunkById(200, function ($rows) use ($disk, $fn, $seal) {
+            foreach ($rows as $row) {
+                if (str_ends_with($row->receipt_path, '.enc') === $seal || ! $disk->exists($row->receipt_path)) {
+                    continue;
+                }
+                $path = $seal ? $row->receipt_path.'.enc' : substr($row->receipt_path, 0, -4);
+                $disk->put($path, $fn($disk->get($row->receipt_path), (int) $row->user_id));
+                DB::table('transactions')->where('id', $row->id)->update(['receipt_path' => $path]);
+                $disk->delete($row->receipt_path);
+            }
+        });
     }
 
     /** Rewrite the given columns of every row with $fn(value, ownerId, column). */

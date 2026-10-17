@@ -3,8 +3,10 @@
 use App\Enums\UserRole;
 use App\Models\User;
 use App\Services\AlertScanner;
+use App\Services\BackupService;
 use App\Services\DataVault;
 use App\Services\HeirService;
+use App\Services\MetalPriceFetcher;
 use App\Services\NetWorth;
 use App\Services\RateFetcher;
 use App\Services\RecurringService;
@@ -27,6 +29,40 @@ Artisan::command('finance:owner {email} {name}', function (string $email, string
     $this->info("Owner {$email} created with default categories.");
 })->purpose('Create the owner account');
 
+Artisan::command('finance:restore {file} {email}', function (BackupService $backups, string $file, string $email) {
+    $owner = User::where('email', strtolower($email))->where('role', UserRole::Owner)->first();
+    if (! $owner) {
+        $this->error('Create the owner first: php artisan finance:owner '.$email.' "Name"');
+
+        return 1;
+    }
+    if (! is_readable($file)) {
+        $this->error("Can't read {$file}.");
+
+        return 1;
+    }
+    try {
+        $counts = $backups->restore($owner, $backups->open(file_get_contents($file), password('Backup passphrase', required: true)));
+    } catch (RuntimeException $e) {
+        $this->error($e->getMessage());
+
+        return 1;
+    }
+    $this->table(['Table', 'Rows'], collect($counts)->filter()->map(fn ($n, $t) => [$t, $n])->values()->all());
+    $this->info("Restored into {$owner->email}.");
+})->purpose('Restore an encrypted backup into a new, empty owner account');
+
+Artisan::command('finance:admin {email} {--revoke}', function (string $email) {
+    $user = User::where('email', strtolower($email))->where('role', UserRole::Owner)->first();
+    if (! $user) {
+        $this->error('No owner with that email.');
+
+        return 1;
+    }
+    $user->forceFill(['is_admin' => ! $this->option('revoke')])->save();
+    $this->info($user->is_admin ? "{$user->email} can now invite users (Settings → Users)." : "{$user->email} is no longer an admin.");
+})->purpose('Let an owner invite new users by email (or --revoke)');
+
 Artisan::command('finance:auto-pay', function (RecurringService $service) {
     $this->info('Paid '.$service->runAutoPay().' due auto-pay item(s).');
 })->purpose('Pay bills/subscriptions flagged auto-pay that are due');
@@ -48,7 +84,12 @@ Artisan::command('finance:fetch-rates', function (RateFetcher $fetcher) {
     $this->info('Updated '.$fetcher->run().' rate(s).');
 })->purpose('Auto-update exchange rates for owners who enabled it');
 
+Artisan::command('finance:fetch-metals', function (MetalPriceFetcher $fetcher) {
+    $this->info('Updated gold/silver prices for '.$fetcher->run().' owner(s).');
+})->purpose('Auto-update gold/silver prices for owners who enabled it');
+
 Schedule::command('finance:snapshot')->dailyAt('23:50');
+Schedule::command('finance:fetch-metals')->dailyAt('07:05');
 Schedule::command('finance:fetch-rates')->dailyAt('07:00');
 
 Artisan::command('finance:heir-check', function (HeirService $heirs) {
@@ -58,6 +99,7 @@ Artisan::command('finance:heir-check', function (HeirService $heirs) {
 
 Schedule::command('finance:heir-check')->hourly()->withoutOverlapping();
 
+Schedule::command('sanctum:prune-expired --hours=24')->daily();
 // Data master key (config/vault.php). Store it outside the project and the backups, with two offline copies.
 Artisan::command('vault:key', function (DataVault $vault) {
     $key = 'base64:'.base64_encode(Encrypter::generateKey('aes-256-gcm'));

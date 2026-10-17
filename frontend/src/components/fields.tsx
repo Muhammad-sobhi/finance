@@ -47,6 +47,20 @@ export function check(form: Form, name: string, label: string, text: string, o: 
   }
 }
 
+/** "Counts for zakat" checkbox; unset (null) follows the type's default until the user ticks it. */
+export function zakatable(form: Form, label: string, text: string, byDefault: boolean, o: Opts = {}): Field {
+  const v = form.f.zakatable as boolean | null
+  return {
+    name: 'zakatable', label, full: o.full, hidden: o.hidden,
+    control: (
+      <label className="check" htmlFor="f-zakatable">
+        <input id="f-zakatable" type="checkbox" checked={v ?? byDefault} onChange={(e) => form.put('zakatable', e.target.checked)} />
+        {text}
+      </label>
+    ),
+  }
+}
+
 export const CURRENCIES = ['EGP', 'USD', 'EUR', 'SAR', 'AED', 'KWD', 'GBP']
 
 export function currency(form: Form, name = 'currency', label = 'Currency', o: Opts = {}): Field {

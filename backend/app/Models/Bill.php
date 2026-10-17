@@ -17,6 +17,8 @@ class Bill extends Model
 
     public const DUE_COLUMN = 'due_date';
 
+    public const TX_TYPE = 'expense';
+
     protected $fillable = ['name', 'category_id', 'amount', 'currency', 'due_date', 'cycle', 'remind_days', 'auto_pay', 'account_id', 'notes', 'is_active'];
 
     protected function casts(): array

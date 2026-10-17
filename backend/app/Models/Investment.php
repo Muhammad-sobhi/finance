@@ -19,12 +19,13 @@ class Investment extends Model
 
     protected $fillable = [
         'name', 'type', 'platform', 'invested_amount', 'current_value', 'currency', 'quantity', 'unit',
-        'start_date', 'maturity_date', 'annual_return', 'payout_cycle', 'remind_days', 'notes',
+        'start_date', 'maturity_date', 'annual_return', 'payout_cycle', 'remind_days', 'notes', 'zakatable',
     ];
 
     protected function casts(): array
     {
         return [
+            'zakatable' => 'boolean',
             'type' => InvestmentType::class,
             'payout_cycle' => PayoutCycle::class,
             'invested_amount' => 'decimal:2',
@@ -34,6 +35,12 @@ class Investment extends Model
             'start_date' => 'date:Y-m-d',
             'maturity_date' => 'date:Y-m-d',
         ];
+    }
+
+    /** Rental real estate pays zakat on its income, not its value, so it is excluded unless marked. */
+    public function isZakatable(): bool
+    {
+        return $this->zakatable ?? $this->type !== InvestmentType::RealEstate;
     }
 
     public function values(): HasMany

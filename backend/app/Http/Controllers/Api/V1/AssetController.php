@@ -74,6 +74,7 @@ class AssetController extends Controller
             'karat' => ['nullable', 'integer', Rule::in([9, 10, 12, 14, 18, 21, 22, 24])],
             'location' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'zakatable' => ['sometimes', 'boolean'],
         ]);
         if (isset($data['currency'])) {
             $data['currency'] = strtoupper($data['currency']);
@@ -92,7 +93,7 @@ class AssetController extends Controller
             'purchase_date' => $a->purchase_date?->format('Y-m-d'),
             'current_value' => $a->current_value !== null ? (float) $a->current_value : null,
             'grams' => $a->grams !== null ? (float) $a->grams : null, 'karat' => $a->karat,
-            'location' => $a->location, 'notes' => $a->notes,
+            'location' => $a->location, 'notes' => $a->notes, 'zakatable' => $a->isZakatable(),
             // Valuation actually used (auto for metals), in its currency and in base.
             'value' => $value, 'value_currency' => $currency, 'base_value' => $fx->toBase($value, $currency),
             'auto_valued' => $a->type->isMetal(),

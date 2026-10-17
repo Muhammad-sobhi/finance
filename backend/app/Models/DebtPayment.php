@@ -3,13 +3,16 @@
 namespace App\Models;
 
 use App\Models\Concerns\EncryptedForOwner;
+use App\Models\Concerns\OwnedThroughParent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 class DebtPayment extends Model
 {
-    use EncryptedForOwner;
+    use EncryptedForOwner, OwnedThroughParent;
+
+    public const PARENT = [Debt::class, 'debt_id'];
 
     /** Stored encrypted with the owner's data key (see EncryptedForOwner). */
     public const ENCRYPTED = ['amount', 'note'];
@@ -19,12 +22,6 @@ class DebtPayment extends Model
     protected function casts(): array
     {
         return ['amount' => 'decimal:2', 'date' => 'date:Y-m-d'];
-    }
-
-    /** Rows carry the owner's id (from the debt) so they can be decrypted on their own. */
-    protected static function booted(): void
-    {
-        static::creating(fn (DebtPayment $p) => $p->user_id ??= Debt::whereKey($p->debt_id)->value('user_id'));
     }
 
     public function debt(): BelongsTo
