@@ -18,6 +18,7 @@ return [
         'installment' => ':name installment',
         'gameya' => ':name gameya payment',
         'gameya_payout' => 'Your :name gameya turn',
+        'vault' => 'A vault item needs renewal',
         'maturity' => ':name matures',
     ],
     'when' => [
@@ -26,5 +27,6 @@ return [
         'overdue' => ':days days late',
     ],
     'body' => ':subject — :amount :currency, :when',
+    'body_plain' => ':subject, :when',
     'open' => 'Open Dinar',
 ];

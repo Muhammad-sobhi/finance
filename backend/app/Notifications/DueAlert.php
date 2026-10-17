@@ -74,6 +74,13 @@ class DueAlert extends Notification implements ShouldQueue
 
     private function body(User $user): string
     {
+        if ($this->item->currency === '') {
+            return __('alerts.body_plain', [
+                'subject' => $this->subject($user),
+                'when' => __("alerts.when.{$this->stage}", ['days' => abs($this->days)], $user->locale),
+            ], $user->locale);
+        }
+
         return __('alerts.body', [
             'subject' => $this->subject($user),
             'amount' => number_format($this->item->amount, $this->item->amount == floor($this->item->amount) ? 0 : 2),

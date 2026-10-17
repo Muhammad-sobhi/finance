@@ -24,6 +24,7 @@ const pages = {
   Planning: () => import('./pages/Planning'),
   Public: () => import('./pages/Public'),
   Admin: () => import('./pages/Admin'),
+  Vault: () => import('./pages/Vault'),
 }
 const Accounts = lazy(() => pages.Accounts().then((m) => ({ default: m.Accounts })))
 const Assets = lazy(() => pages.Assets().then((m) => ({ default: m.Assets })))
@@ -38,6 +39,7 @@ const HeirPage = lazy(() => pages.Heir().then((m) => ({ default: m.HeirPage })))
 const Income = lazy(() => pages.Income().then((m) => ({ default: m.Income })))
 const Planning = lazy(() => pages.Planning().then((m) => ({ default: m.Planning })))
 const Admin = lazy(() => pages.Admin().then((m) => ({ default: m.Admin })))
+const Vault = lazy(() => pages.Vault().then((m) => ({ default: m.Vault })))
 const LinkPage = lazy(() => pages.Public().then((m) => ({ default: m.LinkPage })))
 const HeirRequestPage = lazy(() => pages.Public().then((m) => ({ default: m.HeirRequestPage })))
 const ForgotPasswordPage = lazy(() => pages.Public().then((m) => ({ default: m.ForgotPasswordPage })))
@@ -78,6 +80,7 @@ export default function App() {
           <Route path="subscriptions" element={<Recurring key="subscriptions" kind="subscriptions" />} />
           <Route path="investments" element={<Investments />} />
           <Route path="assets" element={<Assets />} />
+          <Route path="vault" element={<Vault />} />
           <Route path="reports" element={<Reports />} />
           <Route path="heir" element={<HeirPage />} />
           <Route path="settings" element={<Settings />} />

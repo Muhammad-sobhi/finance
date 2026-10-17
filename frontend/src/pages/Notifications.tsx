@@ -65,7 +65,7 @@ export function Notifications() {
             ) : (
               <span className="note-main">
                 <b>{t(`stage_${n.data.stage}`)}</b>
-                <span>{dueSubject(i, n.data.kind, n.data.name)} — <span className="num">{num(n.data.amount)}</span> {n.data.currency}</span>
+                <span>{dueSubject(i, n.data.kind, n.data.name)}{n.data.currency && <> — <span className="num">{num(n.data.amount)}</span> {n.data.currency}</>}</span>
               </span>
             )}
             <span className="note-side">

@@ -65,6 +65,9 @@ class BackupService
             ['heirs', Models\Heir::class, null, []],
             ['trusted_contacts', Models\TrustedContact::class, null, []],
             ['transactions', Models\Transaction::class, null, ['account_id' => 'accounts', 'to_account_id' => 'accounts', 'category_id' => 'categories']],
+            // Still sealed with the owner's PIN inside the backup.
+            ['vaults', Models\Vault::class, null, []],
+            ['vault_items', Models\VaultItem::class, null, []],
         ];
     }
 

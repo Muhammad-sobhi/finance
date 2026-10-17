@@ -8,6 +8,7 @@ use App\Enums\UserRole;
 use App\Models\Bill;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Models\VaultItem;
 use App\Notifications\DueAlert;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
@@ -109,6 +110,10 @@ class AlertScanner
                 $out->push(new DueItem($owner->id, 'gameya_payout', $g->id, $g->name, $g->roundDate($g->my_turn), $g->payout(), $g->currency, $g->remind_days, '/debts'));
             }
         });
+
+        // Vault renewals (insurance, ID, passport…): the item itself is sealed, so the alert is generic.
+        VaultItem::where('user_id', $owner->id)->whereNotNull('remind_on')->get()
+            ->each(fn (VaultItem $v) => $out->push(new DueItem($owner->id, 'vault', $v->id, '', CarbonImmutable::parse($v->remind_on), 0, '', null, '/vault')));
 
         // Zakat day (a week's notice at least, to prepare the money), only when something is due.
         if ($owner->zakat_date) {

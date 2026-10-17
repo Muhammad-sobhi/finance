@@ -28,7 +28,7 @@ class User extends Authenticatable implements HasLocalePreference
 
     /** Pages that can sit on the phone's bottom bar (the "More" button is always there). */
     public const PHONE_NAV = ['/', '/accounts', '/transactions', '/bills', '/income', '/categories', '/planning', '/debts',
-        '/subscriptions', '/investments', '/assets', '/reports', '/heir', '/settings'];
+        '/subscriptions', '/investments', '/assets', '/reports', '/vault', '/heir', '/settings'];
 
     public const PHONE_NAV_DEFAULT = ['/', '/accounts', '/transactions', '/bills'];
 

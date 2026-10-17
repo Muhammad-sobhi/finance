@@ -26,6 +26,7 @@ export const NAV: { path: string; key: Key }[] = [
   { path: '/investments', key: 'investments' },
   { path: '/assets', key: 'assets' },
   { path: '/reports', key: 'reports' },
+  { path: '/vault', key: 'vault' },
   { path: '/heir', key: 'heir' },
   { path: '/settings', key: 'settings' },
 ]

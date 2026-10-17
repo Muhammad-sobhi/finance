@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\SettingsController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\TransactionController;
+use App\Http\Controllers\Api\V1\VaultController;
 use App\Http\Controllers\Api\V1\ZakatController;
 use Illuminate\Support\Facades\Route;
 
@@ -110,6 +111,14 @@ Route::prefix('v1')->group(function () {
         Route::patch('zakat/settings', [ZakatController::class, 'updateSettings'])->name('zakat.settings');
         Route::post('zakat/pay', [ZakatController::class, 'pay'])->name('zakat.pay');
         Route::delete('zakat/payments/{payment}', [ZakatController::class, 'destroyPayment'])->name('zakat.payments.destroy');
+
+        Route::get('vault', [VaultController::class, 'show'])->name('vault.show');
+        Route::post('vault', [VaultController::class, 'setup'])->name('vault.setup');
+        Route::put('vault/key', [VaultController::class, 'rekey'])->middleware('throttle:account-security')->name('vault.rekey');
+        Route::delete('vault', [VaultController::class, 'reset'])->middleware('throttle:account-security')->name('vault.reset');
+        Route::post('vault/items', [VaultController::class, 'store'])->name('vault.items.store');
+        Route::put('vault/items/{item}', [VaultController::class, 'update'])->name('vault.items.update');
+        Route::delete('vault/items/{item}', [VaultController::class, 'destroy'])->name('vault.items.destroy');
 
         Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
         Route::get('notifications/unread', [NotificationController::class, 'unread'])->name('notifications.unread');

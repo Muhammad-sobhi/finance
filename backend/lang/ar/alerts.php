@@ -18,6 +18,7 @@ return [
         'installment' => 'قسط :name',
         'gameya' => 'دفعة جمعية :name',
         'gameya_payout' => 'دورك في جمعية :name',
+        'vault' => 'تجديد عنصر في الخزنة',
         'maturity' => 'استحقاق :name',
     ],
     'when' => [
@@ -26,5 +27,6 @@ return [
         'overdue' => 'متأخر :days يوم',
     ],
     'body' => ':subject — :amount :currency، :when',
+    'body_plain' => ':subject، :when',
     'open' => 'افتح دينار',
 ];
