@@ -13,6 +13,7 @@ use App\Services\DataVault;
 use App\Services\TransactionService;
 use App\Services\UnusualSpend;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -88,11 +89,31 @@ class TransactionController extends Controller
 
     public function store(TransactionRequest $request): JsonResponse
     {
-        $tx = $this->service->create($request->user(), $request->validated());
+        // An offline entry sent again (lost answer, second tab): answer with the one already saved.
+        $clientId = $request->validated('client_id');
+        if ($clientId && $saved = $this->byClientId($request, $clientId)) {
+            return (new TransactionResource($saved))->response()->setStatusCode(200);
+        }
+        try {
+            $tx = $this->service->create($request->user(), $request->validated());
+        } catch (UniqueConstraintViolationException $e) {
+            // Two copies arrived at the same moment; the other one won.
+            $saved = $clientId ? $this->byClientId($request, $clientId) : null;
+            if (! $saved) {
+                throw $e;
+            }
+
+            return (new TransactionResource($saved))->response()->setStatusCode(200);
+        }
         $this->budgets->watch($request->user());
         $this->unusual->check($request->user(), $tx);
 
         return (new TransactionResource($tx->refresh()))->response()->setStatusCode(201);
+    }
+
+    private function byClientId(Request $request, string $clientId): ?Transaction
+    {
+        return Transaction::ownedBy($request->user())->where('client_id', $clientId)->first();
     }
 
     public function show(Transaction $transaction): TransactionResource

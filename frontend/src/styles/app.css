@@ -379,3 +379,10 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 .slot-link { flex: none; }
 .slot-link > span:last-child { display: inline-flex; gap: 6px; flex: none; }
 .card .acts { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* Connection status under the header (offline / sending / not saved). */
+.net-bar { display: flex; align-items: center; justify-content: center; gap: 8px; flex: none; padding: 5px 10px; font-size: 12px; line-height: 1.4;
+  text-align: center; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--ink); }
+.net-bar.off { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.net-bar svg { width: 16px; height: 16px; flex: none; }
+.net-bar .more { color: var(--neg); }

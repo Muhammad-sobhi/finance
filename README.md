@@ -17,6 +17,7 @@ Arabic-first (RTL) with English, four themes, and a strict no-scroll layout. See
 | + | Debts hub: installment plans (taqseet) and gameyas next to personal debts | ✅ |
 | + | Smart: month-end forecast, unusual-expense alerts, optional daily gold/silver spot prices | ✅ |
 | + | Data: CSV export, printable report, encrypted backup + restore, bank statement import, receipt photos | ✅ |
+| + | Offline: the app opens without a connection; new transactions wait on the device and are sent when it's back (each saved once) | ✅ |
 | + | Operations: nightly encrypted off-server backup, health URL for uptime monitors, watchdog emails, Sentry error reports | ✅ |
 | + | Security & app: optional 2FA (trusted devices), sign-in activity with new-device alerts, installable PWA with offline page | ✅ |
 
@@ -338,6 +339,16 @@ rm -rf /tmp/restore.zip /tmp/database.sql /tmp/receipts
 ```
 
 The in-app *Encrypted backup* (one owner's data, your own passphrase) is separate. It is still worth downloading now and then.
+
+## Offline use
+
+The installed app (PWA) opens without a connection. The service worker keeps only the app's own files (HTML shell, JS, CSS, fonts, icons). It never keeps `/api` answers.
+
+- **Adding works offline:** the quick-add sheet and the *new transaction* form save into an outbox on the device (`localStorage`, `src/lib/offline.ts`). A banner says you are offline and that what you add is sent automatically. The outbox is sent when the connection returns, when the app is opened, and every 30 seconds while items are waiting.
+- **Saved once:** each entry carries a `client_id` (UUID). `POST /api/v1/transactions` with a `client_id` the owner already used answers `200` with the saved transaction instead of saving it again.
+- **Refused entries** (e.g. the account was deleted meanwhile) stay on the device under *"N not saved — view"*, where they can be retried or discarded.
+- **What stays on the device:** the signed-in profile (settings) and, for the add forms, account names/currencies and categories. Balances, numbers and notes are not stored. All of it is cleared on sign-out.
+- **Not offline:** viewing balances, lists and reports, and editing or deleting. These need a connection.
 
 ## Monitoring
 

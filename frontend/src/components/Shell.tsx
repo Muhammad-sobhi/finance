@@ -10,6 +10,7 @@ import { select } from './fields'
 import { FormModal } from './Modal'
 import { useForm } from '../hooks/useForm'
 import { Icon } from './Icon'
+import { OfflineBar } from './OfflineBar'
 import { QuickAdd } from './QuickAdd'
 import { TransactionForm } from './TransactionForm'
 
@@ -88,6 +89,7 @@ export function Shell() {
 
       <main className="main">
         {readOnly && <div className="readonly-bar" role="status">{t('readOnly')}</div>}
+        {!readOnly && <OfflineBar />}
         <header className="top">
           <h1>{t(current.key)}</h1>
           <div className="ctrls">

@@ -1,23 +1,54 @@
-// Service worker: offline fallback page, web-push alerts, and opening the right page when tapped.
-// Financial data is never cached here: only the offline page and its icon.
-const CACHE = 'dinar-offline-v1'
-const OFFLINE = ['/offline.html', '/icon-192.png']
+// Service worker: the app opens offline, web-push alerts, and opening the right page when tapped.
+// Only the app's own files are cached (HTML shell, JS, CSS, fonts, icons) — never /api, so
+// financial data is never stored here. Offline entries wait in the app's outbox (src/lib/offline.ts).
+const SHELL = 'dinar-shell-v2'
+const ASSETS = 'dinar-assets-v2'
+const PRECACHE = ['/', '/offline.html', '/icon-192.png', '/manifest.webmanifest', '/boot.js']
+const MAX_ASSETS = 150
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(OFFLINE)).then(() => self.skipWaiting()))
+  e.waitUntil(caches.open(SHELL).then((c) => c.addAll(PRECACHE)).then(() => self.skipWaiting()))
 })
 self.addEventListener('activate', (e) => e.waitUntil((async () => {
-  for (const key of await caches.keys()) if (key !== CACHE) await caches.delete(key)
+  for (const key of await caches.keys()) if (key !== SHELL && key !== ASSETS) await caches.delete(key)
   await self.clients.claim()
 })()))
 
-// Page loads go to the network; if it's unreachable, show the offline page. API calls are untouched.
+const sameOrigin = (url) => url.origin === self.location.origin
+
+// Hashed build files never change: serve from cache, fetch and keep on first use.
+async function asset(req) {
+  const hit = await caches.match(req)
+  if (hit) return hit
+  const res = await fetch(req)
+  if (res.ok) {
+    const cache = await caches.open(ASSETS)
+    await cache.put(req, res.clone())
+    const keys = await cache.keys()   // old builds' files: drop the oldest
+    for (const k of keys.slice(0, Math.max(0, keys.length - MAX_ASSETS))) await cache.delete(k)
+  }
+  return res
+}
+
+// Pages: the network first (always the latest build); offline, the saved app shell.
+async function page(req) {
+  try {
+    const res = await fetch(req)
+    if (res.ok) (await caches.open(SHELL)).put('/', res.clone())
+    return res
+  } catch {
+    return (await caches.match('/')) || (await caches.match('/offline.html'))
+  }
+}
+
 self.addEventListener('fetch', (event) => {
   const req = event.request
-  if (req.mode === 'navigate') {
-    event.respondWith(fetch(req).catch(() => caches.match('/offline.html')))
-  } else if (OFFLINE.includes(new URL(req.url).pathname)) {
-    event.respondWith(caches.match(req).then((r) => r || fetch(req)))
+  const url = new URL(req.url)
+  if (req.method !== 'GET' || !sameOrigin(url) || url.pathname.startsWith('/api/') || url.pathname === '/up') return
+  if (req.mode === 'navigate') event.respondWith(page(req))
+  else if (url.pathname.startsWith('/assets/')) event.respondWith(asset(req))
+  else if (PRECACHE.includes(url.pathname)) {
+    event.respondWith(fetch(req).catch(() => caches.match(req)))
   }
 })
 

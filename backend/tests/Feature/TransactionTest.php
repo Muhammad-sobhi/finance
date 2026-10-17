@@ -167,4 +167,28 @@ class TransactionTest extends TestCase
             ->assertJsonPath('last_account_id', $this->wallet->id)
             ->assertJsonPath('last_category_id', $this->cat('food'));
     }
+
+    public function test_offline_entry_sent_twice_is_saved_once(): void
+    {
+        $body = ['type' => 'expense', 'account_id' => $this->bank->id, 'category_id' => $this->cat('food'), 'amount' => 50,
+            'date' => '2026-10-10', 'client_id' => '6f1c1f0e-8a52-4c7e-9a43-2b1f5d7c9e01'];
+
+        $id = $this->postJson('/api/v1/transactions', $body)->assertCreated()->assertJsonPath('date', '2026-10-10')->json('id');
+        $this->postJson('/api/v1/transactions', $body)->assertOk()->assertJsonPath('id', $id);
+
+        $this->assertSame(950.0, $this->balance($this->bank));
+        $this->assertSame(1, $this->owner->transactions()->count());
+    }
+
+    public function test_client_id_is_per_owner_and_must_be_a_uuid(): void
+    {
+        $uuid = '6f1c1f0e-8a52-4c7e-9a43-2b1f5d7c9e01';
+        $other = User::factory()->create();
+        $theirs = Account::factory()->for($other)->create(['balance' => 100]);
+        app(TransactionService::class)->create($other, ['type' => 'expense', 'account_id' => $theirs->id, 'amount' => 10, 'date' => '2026-10-10', 'client_id' => $uuid]);
+
+        $this->postJson('/api/v1/transactions', ['type' => 'expense', 'account_id' => $this->bank->id, 'amount' => 5, 'client_id' => $uuid])->assertCreated();
+        $this->postJson('/api/v1/transactions', ['type' => 'expense', 'account_id' => $this->bank->id, 'amount' => 5, 'client_id' => 'abc'])
+            ->assertUnprocessable()->assertJsonValidationErrors('client_id');
+    }
 }
