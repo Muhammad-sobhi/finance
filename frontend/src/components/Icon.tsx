@@ -29,6 +29,8 @@ const PATHS: Record<string, string> = {
   copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4H4v12h4"/>',
   trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
+  fingerprint: '<path d="M6.5 6.5A8 8 0 0 1 20 12v1M4 12a8 8 0 0 1 .8-3.5M12 8a4 4 0 0 1 4 4v2a10 10 0 0 1-1 4.5M8 12a4 4 0 0 1 2-3.5M12 12v2a14 14 0 0 1-2.5 7M8 15a17 17 0 0 1-1.5 5M20 16.5a18 18 0 0 1-1 3"/>',
+  offline: '<path d="M2 8.5a15 15 0 0 1 6-3.2M22 8.5a15 15 0 0 0-9.5-3.9M5 12a10 10 0 0 1 4-2.2M19 12a10 10 0 0 0-2.4-1.6M8.5 15.5a5 5 0 0 1 5.5-1"/><circle cx="12" cy="19" r="1"/><path d="M3 3l18 18"/>',
   logout: '<path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h11"/>',
   filter: '<path d="M4 5h16l-6 8v6l-4-2v-4z"/>',
   empty: '<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 13h5l1 2h4l1-2h5"/>',

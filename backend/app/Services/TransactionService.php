@@ -20,6 +20,7 @@ class TransactionService
         return DB::transaction(function () use ($owner, $data) {
             $tx = new Transaction;
             $tx->user_id = $owner->id;
+            $tx->client_id = $data['client_id'] ?? null;
             $this->fill($tx, $data);
             $tx->save();
             $this->apply($tx, 1);

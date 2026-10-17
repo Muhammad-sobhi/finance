@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useI18n } from '../i18n'
 import { useApi } from '../hooks/useApi'
 import { ApiError, post } from '../lib/api'
+import { isNetworkError, newClientId, outbox } from '../lib/offline'
+import { keepAccounts, keepCategories } from '../lib/offlineLists'
 import { isoDate } from '../lib/dates'
 import { catName } from '../lib/labels'
 import { useSession } from '../lib/session'
@@ -16,11 +18,12 @@ import { Icon } from './Icon'
 export function QuickAdd({ onClose, onDetails }: { onClose: () => void; onDetails: () => void }) {
   const i = useI18n()
   const { t } = i
-  const { refresh, toast } = useSession()
+  const { refresh, toast, user } = useSession()
   const [type, setType] = useState<'expense' | 'income'>('expense')
-  const cats = useApi<Category[]>(`/categories?type=${type}`)
-  const accounts = useApi<Account[]>('/accounts?active_only=1')
-  const meta = useApi<{ last_account_id: number | null; last_category_id: number | null }>('/transactions/quick-meta')
+  // Kept on this device too, so the sheet works offline.
+  const cats = useApi<Category[]>(`/categories?type=${type}`, { offline: keepCategories })
+  const accounts = useApi<Account[]>('/accounts?active_only=1', { offline: keepAccounts })
+  const meta = useApi<{ last_account_id: number | null; last_category_id: number | null }>('/transactions/quick-meta', { offline: (m) => m })
   const [amount, setAmount] = useState('')
   const [categoryId, setCategoryId] = useState<number | null>(null)
   const [accountId, setAccountId] = useState<number | null>(null)
@@ -51,13 +54,23 @@ export function QuickAdd({ onClose, onDetails }: { onClose: () => void; onDetail
     if (!value || value <= 0) { setError(t('amount')); amountRef.current?.focus(); return }
     if (!accountId) { setError(t('account')); return }
     setBusy(true)
+    const body = { type, amount: value, account_id: accountId, category_id: categoryId, date: isoDate() }
+    const clientId = newClientId()
+    // No connection: keep it on this device; it is sent when the connection is back.
+    const queue = () => {
+      outbox.add({ client_id: clientId, user_id: user!.id, body, label: { amount: value, currency, category: chips.find((c) => c.id === categoryId)?.label ?? null } })
+      toast(t('savedOffline'))
+      onClose()
+    }
     try {
-      await post('/transactions', { type, amount: value, account_id: accountId, category_id: categoryId, date: isoDate() })
+      if (!navigator.onLine) { queue(); return }
+      await post('/transactions', { ...body, client_id: clientId })
       toast(t('saved'))
       refresh()
       onClose()
     } catch (err) {
-      setError(err instanceof ApiError ? Object.values(err.fieldErrors)[0] ?? t('error') : t('error'))
+      if (isNetworkError(err)) queue()
+      else setError(err instanceof ApiError ? Object.values(err.fieldErrors)[0] ?? t('error') : t('error'))
     } finally {
       setBusy(false)
     }

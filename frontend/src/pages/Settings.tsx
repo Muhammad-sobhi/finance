@@ -3,6 +3,7 @@ import { currency, money, text } from '../components/fields'
 import { DataTools } from '../components/DataTools'
 import { DetailModal } from '../components/DetailModal'
 import { Icon } from '../components/Icon'
+import { AppLockRow } from '../components/AppLockSettings'
 import { TwoFactorRow } from '../components/TwoFactorSettings'
 import { DeleteButton, FormModal } from '../components/Modal'
 import { Paged } from '../components/Paged'
@@ -20,7 +21,7 @@ export function Settings() {
   const { t, num: n, date: fmtDate } = useI18n()
   const { readOnly, refresh, toast } = useSession()
   const { data } = useApi<S>('/settings')
-  const [tab, setTab] = useState<'general' | 'rates' | 'data'>('general')
+  const [tab, setTab] = useState<'general' | 'rates' | 'security' | 'data'>('general')
   const [f, setF] = useState<Record<string, string | boolean>>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [rate, setRate] = useState<Rate | null | undefined>(undefined)
@@ -69,14 +70,14 @@ export function Settings() {
 
   return (
     <div className="list">
-      <div className="list-head show-sm">
+      <div className="list-head show-md">
         <div className="seg" role="radiogroup">
-          {(['general', 'rates', 'data'] as const).map((k) => (
-            <button type="button" key={k} role="radio" aria-checked={tab === k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{t(k === 'data' ? 'dataTab' : k)}</button>
+          {(['general', 'rates', 'security', 'data'] as const).map((k) => (
+            <button type="button" key={k} role="radio" aria-checked={tab === k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{t(k === 'data' ? 'dataTab' : k === 'security' ? 'securityTab' : k)}</button>
           ))}
         </div>
       </div>
-      <div className="split">
+      <div className="split tabs-md">
         <form className={`card${tab !== 'general' ? ' off-sm' : ''}`} onSubmit={save}>
           <h3>{t('general')}</h3>
           <div className="setting-row"><span>{t('baseCurrency')}</span><b className="num">{data?.base_currency}</b></div>
@@ -92,7 +93,6 @@ export function Settings() {
             </span>
           </div>
           <PushRow />
-          <AccountRows />
           {!readOnly && <div className="actions"><button type="submit" className="btn">{t('save')}</button></div>}
         </form>
         <div className="col">
@@ -116,6 +116,11 @@ export function Settings() {
               onChange={(e) => patch('/settings', { auto_fetch_rates: e.target.checked }).then(() => { toast(t('saved')); refresh() }).catch(() => toast(t('error')))} />
           </div>
           {!readOnly && <div className="actions"><button type="button" className="btn" onClick={() => setRate(null)}><Icon name="plus" />{t('addRate')}</button></div>}
+        </div>
+        {/* Sign-in and this device: account, password, other devices, 2FA, app lock. */}
+        <div className={`card sec-card${tab !== 'security' ? ' off-sm' : ''}`}>
+          <h3>{t('securityTab')}</h3>
+          <AccountRows />
         </div>
         <DataTools className={tab !== 'data' ? 'off-sm' : ''} />
         </div>
@@ -146,6 +151,7 @@ function AccountRows() {
         <button type="button" className="btn sm ghost" onClick={others}>{t('logoutOthers')}</button>
       </div>
       <TwoFactorRow />
+      <AppLockRow />
       {open === 'profile' && <ProfileForm onClose={() => setOpen(null)} />}
       {open === 'password' && <PasswordForm onClose={() => setOpen(null)} />}
       {open === 'activity' && <ActivityList onClose={() => setOpen(null)} />}

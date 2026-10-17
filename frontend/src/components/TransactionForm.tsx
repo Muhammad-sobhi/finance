@@ -3,6 +3,8 @@ import { useI18n } from '../i18n'
 import { useApi } from '../hooks/useApi'
 import { ApiError, del, fetchBlob, patch, post, upload } from '../lib/api'
 import { shrinkImage } from '../lib/image'
+import { isNetworkError, newClientId, outbox } from '../lib/offline'
+import { keepAccounts, keepCategories } from '../lib/offlineLists'
 import { isoDate } from '../lib/dates'
 import { catName } from '../lib/labels'
 import { useSession } from '../lib/session'
@@ -13,9 +15,10 @@ import { DeleteButton, FormModal, type Field } from './Modal'
 export function TransactionForm({ tx, onClose }: { tx?: Transaction | null; onClose: () => void }) {
   const i = useI18n()
   const { t } = i
-  const { refresh, toast, readOnly } = useSession()
-  const accounts = useApi<Account[]>('/accounts')
-  const cats = useApi<Category[]>('/categories')
+  const { refresh, toast, readOnly, user } = useSession()
+  // New entries work offline too, so these lists are kept on this device.
+  const accounts = useApi<Account[]>('/accounts', { offline: keepAccounts })
+  const cats = useApi<Category[]>('/categories', { offline: keepCategories })
   const [f, setF] = useState({
     type: (tx?.type ?? 'expense') as TxType,
     amount: tx ? String(tx.amount) : '',
@@ -70,7 +73,8 @@ export function TransactionForm({ tx, onClose }: { tx?: Transaction | null; onCl
   const transfer = f.type === 'transfer'
   const crossCurrency = transfer && !!from && !!to && from.currency !== to.currency
 
-  const run = async (fn: () => Promise<unknown>) => {
+  /** `offline`: what to do instead when there is no connection (new entries only). */
+  const run = async (fn: () => Promise<unknown>, offline?: () => void) => {
     setBusy(true)
     try {
       await fn()
@@ -78,7 +82,10 @@ export function TransactionForm({ tx, onClose }: { tx?: Transaction | null; onCl
       refresh()
       onClose()
     } catch (err) {
-      if (err instanceof ApiError && err.data.code === 'managed_by_debt') toast(t('managedByDebt'))
+      if (isNetworkError(err)) {
+        if (offline) offline()
+        else toast(t('needsConnection'))
+      } else if (err instanceof ApiError && err.data.code === 'managed_by_debt') toast(t('managedByDebt'))
       else if (err instanceof ApiError && err.data.code === 'managed_by_project') toast(t('managedByProject'))
       else if (err instanceof ApiError && err.data.code === 'managed_by_zakat') toast(t('managedByZakat'))
       else if (err instanceof ApiError && err.data.code === 'managed_by_installment') toast(t('managedByInstallment'))
@@ -91,7 +98,7 @@ export function TransactionForm({ tx, onClose }: { tx?: Transaction | null; onCl
     }
   }
 
-  const submit = () => run(() => {
+  const submit = () => {
     const body = {
       type: f.type,
       amount: Number(f.amount),
@@ -103,8 +110,25 @@ export function TransactionForm({ tx, onClose }: { tx?: Transaction | null; onCl
       date: f.date,
       note: f.note || null,
     }
-    return tx ? patch(`/transactions/${tx.id}`, body) : post('/transactions', body)
-  })
+    if (tx) return run(() => patch(`/transactions/${tx.id}`, body))
+
+    // A new entry without a connection waits on this device and is sent when it's back.
+    const clientId = newClientId()
+    const queue = () => {
+      const category = cats.data?.find((c) => c.id === body.category_id)
+      outbox.add({ client_id: clientId, user_id: user!.id, body, label: { amount: body.amount, currency: from?.currency ?? '', category: category ? catName(i, category) : null } })
+      toast(t('savedOffline'))
+      onClose()
+    }
+    if (!navigator.onLine) {
+      // The server can't check it now; catch the obvious mistakes here.
+      const missing = !(body.amount > 0) ? 'amount' : !body.account_id ? 'account_id' : transfer && !body.to_account_id ? 'to_account_id' : null
+      if (missing) { setErrors({ [missing]: t(missing === 'amount' ? 'amount' : missing === 'account_id' ? 'account' : 'toAccount') }); return }
+      queue()
+      return
+    }
+    return run(() => post('/transactions', { ...body, client_id: clientId }), queue)
+  }
 
   const accountOptions = acc.filter((a) => a.is_active || a.id === tx?.account_id || a.id === tx?.to_account_id)
     .map((a) => <option key={a.id} value={a.id}>{a.name} · {a.currency}</option>)

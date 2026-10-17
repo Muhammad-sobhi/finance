@@ -73,6 +73,8 @@ class TransactionRequest extends FormRequest
             'fee' => ['nullable', 'numeric', 'min:0', 'max:9999999999999'],
             'date' => ['required', 'date_format:Y-m-d'],
             'note' => ['nullable', 'string', 'max:500'],
+            // Set by the app for entries made offline (see TransactionController::store).
+            'client_id' => ['nullable', 'uuid'],
         ];
     }
 }

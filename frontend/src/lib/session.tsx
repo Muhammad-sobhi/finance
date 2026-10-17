@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { api, ApiError, patch, post, token, UNAUTHORIZED_EVENT } from './api'
 import { I18nCtx, makeI18n, type Lang } from '../i18n'
+import { appLock } from './appLock'
+import { isNetworkError, offlineCache } from './offline'
 import type { ListMode, Theme, User } from './types'
 
 const THEME_COLORS: Record<Theme, string> = { ledger: '#f4efe3', swiss: '#ffffff', geo: '#1e3a5f', vault: '#1c1b19' }
@@ -43,6 +45,13 @@ const deviceToken = {
   set: (v: string) => { try { localStorage.setItem('fin.device', v) } catch { /* private mode */ } },
 }
 
+/** Last signed-in profile (settings, no financial data), so the app opens without a connection. */
+const savedUser = {
+  get: (): User | null => { try { return JSON.parse(localStorage.getItem('fin.user') ?? 'null') as User | null } catch { return null } },
+  set: (u: User) => { try { localStorage.setItem('fin.user', JSON.stringify(u)) } catch { /* private mode */ } },
+  clear: () => { try { localStorage.removeItem('fin.user') } catch { /* private mode */ } offlineCache.clear(); appLock.clear() },
+}
+
 const Ctx = createContext<Session | null>(null)
 
 export function useSession(): Session {
@@ -62,6 +71,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const applyUser = useCallback((u: User) => {
     setUser(u)
+    savedUser.set(u)
     setThemeState(u.theme); store('fin.theme', u.theme)
     setLangState(u.locale); store('fin.lang', u.locale)
     setListModeState(u.list_mode); store('fin.list', u.list_mode)
@@ -70,15 +80,27 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!token.get()) return
     // Retry transient failures (rate limit, network); only a 401 means the token is gone.
+    // Offline: open with the saved profile straight away; it is refreshed when the connection is back.
+    const offline = (err: unknown) => {
+      const saved = isNetworkError(err) ? savedUser.get() : null
+      if (saved) setUser(saved)
+      return !!saved
+    }
     const boot = (attempt: number): Promise<void> => api<User>('/auth/me').then(applyUser).catch((err) => {
-      if (err instanceof ApiError && err.status === 401) return token.set(null)
+      if (err instanceof ApiError && err.status === 401) { savedUser.clear(); return token.set(null) }
+      if (!navigator.onLine && offline(err)) return
       if (attempt < 3) return new Promise<void>((r) => setTimeout(r, 1000 * (attempt + 1))).then(() => boot(attempt + 1))
+      offline(err)
     })
     boot(0).finally(() => setBooting(false))
+
+    const online = () => { if (token.get()) api<User>('/auth/me').then(applyUser).catch(() => undefined) }
+    window.addEventListener('online', online)
+    return () => window.removeEventListener('online', online)
   }, [applyUser])
 
   useEffect(() => {
-    const onUnauth = () => setUser(null)
+    const onUnauth = () => { savedUser.clear(); setUser(null) }
     window.addEventListener(UNAUTHORIZED_EVENT, onUnauth)
     return () => window.removeEventListener(UNAUTHORIZED_EVENT, onUnauth)
   }, [])
@@ -127,6 +149,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     logout: async () => {
       await post('/auth/logout', {}).catch(() => undefined)
       token.set(null)
+      savedUser.clear()
       setUser(null)
     },
     revision,
