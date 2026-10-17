@@ -12,9 +12,13 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
 /**
- * The PIN vault (passwords, bank details, documents…). The browser encrypts and decrypts;
- * this only stores what it is given. Changing the PIN or wiping the vault needs the
- * account password, so a stolen session can't lock the owner out of their own vault.
+ * The vault (passwords, bank details, documents…). The browser encrypts and decrypts; this
+ * only stores what it is given. Three modes, chosen by the owner:
+ *  - pin_heir: PIN to open; a copy of the key for heirs, released once heir access is active.
+ *  - pin:      PIN only; nobody else can ever open it (heirs included).
+ *  - open:     no PIN; the key copy opens it right after sign-in.
+ * Changing the mode/PIN or wiping the vault needs the account password, so a stolen session
+ * can't lock the owner out of their own vault.
  */
 class VaultController extends Controller
 {
@@ -24,7 +28,7 @@ class VaultController extends Controller
         $vault = Vault::where('user_id', $owner->id)->first();
 
         return response()->json([
-            'vault' => $vault?->only(['salt', 'iterations', 'iv', 'wrapped_key']),
+            'vault' => $vault ? $vault->only(['salt', 'iterations', 'iv', 'wrapped_key']) + ['mode' => $this->mode($vault)] : null,
             'items' => $vault ? VaultItem::ownedBy($request->user())->orderBy('id')->get()->map(fn (VaultItem $i) => $this->present($i)) : [],
         ]);
     }
@@ -41,7 +45,7 @@ class VaultController extends Controller
         return response()->json(['ok' => true], 201);
     }
 
-    /** New PIN: the browser re-wraps the same vault key; items don't change. */
+    /** New PIN and/or mode: the browser re-wraps the same vault key; items don't change. */
     public function rekey(Request $request): JsonResponse
     {
         $owner = $this->owner($request);
@@ -49,6 +53,20 @@ class VaultController extends Controller
         Vault::where('user_id', $owner->id)->firstOrFail()->update($this->keyData($request));
 
         return response()->json(['ok' => true]);
+    }
+
+    /**
+     * The key copy, when this user may have it: the owner of a vault without PIN, or an heir
+     * once heir access is active and the owner left a copy.
+     */
+    public function escrow(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $vault = Vault::where('user_id', $user->ownerId())->first();
+        $allowed = $vault?->hasHeirCopy() && ($user->isHeir() ? $user->owner->heirAccessActive() : ! $vault->hasPin());
+        abort_unless($allowed, 403);
+
+        return response()->json(['key' => $vault->escrow_key]);
     }
 
     /** Forgot the PIN: delete the key and every item, so a new vault can be set up. */
@@ -100,14 +118,28 @@ class VaultController extends Controller
         return $user;
     }
 
+    /** Validated key fields for the chosen mode; fields the mode doesn't use are cleared. */
     private function keyData(Request $request): array
     {
-        return $request->validate([
-            'salt' => ['required', 'string', 'max:64', 'regex:/^[A-Za-z0-9+\/=]+$/'],
-            'iterations' => ['required', 'integer', 'min:'.Vault::MIN_ITERATIONS, 'max:10000000'],
-            'iv' => ['required', 'string', 'max:32', 'regex:/^[A-Za-z0-9+\/=]+$/'],
-            'wrapped_key' => ['required', 'string', 'max:200', 'regex:/^[A-Za-z0-9+\/=]+$/'],
+        $b64 = 'regex:/^[A-Za-z0-9+\/=]+$/';
+        $mode = $request->validate(['mode' => ['required', Rule::in(['pin_heir', 'pin', 'open'])]])['mode'];
+        $pin = $mode !== 'open' ? 'required' : 'prohibited';
+        $copy = $mode !== 'pin' ? 'required' : 'prohibited';
+        $data = $request->validate([
+            'salt' => [$pin, 'string', 'max:64', $b64],
+            'iterations' => [$pin, 'integer', 'min:'.Vault::MIN_ITERATIONS, 'max:10000000'],
+            'iv' => [$pin, 'string', 'max:32', $b64],
+            'wrapped_key' => [$pin, 'string', 'max:200', $b64],
+            // The raw 256-bit vault key, base64 (44 chars).
+            'escrow_key' => [$copy, 'string', 'size:44', $b64],
         ]);
+
+        return array_merge(array_fill_keys(['salt', 'iterations', 'iv', 'wrapped_key', 'escrow_key'], null), $data);
+    }
+
+    private function mode(Vault $vault): string
+    {
+        return ! $vault->hasPin() ? 'open' : ($vault->hasHeirCopy() ? 'pin_heir' : 'pin');
     }
 
     private function itemData(Request $request): array

@@ -15,7 +15,7 @@ class VaultTest extends TestCase
 
     private User $owner;
 
-    private array $key = ['salt' => 'c2FsdHNhbHRzYWx0c2FsdA==', 'iterations' => 600000, 'iv' => 'aXZpdml2aXZpdml2', 'wrapped_key' => 'd3JhcHBlZGtleXdyYXBwZWRrZXl3cmFwcGVka2V5d3JhcA=='];
+    private array $key = ['mode' => 'pin', 'salt' => 'c2FsdHNhbHRzYWx0c2FsdA==', 'iterations' => 600000, 'iv' => 'aXZpdml2aXZpdml2', 'wrapped_key' => 'd3JhcHBlZGtleXdyYXBwZWRrZXl3cmFwcGVka2V5d3JhcA=='];
 
     protected function setUp(): void
     {
@@ -77,6 +77,34 @@ class VaultTest extends TestCase
         $this->getJson('/api/v1/vault')->assertJsonPath('vault', null)->assertJsonCount(0, 'items');
         $this->putJson("/api/v1/vault/items/{$id}", $this->item())->assertForbidden();
         $this->deleteJson("/api/v1/vault/items/{$id}")->assertForbidden();
+    }
+
+    public function test_heir_copy_opens_only_after_heir_access_and_pin_is_optional(): void
+    {
+        $copy = base64_encode(random_bytes(32));
+        $this->postJson('/api/v1/vault', ['mode' => 'pin_heir'] + $this->key)->assertJsonValidationErrors('escrow_key');
+        $this->postJson('/api/v1/vault', ['mode' => 'pin_heir', 'escrow_key' => $copy] + $this->key)->assertCreated();
+        $this->getJson('/api/v1/vault')->assertJsonPath('vault.mode', 'pin_heir')->assertJsonMissingPath('vault.escrow_key');
+        $this->assertStringNotContainsString($copy, json_encode(\DB::table('vaults')->get())); // stored encrypted
+        $this->getJson('/api/v1/vault/escrow')->assertForbidden(); // the owner uses the PIN
+
+        $heir = User::factory()->heirOf($this->owner)->create();
+        Sanctum::actingAs($heir);
+        $this->getJson('/api/v1/vault/escrow')->assertForbidden(); // access not active yet
+        $this->owner->forceFill(['heir_access_activated_at' => now()])->save();
+        Sanctum::actingAs($heir->fresh());
+        $this->getJson('/api/v1/vault/escrow')->assertOk()->assertJsonPath('key', $copy);
+
+        // No PIN: the owner gets the copy right away. PIN only: nobody does.
+        Sanctum::actingAs($this->owner);
+        $this->putJson('/api/v1/vault/key', ['mode' => 'open', 'escrow_key' => $copy, 'current_password' => 'password'])->assertOk();
+        $this->getJson('/api/v1/vault')->assertJsonPath('vault.mode', 'open')->assertJsonPath('vault.wrapped_key', null);
+        $this->getJson('/api/v1/vault/escrow')->assertJsonPath('key', $copy);
+        $this->putJson('/api/v1/vault/key', $this->key + ['escrow_key' => $copy, 'current_password' => 'password'])->assertJsonValidationErrors('escrow_key');
+        $this->putJson('/api/v1/vault/key', $this->key + ['current_password' => 'password'])->assertOk();
+        $this->getJson('/api/v1/vault/escrow')->assertForbidden();
+        Sanctum::actingAs($heir->fresh());
+        $this->getJson('/api/v1/vault/escrow')->assertForbidden();
     }
 
     public function test_renewal_reminder_is_generic(): void

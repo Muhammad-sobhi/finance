@@ -58,7 +58,7 @@ Locally `MAIL_MAILER=log` writes emails (alerts, heir links) to `backend/storage
 ## Checks
 
 ```bash
-cd backend && php artisan test                         # 147 feature tests, SQLite in memory
+cd backend && php artisan test                         # 148 feature tests, SQLite in memory
 # same suite on MySQL (uses a separate database):
 DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_DATABASE=finance_test DB_USERNAME=finance DB_PASSWORD=secret php artisan test
 
@@ -335,13 +335,18 @@ Rotating the master key: generate a new one, put it in `/etc/finance/master.key`
 
 **Upgrading an existing install** to this version: take a backup first, create the master key file as above and set `DATA_MASTER_KEY_FILE`, then deploy. `php artisan migrate` encrypts all existing data in place (it uses `APP_KEY` to read the fields that were encrypted the old way).
 
-## Vault (PIN)
+## Vault
 
-*Vault* keeps passwords, bank and card details, documents, insurance, crypto recovery phrases and secret notes. It is stronger than the rest of the app: items are encrypted **in the browser** (WebCrypto AES-256-GCM) with a vault key that the server stores only wrapped by a key derived from the user's PIN (PBKDF2-SHA256, 600,000 rounds). The server, the admin and backups hold ciphertext only.
+*Vault* keeps passwords, bank and card details, documents, insurance, crypto recovery phrases and secret notes. Items are encrypted **in the browser** (WebCrypto AES-256-GCM) with a random vault key; the server never receives an item in clear. The owner picks how that key is kept:
 
-- PIN: at least 8 characters, letters and digits mixed (a short numeric PIN could be guessed offline by whoever holds the database). The vault locks itself after 5 idle minutes and on reload.
-- Forgotten PIN = the vault's contents are gone; *Forgot the PIN?* wipes the vault (needs the account password) so a new one can be set up. The rest of the account is not affected. Changing the PIN also needs the account password.
-- Heirs see that a vault exists but can't open it without the owner's PIN.
+| Mode | Opens with | Heirs | Server/admin could read |
+|---|---|---|---|
+| **PIN + copy for heirs** (default) | the PIN | yes, once heir access is active | technically, like the rest of the financial data |
+| PIN only | the PIN | no | never |
+| No PIN | sign-in | yes, once heir access is active | technically, like the rest of the financial data |
+
+- The PIN wraps the key with PBKDF2-SHA256 (600,000 rounds); at least 8 characters, letters and digits mixed (a short numeric PIN could be guessed offline by whoever holds the database). The key copy is stored encrypted with the owner's data key and is only released to the owner of a no-PIN vault, or to an heir once heir access is active.
+- With a PIN the vault locks itself after 5 idle minutes and on reload. *Forgot the PIN?* wipes the vault (needs the account password); with the heir copy nothing else is lost. Changing the mode or PIN also needs the account password.
 - Documents and insurance can carry a renewal date; that date alone is stored readable so the alert can fire ("A vault item needs renewal"), without the item's name.
 
 ## Security notes

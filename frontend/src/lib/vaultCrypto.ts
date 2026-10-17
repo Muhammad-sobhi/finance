@@ -1,15 +1,19 @@
 /**
- * The PIN vault's cryptography, all in the browser (WebCrypto). A random AES-256-GCM vault
- * key encrypts every item; that key is stored on the server only wrapped by a key derived
- * from the owner's PIN (PBKDF2-SHA256). The server never sees the PIN, the vault key or any
- * item in clear. The unlocked key lives in memory only and is forgotten after a few idle
- * minutes or a reload.
+ * The vault's cryptography, all in the browser (WebCrypto). A random AES-256-GCM vault key
+ * encrypts every item. The server gets that key only wrapped by a key derived from the
+ * owner's PIN (PBKDF2-SHA256) and/or, if the owner wants their heirs to be able to open the
+ * vault (or chose no PIN), as a copy it stores encrypted like the rest of their data. Items
+ * never leave the browser in clear. The unlocked key lives in memory only and is forgotten
+ * after a few idle minutes or a reload.
  */
 
 export const ITERATIONS = 600_000
 const IDLE_LOCK_MS = 5 * 60 * 1000
 
-export interface VaultKeyBox { salt: string; iterations: number; iv: string; wrapped_key: string }
+export type Mode = 'pin_heir' | 'pin' | 'open'
+export interface VaultKeyBox { salt: string | null; iterations: number | null; iv: string | null; wrapped_key: string | null; mode: Mode }
+/** What the server stores for a mode: the PIN-wrapped key and/or the key copy. */
+export type KeyBody = { mode: Mode; salt?: string; iterations?: number; iv?: string; wrapped_key?: string; escrow_key?: string }
 export interface Sealed { iv: string; ciphertext: string }
 
 const enc = new TextEncoder()
@@ -29,7 +33,7 @@ async function pinKey(pin: string, salt: Uint8Array, iterations: number): Promis
   return crypto.subtle.deriveKey({ name: 'PBKDF2', hash: 'SHA-256', salt: salt as BufferSource, iterations }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt'])
 }
 
-async function wrap(raw: Uint8Array, pin: string): Promise<VaultKeyBox> {
+async function wrap(raw: Uint8Array, pin: string) {
   const salt = random(16)
   const iv = random(12)
   const kek = await pinKey(pin, salt, ITERATIONS)
@@ -39,6 +43,7 @@ async function wrap(raw: Uint8Array, pin: string): Promise<VaultKeyBox> {
 
 /** Raw vault key bytes, or null when the PIN is wrong. */
 async function unwrapRaw(box: VaultKeyBox, pin: string): Promise<Uint8Array | null> {
+  if (!box.salt || !box.iv || !box.wrapped_key || !box.iterations) return null
   try {
     const kek = await pinKey(pin, unb64(box.salt), box.iterations)
     return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(box.iv) as BufferSource }, kek, unb64(box.wrapped_key) as BufferSource))
@@ -47,7 +52,8 @@ async function unwrapRaw(box: VaultKeyBox, pin: string): Promise<Uint8Array | nu
   }
 }
 
-const importItemKey = (raw: Uint8Array) => crypto.subtle.importKey('raw', raw as BufferSource, 'AES-GCM', false, ['encrypt', 'decrypt'])
+// Extractable so the owner can change the PIN/mode while unlocked; it still never leaves memory except as wrapped above.
+const importItemKey = (raw: Uint8Array) => crypto.subtle.importKey('raw', raw as BufferSource, 'AES-GCM', true, ['encrypt', 'decrypt'])
 
 // ---- The unlocked session (memory only) ----
 let current: CryptoKey | null = null
@@ -70,15 +76,39 @@ export function lock() {
   notify()
 }
 
-/** New vault: a fresh random key, wrapped with the PIN. Unlocks it. */
-export async function createVault(pin: string): Promise<VaultKeyBox> {
+async function body(raw: Uint8Array, mode: Mode, pin: string | null): Promise<KeyBody> {
+  const out: KeyBody = { mode }
+  if (mode !== 'open') Object.assign(out, await wrap(raw, pin ?? ''))
+  if (mode !== 'pin') out.escrow_key = b64(raw)
+  return out
+}
+
+/** New vault: a fresh random key, stored as the mode asks. Unlocks it. */
+export async function createVault(mode: Mode, pin: string | null): Promise<KeyBody> {
   const raw = random(32)
-  const box = await wrap(raw, pin)
+  const out = await body(raw, mode, pin)
   current = await importItemKey(raw)
   raw.fill(0)
   touch()
   notify()
-  return box
+  return out
+}
+
+/** Re-store the unlocked key under a new mode/PIN (items don't change). */
+export async function rekey(mode: Mode, pin: string | null): Promise<KeyBody> {
+  const raw = new Uint8Array(await crypto.subtle.exportKey('raw', key()))
+  const out = await body(raw, mode, pin)
+  raw.fill(0)
+  return out
+}
+
+/** Open with the key copy the server released (no-PIN vault, or an heir after activation). */
+export async function unlockWithCopy(copy: string) {
+  const raw = unb64(copy)
+  current = await importItemKey(raw)
+  raw.fill(0)
+  touch()
+  notify()
 }
 
 export async function unlock(box: VaultKeyBox, pin: string): Promise<boolean> {
@@ -89,15 +119,6 @@ export async function unlock(box: VaultKeyBox, pin: string): Promise<boolean> {
   touch()
   notify()
   return true
-}
-
-/** Same vault key, new PIN. Null when the old PIN is wrong. */
-export async function changePin(box: VaultKeyBox, oldPin: string, newPin: string): Promise<VaultKeyBox | null> {
-  const raw = await unwrapRaw(box, oldPin)
-  if (!raw) return null
-  const next = await wrap(raw, newPin)
-  raw.fill(0)
-  return next
 }
 
 function key(): CryptoKey {

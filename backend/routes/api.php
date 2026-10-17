@@ -114,6 +114,7 @@ Route::prefix('v1')->group(function () {
 
         Route::get('vault', [VaultController::class, 'show'])->name('vault.show');
         Route::post('vault', [VaultController::class, 'setup'])->name('vault.setup');
+        Route::get('vault/escrow', [VaultController::class, 'escrow'])->middleware('throttle:account-security')->name('vault.escrow');
         Route::put('vault/key', [VaultController::class, 'rekey'])->middleware('throttle:account-security')->name('vault.rekey');
         Route::delete('vault', [VaultController::class, 'reset'])->middleware('throttle:account-security')->name('vault.reset');
         Route::post('vault/items', [VaultController::class, 'store'])->name('vault.items.store');

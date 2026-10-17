@@ -33,7 +33,7 @@ const kindLabel = (k: Kind): Key => `vk_${k}` as Key
 const remindOf = (kind: Kind, f: Fields) => SPEC[kind].fields.find((s) => s.date && f[s.k])?.k
 const fail = (field: string, msg: string) => new ApiError(422, { errors: { [field]: [msg] } })
 
-/** Passwords, bank details, documents… sealed in the browser with the owner's vault PIN. */
+/** Passwords, bank details, documents… sealed in the browser; opened with a PIN or the owner's key copy. */
 export function Vault() {
   const { t, date: fmt } = useI18n()
   const { readOnly } = useSession()
@@ -41,11 +41,21 @@ export function Vault() {
   const [open, setOpen] = useState(V.isUnlocked())
   const [items, setItems] = useState<Item[] | null>(null)
   const [kind, setKind] = useState<Kind | ''>('')
-  const [dialog, setDialog] = useState<'setup' | 'pin' | 'reset' | null>(null)
+  const [dialog, setDialog] = useState<'setup' | 'settings' | 'reset' | null>(null)
+  const [sealedOff, setSealedOff] = useState(false)
   const [edit, setEdit] = useState<Item | Kind | null>(null)
   const [view, setView] = useState<Item | null>(null)
 
   useEffect(() => V.onLockChange(() => setOpen(V.isUnlocked())), [])
+
+  // No PIN (owner) or an heir with a key copy: open with the copy instead of asking.
+  const mode = data?.vault?.mode
+  useEffect(() => {
+    if (open || !mode || (mode !== 'open' && !(readOnly && mode === 'pin_heir'))) return
+    let live = true
+    api<{ key: string }>('/vault/escrow').then((r) => { if (live) return V.unlockWithCopy(r.key) }).catch(() => { if (live) setSealedOff(true) })
+    return () => { live = false }
+  }, [open, mode, readOnly])
 
   // Decrypt in the browser whenever the list or the lock state changes.
   useEffect(() => {
@@ -79,7 +89,9 @@ export function Vault() {
       <div className="empty vault-gate">
         <Icon name="lock" />
         <p><b>{t('vaultLocked')}</b></p>
-        {readOnly ? <p className="hint">{t('vaultHeirPin')}</p> : <UnlockForm box={data.vault} onForgot={() => setDialog('reset')} />}
+        {readOnly || mode === 'open'
+          ? <p className="hint">{readOnly && (mode === 'pin' || sealedOff) ? t('vaultHeirPin') : t('loading')}</p>
+          : <UnlockForm box={data.vault} onForgot={() => setDialog('reset')} />}
         {dialog === 'reset' && <ResetForm onClose={() => setDialog(null)} />}
       </div>
     )
@@ -93,8 +105,8 @@ export function Vault() {
           {KINDS.map((k) => <option key={k} value={k}>{t(kindLabel(k))}</option>)}
         </select>
         <span className="grow" />
-        {!readOnly && <button type="button" className="icon-btn" title={t('vaultChangePin')} aria-label={t('vaultChangePin')} onClick={() => setDialog('pin')}><Icon name="key" /></button>}
-        <button type="button" className="icon-btn" title={t('vaultLock')} aria-label={t('vaultLock')} onClick={V.lock}><Icon name="lock" /></button>
+        {!readOnly && <button type="button" className="icon-btn" title={t('vaultSettings')} aria-label={t('vaultSettings')} onClick={() => setDialog('settings')}><Icon name="key" /></button>}
+        {mode !== 'open' && !readOnly && <button type="button" className="icon-btn" title={t('vaultLock')} aria-label={t('vaultLock')} onClick={V.lock}><Icon name="lock" /></button>}
         {!readOnly && <button type="button" className="btn" onClick={() => setEdit(kind || 'password')}><Icon name="plus" /><span className="hide-sm">{t('add')}</span></button>}
       </ListHead>
       <Paged
@@ -111,7 +123,7 @@ export function Vault() {
       />
       {view && <ItemView item={view} onClose={() => setView(null)} onEdit={readOnly ? undefined : () => { setEdit(view); setView(null) }} />}
       {edit !== null && <ItemForm item={typeof edit === 'string' ? null : edit} kind={typeof edit === 'string' ? edit : edit.kind} onClose={() => setEdit(null)} />}
-      {dialog === 'pin' && <PinForm box={data.vault} onClose={() => setDialog(null)} />}
+      {dialog === 'settings' && <ModeForm current={data.vault.mode} onClose={() => setDialog(null)} />}
     </div>
   )
 }
@@ -125,26 +137,44 @@ function subtitle(i: Item): string {
   return secret ? `•••• ${secret.slice(-4)}` : ''
 }
 
+const MODES: V.Mode[] = ['pin_heir', 'pin', 'open']
+
+/** Mode picker + PIN fields shared by setup and settings. Throws field errors; returns the PIN (or null). */
+function modeFields(form: ReturnType<typeof useForm<Record<string, unknown>>>, t: ReturnType<typeof useI18n>['t']) {
+  const mode = form.f.mode as V.Mode
+  const fields = [
+    select(form, 'mode', t('vMode'), MODES.map((m) => [m, t(`vMode_${m}` as Key)]), { full: true }),
+    { name: 'modeHint', label: t('important'), full: true, control: <p className="hint" id="f-modeHint">{t(`vModeHint_${mode}` as Key)}</p> },
+    text(form, 'pin', t('vPin'), { type: 'password', dir: 'ltr', hidden: mode === 'open' }),
+    text(form, 'pin2', t('vPinConfirm'), { type: 'password', dir: 'ltr', hidden: mode === 'open' }),
+  ]
+  const pin = () => {
+    if (mode === 'open') return null
+    const p = String(form.f.pin ?? '')
+    const issue = V.pinIssue(p)
+    if (issue) throw fail('pin', t(issue === 'short' ? 'vPinShort' : 'vPinWeak'))
+    if (p !== form.f.pin2) throw fail('pin2', t('vPinMismatch'))
+    return p
+  }
+  return { mode, fields, pin }
+}
+
 function SetupForm({ onClose }: { onClose: () => void }) {
   const { t } = useI18n()
   const { refresh } = useSession()
-  const form = useForm({ pin: '', pin2: '', understood: false }, onClose)
+  const form = useForm<Record<string, unknown>>({ mode: 'pin_heir', pin: '', pin2: '', understood: false }, onClose)
+  const m = modeFields(form, t)
   const submit = () => form.run(async () => {
-    const pin = String(form.f.pin)
-    const issue = V.pinIssue(pin)
-    if (issue) throw fail('pin', t(issue === 'short' ? 'vPinShort' : 'vPinWeak'))
-    if (pin !== form.f.pin2) throw fail('pin2', t('vPinMismatch'))
-    if (!form.f.understood) throw fail('understood', t('vMustAccept'))
-    await post('/vault', await V.createVault(pin))
+    const pin = m.pin()
+    if (m.mode === 'pin' && !form.f.understood) throw fail('understood', t('vMustAccept'))
+    await post('/vault', await V.createVault(m.mode, pin))
     refresh()
     onClose()
   }, {}, true)
   return (
     <FormModal title={t('vaultSetup')} errors={form.errors} busy={form.busy} onClose={onClose} onSubmit={submit} fields={[
-      { name: 'about', label: t('important'), full: true, control: <p className="hint" id="f-about">{t('vaultSetupHint')}</p> },
-      text(form, 'pin', t('vPin'), { type: 'password', dir: 'ltr', full: true }),
-      text(form, 'pin2', t('vPinConfirm'), { type: 'password', dir: 'ltr', full: true }),
-      check(form, 'understood', t('important'), t('vForgetWarning'), { full: true }),
+      ...m.fields,
+      check(form, 'understood', t('important'), t('vForgetWarning'), { full: true, hidden: m.mode !== 'pin' }),
     ]} />
   )
 }
@@ -173,27 +203,23 @@ function UnlockForm({ box, onForgot }: { box: V.VaultKeyBox; onForgot: () => voi
   )
 }
 
-function PinForm({ box, onClose }: { box: V.VaultKeyBox; onClose: () => void }) {
+function ModeForm({ current, onClose }: { current: V.Mode; onClose: () => void }) {
   const { t } = useI18n()
   const { toast, refresh } = useSession()
-  const form = useForm({ old: '', pin: '', pin2: '', current_password: '' }, onClose)
+  const form = useForm<Record<string, unknown>>({ mode: current, pin: '', pin2: '', understood: false, current_password: '' }, onClose)
+  const m = modeFields(form, t)
   const submit = () => form.run(async () => {
-    const pin = String(form.f.pin)
-    const issue = V.pinIssue(pin)
-    if (issue) throw fail('pin', t(issue === 'short' ? 'vPinShort' : 'vPinWeak'))
-    if (pin !== form.f.pin2) throw fail('pin2', t('vPinMismatch'))
-    const next = await V.changePin(box, String(form.f.old), pin)
-    if (!next) throw fail('old', t('vWrongPin'))
-    await put('/vault/key', { ...next, current_password: form.f.current_password })
+    const pin = m.pin()
+    if (m.mode === 'pin' && !form.f.understood) throw fail('understood', t('vMustAccept'))
+    await put('/vault/key', { ...(await V.rekey(m.mode, pin)), current_password: form.f.current_password })
     toast(t('saved'))
     refresh()
     onClose()
   }, {}, true)
   return (
-    <FormModal title={t('vaultChangePin')} errors={form.errors} busy={form.busy} onClose={onClose} onSubmit={submit} fields={[
-      text(form, 'old', t('vOldPin'), { type: 'password', dir: 'ltr', full: true }),
-      text(form, 'pin', t('vNewPin'), { type: 'password', dir: 'ltr', full: true }),
-      text(form, 'pin2', t('vPinConfirm'), { type: 'password', dir: 'ltr', full: true }),
+    <FormModal title={t('vaultSettings')} errors={form.errors} busy={form.busy} onClose={onClose} onSubmit={submit} fields={[
+      ...m.fields,
+      check(form, 'understood', t('important'), t('vForgetWarning'), { full: true, hidden: m.mode !== 'pin' }),
       text(form, 'current_password', t('currentPassword'), { type: 'password', dir: 'ltr', full: true }),
     ]} />
   )
