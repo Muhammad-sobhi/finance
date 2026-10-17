@@ -152,7 +152,7 @@ td.acts { width: 1%; }
 .split > .col { min-height: 0; display: flex; flex-direction: column; gap: var(--gap); }
 .split > .col > .card { min-height: 0; }
 .split > .col > .rates-card { flex: 1; }
-.data-card { flex: none; gap: 8px; }
+.data-card, .sec-card { flex: none; gap: 8px; }
 .data-acts { display: flex; flex-wrap: wrap; gap: 8px; }
 .data-card .hint { font-size: 12px; margin: 0; }
 .receipt-ctl { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -184,6 +184,15 @@ p.hint { margin: 0; font-size: 13px; }
 .acct-email { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .setting-row input[type='checkbox'] { width: 18px; height: 18px; accent-color: var(--accent); }
 @media (max-width: 720px) { .show-sm { display: flex; } }
+/* Settings has too many cards for a tablet screen: tabs (one card at a time) up to 1100px. */
+.show-md { display: none; }
+@media (max-width: 1100px) {
+  .show-md { display: flex; }
+  .split.tabs-md { display: flex; flex-direction: column; }
+  .split.tabs-md > .card, .split.tabs-md > .col, .split.tabs-md > .col > .card { flex: 1; }
+  .split.tabs-md > .card.off-sm, .split.tabs-md > .col > .card.off-sm { display: none; }
+  .split.tabs-md > .col:not(:has(> .card:not(.off-sm))) { display: none; }
+}
 .li-btn { all: unset; box-sizing: border-box; display: flex; width: 100%; cursor: pointer; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0; border-bottom: var(--row-line); font-size: 14px; }
 .li-btn > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .li-btn:focus-visible { outline: 2px solid var(--accent); }
@@ -386,3 +395,10 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 .net-bar.off { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .net-bar svg { width: 16px; height: 16px; flex: none; }
 .net-bar .more { color: var(--neg); }
+
+/* App lock screen */
+.lock .card { width: min(340px, 100%); }
+.lock-h { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
+.lock-h svg { width: 32px; height: 32px; color: var(--accent); }
+.lock .code-inp { text-align: center; letter-spacing: 8px; font-size: 22px; }
+.lock .btn svg { width: 18px; height: 18px; }

@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { api, ApiError, patch, post, token, UNAUTHORIZED_EVENT } from './api'
 import { I18nCtx, makeI18n, type Lang } from '../i18n'
+import { appLock } from './appLock'
 import { isNetworkError, offlineCache } from './offline'
 import type { ListMode, Theme, User } from './types'
 
@@ -48,7 +49,7 @@ const deviceToken = {
 const savedUser = {
   get: (): User | null => { try { return JSON.parse(localStorage.getItem('fin.user') ?? 'null') as User | null } catch { return null } },
   set: (u: User) => { try { localStorage.setItem('fin.user', JSON.stringify(u)) } catch { /* private mode */ } },
-  clear: () => { try { localStorage.removeItem('fin.user') } catch { /* private mode */ } offlineCache.clear() },
+  clear: () => { try { localStorage.removeItem('fin.user') } catch { /* private mode */ } offlineCache.clear(); appLock.clear() },
 }
 
 const Ctx = createContext<Session | null>(null)

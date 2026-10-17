@@ -1,7 +1,10 @@
-import { lazy, Suspense, useEffect } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { LockScreen } from './components/LockScreen'
 import { Shell } from './components/Shell'
 import { useI18n } from './i18n'
+import { token } from './lib/api'
+import { appLock, LOCK_CHANGED } from './lib/appLock'
 import { useSession } from './lib/session'
 import { Dashboard } from './pages/Dashboard'
 import { Login } from './pages/Login'
@@ -45,9 +48,51 @@ const HeirRequestPage = lazy(() => pages.Public().then((m) => ({ default: m.Heir
 const ForgotPasswordPage = lazy(() => pages.Public().then((m) => ({ default: m.ForgotPasswordPage })))
 const ResetPasswordPage = lazy(() => pages.Public().then((m) => ({ default: m.ResetPasswordPage })))
 
+/**
+ * App lock (Settings → App lock): locked when the app is opened with a saved sign-in, and again
+ * after it spent the chosen time in the background. Not after typing the password to sign in.
+ */
+function useAppLock(userId: number | undefined, booting: boolean) {
+  const [config, setConfig] = useState(() => appLock.get(userId))
+  const openedSignedIn = useRef(!!token.get())
+  const [locked, setLocked] = useState(false)
+
+  useEffect(() => {
+    const load = () => setConfig(appLock.get(userId))
+    load()
+    window.addEventListener(LOCK_CHANGED, load)
+    return () => window.removeEventListener(LOCK_CHANGED, load)
+  }, [userId])
+
+  useEffect(() => {
+    if (booting) return
+    // Only the sign-in this app was opened with; an expired one ends at the password screen.
+    if (userId && openedSignedIn.current && appLock.get(userId)) setLocked(true)
+    openedSignedIn.current = false
+  }, [userId, booting])
+
+  useEffect(() => {
+    if (!config) return
+    let hiddenAt = 0
+    const onChange = () => {
+      if (document.visibilityState === 'hidden') {
+        hiddenAt = Date.now()
+        if (config.after === 0) setLocked(true)   // also keeps the app switcher preview covered
+      } else if (hiddenAt && Date.now() - hiddenAt >= config.after * 1000) {
+        setLocked(true)
+      }
+    }
+    document.addEventListener('visibilitychange', onChange)
+    return () => document.removeEventListener('visibilitychange', onChange)
+  }, [config])
+
+  return { config, locked: locked && !!config, unlock: () => setLocked(false) }
+}
+
 export default function App() {
   const { user, booting } = useSession()
   const { t } = useI18n()
+  const lock = useAppLock(user?.id, booting)
 
   // Once signed in and idle, fetch the other pages so later navigation is instant.
   useEffect(() => {
@@ -57,6 +102,7 @@ export default function App() {
   }, [user])
 
   if (booting) return <div className="empty">{t('loading')}</div>
+  if (user && lock.locked) return <LockScreen config={lock.config!} onUnlock={lock.unlock} />
 
   return (
     <BrowserRouter>
