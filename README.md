@@ -33,6 +33,7 @@ composer install
 cp .env.example .env                 # set DB_PASSWORD=secret (and mail settings if you want real emails)
 php artisan key:generate
 php artisan webpush:vapid            # browser-push keys, written into .env
+php artisan vault:key                # data master key: put the printed line in .env as DATA_MASTER_KEY=
 php artisan migrate
 php artisan finance:owner you@example.com "Your Name"     # the owner + default categories
 #   …or demo data instead: php artisan db:seed --class=DemoSeeder   (demo@example.com / password)
@@ -51,7 +52,7 @@ Locally `MAIL_MAILER=log` writes emails (alerts, heir links) to `backend/storage
 ## Checks
 
 ```bash
-cd backend && php artisan test                         # 77 feature tests, SQLite in memory
+cd backend && php artisan test                         # 85 feature tests, SQLite in memory
 # same suite on MySQL (uses a separate database):
 DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_DATABASE=finance_test DB_USERNAME=finance DB_PASSWORD=secret php artisan test
 
@@ -147,6 +148,18 @@ composer install --no-dev --optimize-autoloader
 cp .env.example .env && php artisan key:generate && php artisan webpush:vapid
 ```
 
+Create the **data master key** (see *Data encryption* below). It lives outside the project, readable by PHP but not part of any backup:
+
+```bash
+sudo usermod -aG www-data $USER                # the deploy user can run artisan with the key
+sudo mkdir -p /etc/finance
+php artisan vault:key                          # prints base64:... and its fingerprint — copy both NOW
+sudo sh -c 'printf "%s" "base64:...paste..." > /etc/finance/master.key'
+sudo chown root:www-data /etc/finance/master.key && sudo chmod 0640 /etc/finance/master.key
+```
+
+Save the key in **two safe places away from the server** (e.g. a password manager and a printed copy in a safe). Then run `php artisan vault:check --ask` and paste each saved copy to prove it is correct.
+
 Edit `backend/.env`:
 
 ```dotenv
@@ -170,6 +183,7 @@ MAIL_PASSWORD=<mail-password>
 MAIL_FROM_ADDRESS=alerts@example.com
 MAIL_FROM_NAME="Treasury"
 VAPID_SUBJECT=mailto:you@example.com           # VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY set by webpush:vapid
+DATA_MASTER_KEY_FILE=/etc/finance/master.key   # never put the key itself in .env on the server
 ```
 
 Then:
@@ -229,12 +243,37 @@ mysqldump --single-transaction finance | gzip > /var/backups/finance-$(date +%F)
 find /var/backups -name 'finance-*.sql.gz' -mtime +30 -delete
 ```
 
-Keep `backend/.env` (it holds `APP_KEY`, which decrypts account numbers, national IDs and notes) backed up separately and securely — without it the encrypted fields cannot be read.
+The dumps contain only encrypted financial data. **Never store the master key with them** — whoever has both can read everything. Keep `backend/.env` backed up separately too (it holds `APP_KEY` for sessions and signed links).
+
+**Restore** (new server or after a failure): install as above, put the saved master key back in `/etc/finance/master.key`, import the dump (`gunzip -c finance-YYYY-MM-DD.sql.gz | mysql finance`), then `php artisan vault:check` must report that every user key opens.
+
+## Data encryption
+
+Users' financial data is encrypted in the database, so it can't be read from MySQL, phpMyAdmin, a dump or a backup — by an attacker or by the server admin in normal work.
+
+- **What is encrypted:** account names, balances, limits, numbers and notes; transaction amounts and notes; debts (person, phone, amounts, notes) and their payments; bill and subscription names, amounts and notes; investments (name, platform, amounts, quantity, return, notes) and their value history; assets (name, prices, grams, location, notes); net-worth snapshots; heirs and trusted contacts (name, phone, relation, national ID, address, notes); in-app notifications. Alerts waiting in the queue carry their names and amounts encrypted too.
+- **What stays readable** (needed for queries, scheduling and login): ids, owner links, dates, currencies, types, statuses, categories, exchange rates, user settings, emails.
+- **How:** every user has a random data key (AES-256-GCM), stored in `users.data_key` wrapped by the master key. One user's key can't open another's rows. The API decrypts only while handling that user's request, calculates on the server, and returns results to that user alone.
+- **Password reset by email keeps working.** The keys don't depend on passwords, so users never lose data by forgetting a password, and the admin can restore backups at any time.
+- **Data is lost only if** the master key and every copy of it are lost (all users), or all database backups are lost. A user who deletes their account loses their own data, by design.
+- **Limit:** whoever controls the running server (root plus the code) could technically decrypt. The protection is against database and backup access, not against a hostile root user.
+
+Key commands:
+
+```bash
+php artisan vault:key            # generate a new master key (prints it, changes nothing)
+php artisan vault:check          # live key opens every user key (prints its fingerprint)
+php artisan vault:check --ask    # same, for a saved copy you type in (hidden)
+```
+
+Rotating the master key: generate a new one, put it in `/etc/finance/master.key`, set `DATA_MASTER_KEY_PREVIOUS=<old key>` in `.env`, `php artisan config:cache`, run `php artisan vault:rotate`, check with `vault:check`, then remove `DATA_MASTER_KEY_PREVIOUS`, cache the config again, and destroy the old key's copies only after new copies are saved.
+
+**Upgrading an existing install** to this version: take a backup first, create the master key file as above and set `DATA_MASTER_KEY_FILE`, then deploy. `php artisan migrate` encrypts all existing data in place (it uses `APP_KEY` to read the fields that were encrypted the old way).
 
 ## Security notes
 
 - Passwords hashed (bcrypt); Sanctum bearer tokens; login limited to 5/min per email+IP, heir requests to 5/hour per IP and 3/hour per email.
 - Every model is owner-scoped by policy; heirs are read-only by middleware and by policy.
-- Encrypted at rest: account numbers and notes, heir national ID / address / notes, debt notes.
+- Financial data encrypted per user with keys held outside the database (see *Data encryption*).
 - Emailed actions use signed, expiring URLs; the heir request never reveals whether an email is registered.
 - No secrets in the repo — only `.env.example`.
