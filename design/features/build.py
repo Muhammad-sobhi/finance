@@ -1,5 +1,7 @@
-# Generates features.html (rendered to features.png with headless Chromium).
-import base64, pathlib
+# Generates features[-ar].html (rendered to features[-ar].png with headless Chromium).
+# Usage: python3 build.py [en|ar]
+import base64, pathlib, sys
+lang = sys.argv[1] if len(sys.argv) > 1 else 'en'
 here = pathlib.Path(__file__).parent
 def b64(p): return base64.b64encode((here/'..'/p).read_bytes()).decode()
 
@@ -56,15 +58,54 @@ F = [
  ('lang','Arabic & English','Arabic by default with full right-to-left layout. Switch to English any time. Numbers and dates follow your language.'),
  ('theme','4 themes, no scrolling','Ledger, Swiss, Geometric and Vault themes. Every page fits the screen on phone, tablet and desktop — no scrolling ever.'),
 ]
+FA = [
+ ('إضافة سريعة في ٥ ثوانٍ','اضغط زر + من أي صفحة، اكتب المبلغ، اختر الفئة واحفظ. آخر حساب استخدمته مختار تلقائيًا.'),
+ ('كل أماكن أموالك','البنك، بطاقات الخصم والائتمان، إنستاباي، فودافون كاش، اتصالات كاش، أورنج كاش، وي باي، الكاش والتوفير — لكلٍّ رصيده.'),
+ ('المصروفات اليومية والتحويلات','سجّل المصروف والدخل والتحويل بين الحسابات. الأرصدة تتحدث تلقائيًا. شاهد كل يوم بإجماليه وصفِّ حسب الفئة أو الحساب.'),
+ ('الدخل','الراتب يُسجَّل وحده كل شهر أو بضغطة واحدة. تابع مشاريع العمل الحر ودفعاتها وما تبقى لك.'),
+ ('الديون','اعرف من عليه فلوس لك ومن لهم فلوس عندك. سدّد على دفعات من أي حساب حتى تُقفل الدَّين.'),
+ ('التقسيط والجمعيات','تابع أقساطك شهرًا بشهر. اشترك في جمعية أو أدِرها بأعضائها ودوراتها وأدوار القبض وتذكير واتساب.'),
+ ('الفواتير','حدد المبلغ والموعد والتكرار. اضغط «تم الدفع» فيُسجَّل المصروف ويُحدَّد الموعد القادم.'),
+ ('الاشتراكات','اعرف تكلفة اشتراكاتك الشهرية كاملة، مقسّمة بين شخصي وعمل.'),
+ ('الاستثمارات','أسهم، صناديق، شهادات، ودائع، ذهب، عملات رقمية، عقارات وغيرها — مع سجل القيمة والربح والعائد.'),
+ ('الممتلكات','سجّل المباني والأراضي والسيارات والأجهزة والذهب والفضة والمجوهرات. الذهب والفضة يُقيَّمان بسعر اليوم.'),
+ ('الميزانيات وأهداف الادخار','حدد حدًا شهريًا لكل فئة وتنبَّه عند ٨٠٪ و١٠٠٪. الأهداف توضح كم تدّخر كل شهر.'),
+ ('حاسبة الزكاة','تحسب وعاء الزكاة مقارنةً بالنصاب، وتذكّرك قبل يوم الزكاة.'),
+ ('التنبيهات','تذكير قبل الموعد وفي يومه وعند التأخر — داخل التطبيق وبالبريد وعلى الهاتف. كل تنبيه مرة واحدة فقط.'),
+ ('التقارير والنصائح','الدخل والمصروف ونسبة الادخار وصافي الثروة شهريًا وسنويًا. اعرف هل أنت في نمو، مع نصائح بالعربية والإنجليزية.'),
+ ('توقع ذكي','اعرف كيف سينتهي شهرك قبل أن ينتهي، وتنبَّه للمصروفات غير المعتادة.'),
+ ('عملات متعددة','كل مبلغ يُحفظ بعملته. كل الإجماليات تُحوَّل إلى الجنيه المصري بأسعار صرف تعدّلها بنفسك.'),
+ ('وصول الورثة','إن توقفت عن استخدام التطبيق، يحصل ورثتك على وصول للقراءة فقط بعد مهلة — أو يطلبونه عبر شخص موثوق.'),
+ ('الخزنة','احفظ كلمات السر وبيانات البنوك والمستندات مشفّرة على جهازك ومحميّة برمز سري.'),
+ ('الأمان','بياناتك المالية مشفّرة. تحقق بخطوتين، تنبيه عند الدخول من جهاز جديد، وقفل للتطبيق برمز أو بصمة أو الوجه.'),
+ ('يعمل بدون إنترنت ويُثبَّت كتطبيق','ثبّته على هاتفك. أضف مصروفاتك بدون إنترنت — وتُرسَل تلقائيًا عند عودة الاتصال.'),
+ ('بياناتك','صدّر إلى CSV، اطبع تقريرًا، استورد كشف حساب البنك، أرفق صور الإيصالات، ونزّل نسخة احتياطية مشفّرة.'),
+ ('يعمل دائمًا','نسخ احتياطي مشفّر كل ليلة، فحص مستمر للخادم، وتنبيه بالبريد إن توقف أي جزء.'),
+ ('عربي وإنجليزي','العربية افتراضيًا باتجاه من اليمين لليسار. بدّل للإنجليزية متى شئت. الأرقام والتواريخ تتبع لغتك.'),
+ ('٤ ثيمات وبلا تمرير','ثيمات دفتر وسويسري وهندسي وخزنة. كل صفحة تملأ الشاشة على الهاتف واللوحي والكمبيوتر — بلا تمرير أبدًا.'),
+]
+if lang == 'ar':
+    F = [(f[0],) + t for f, t in zip(F, FA)]
+T = {
+ 'en': dict(title='Dinar features', sub='Your personal finance app — everything it does, on one page.',
+   tag='Arabic-first · Egyptian pound by default<br><b>Phone · Tablet · Desktop</b>', themes='Four themes — switch any time',
+   caps=['Ledger','Swiss','Geometric (Arabic)','Vault'],
+   foot=('Built with Laravel 12 + React · Hosted on your own server','One owner · Read-only access for heirs')),
+ 'ar': dict(title='مميزات دينار', sub='تطبيقك لإدارة أموالك الشخصية — كل ما يفعله في صفحة واحدة.',
+   tag='العربية أولًا · الجنيه المصري افتراضيًا<br><b>هاتف · لوحي · كمبيوتر</b>', themes='أربعة ثيمات — بدّل بينها متى شئت',
+   caps=['دفتر','سويسري','هندسي','خزنة'],
+   foot=('مبني بـ Laravel 12 و React · يعمل على خادمك الخاص','مالك واحد · وصول للقراءة فقط للورثة')),
+}[lang]
+num = (lambda n: f'{n:02d}'.translate(str.maketrans('0123456789','٠١٢٣٤٥٦٧٨٩'))) if lang == 'ar' else (lambda n: f'{n:02d}')
 cards = ''
 for n,(ic,t,d) in enumerate(F):
     c = C[n % len(C)]
     cards += f'''<div class="card"><div class="ic" style="--c:{c}"><svg viewBox="0 0 24 24">{I[ic]}</svg></div>
-<div><h3><span class="n">{n+1:02d}</span>{t}</h3><p>{d}</p></div></div>'''
+<div><h3><span class="n">{num(n+1)}</span>{t}</h3><p>{d}</p></div></div>'''
 shots = ''.join(f'<figure><img src="data:image/png;base64,{b64("samples/"+f)}"><figcaption>{c}</figcaption></figure>'
-  for f,c in [('1-ledger.png','Ledger'),('2-swiss.png','Swiss'),('3-arabic-geometric.png','Geometric (Arabic)'),('4-vault.png','Vault')])
-html = f'''<!doctype html><html><head><meta charset="utf-8"><title>Dinar features</title>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&family=Reem+Kufi:wght@600&display=swap" rel="stylesheet">
+  for f,c in zip(['1-ledger.png','2-swiss.png','3-arabic-geometric.png','4-vault.png'], T['caps']))
+html = f'''<!doctype html><html lang="{lang}" dir="{'rtl' if lang == 'ar' else 'ltr'}"><head><meta charset="utf-8"><title>{T['title']}</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&family=Reem+Kufi:wght@600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *{{box-sizing:border-box;margin:0}}
 body{{width:1800px;background:#f4efe3;color:#1f2a24;font-family:Inter,sans-serif;padding:56px 64px 48px}}
@@ -86,14 +127,18 @@ h2{{font-family:Fraunces,serif;font-size:30px;margin:40px 0 18px}}
 .shots{{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}}
 figure img{{width:100%;border-radius:10px;border:1px solid #d9cfb8;display:block}}
 figcaption{{text-align:center;font-size:16px;margin-top:8px;font-weight:500}}
+[dir=rtl] body{{font-family:'IBM Plex Sans Arabic',sans-serif}}
+[dir=rtl] h1,[dir=rtl] h2,[dir=rtl] h3{{font-family:'Reem Kufi',sans-serif}}
+[dir=rtl] p{{font-size:17px;line-height:1.65}}
+[dir=rtl] .n{{font-family:inherit;font-size:15px}}
 footer{{margin-top:32px;padding-top:18px;border-top:1px solid #d9cfb8;display:flex;justify-content:space-between;font-size:16px;color:#4a5550}}
 </style></head><body>
 <header><img src="data:image/png;base64,{b64('logo/dinar-coin-1024.png')}">
-<div><h1>Dinar<span class="ar">دينار</span></h1><div class="sub">Your personal finance app — everything it does, on one page.</div></div>
-<div class="tag">Arabic-first · Egyptian pound by default<br><b>Phone · Tablet · Desktop</b></div></header>
+<div><h1>Dinar<span class="ar">دينار</span></h1><div class="sub">{T['sub']}</div></div>
+<div class="tag">{T['tag']}</div></header>
 <div class="grid">{cards}</div>
-<h2>Four themes — switch any time</h2>
+<h2>{T['themes']}</h2>
 <div class="shots">{shots}</div>
-<footer><span>Built with Laravel 12 + React · Hosted on your own server</span><span>One owner · Read-only access for heirs</span></footer>
+<footer><span>{T['foot'][0]}</span><span>{T['foot'][1]}</span></footer>
 </body></html>'''
-(here/'features.html').write_text(html)
+(here/f"features{'-ar' if lang == 'ar' else ''}.html").write_text(html)
