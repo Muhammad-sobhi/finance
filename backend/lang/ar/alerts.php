@@ -12,6 +12,15 @@ return [
         'owed_to_me' => 'دين لك على :name',
         'i_owe' => 'دين عليك لـ :name',
         'credit_card' => 'سداد بطاقة :name',
+        'income' => 'دخل متوقع: :name',
+        'project' => 'دفعة من :name',
+        'zakat' => 'الزكاة',
+        'installment' => 'قسط :name',
+        'gameya' => 'دفعة جمعية :name',
+        'gameya_payout' => 'دورك في جمعية :name',
+        'vault' => 'تجديد عنصر في الخزنة',
+        'gameya_shared' => 'دفعة جمعية :name',
+        'gameya_shared_payout' => 'دورك في جمعية :name',
         'maturity' => 'استحقاق :name',
     ],
     'when' => [
@@ -20,5 +29,6 @@ return [
         'overdue' => 'متأخر :days يوم',
     ],
     'body' => ':subject — :amount :currency، :when',
-    'open' => 'افتح خزينتي',
+    'body_plain' => ':subject، :when',
+    'open' => 'افتح دينار',
 ];

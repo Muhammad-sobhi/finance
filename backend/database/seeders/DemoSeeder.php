@@ -5,7 +5,10 @@ namespace Database\Seeders;
 use App\Enums\AccountType;
 use App\Models\User;
 use App\Services\DebtService;
+use App\Services\InstallmentService;
 use App\Services\NetWorth;
+use App\Services\ProjectService;
+use App\Services\RecurringService;
 use App\Services\TransactionService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
@@ -50,10 +53,16 @@ class DemoSeeder extends Seeder
         $notes = ['food' => 'Groceries', 'transport' => 'Uber', 'shopping' => 'Clothes', 'health' => 'Pharmacy', 'entertainment' => 'Cinema', 'family' => 'Gift', 'bills' => 'Electricity'];
         $start = CarbonImmutable::today()->subMonths(5)->startOfMonth();
 
+        // Monthly salary as a recurring income source; each month's pay is "received" through it.
+        $salary = $owner->incomeSources()->create([
+            'name' => 'Salary', 'category_id' => $cats['salary'], 'amount' => 35000, 'currency' => 'EGP',
+            'next_date' => $start->toDateString(), 'cycle' => 'monthly', 'account_id' => $accounts[0]->id,
+        ]);
+
         mt_srand(42);
         for ($d = $start; $d <= CarbonImmutable::today(); $d = $d->addDay()) {
             if ($d->day === 1) {
-                $service->create($owner, ['type' => 'income', 'account_id' => $accounts[0]->id, 'category_id' => $cats['salary'], 'amount' => 35000, 'date' => $d->toDateString(), 'note' => 'Salary']);
+                app(RecurringService::class)->pay($salary, ['date' => $d->toDateString()]);
             }
             for ($n = mt_rand(0, 3); $n > 0; $n--) {
                 $key = array_rand($notes);
@@ -70,6 +79,14 @@ class DemoSeeder extends Seeder
         foreach ($accounts as $i => $account) {
             $account->update(['balance' => $targets[$i]]);
         }
+
+        // Freelance work: one partly paid, one waiting for payment.
+        $projects = app(ProjectService::class);
+        $site = $owner->projects()->create(['client' => 'Nile Tech', 'name' => 'Company website', 'amount' => 25000, 'currency' => 'EGP',
+            'start_date' => CarbonImmutable::today()->subMonths(2)->toDateString(), 'due_date' => CarbonImmutable::today()->addDays(10)->toDateString()]);
+        $projects->addPayment($site, ['amount' => 10000, 'date' => CarbonImmutable::today()->subMonth()->toDateString(), 'account_id' => $accounts[0]->id, 'note' => 'deposit']);
+        $owner->projects()->create(['client' => 'Gulf Apps', 'name' => 'Mobile API', 'amount' => 800, 'currency' => 'USD',
+            'start_date' => CarbonImmutable::today()->subMonth()->toDateString(), 'due_date' => CarbonImmutable::today()->subDays(2)->toDateString()]);
 
         // Heir setup (switch armed; access not active).
         $owner->update(['heir_enabled' => true, 'heir_inactivity_days' => 60, 'heir_grace_days' => 14]);
@@ -124,6 +141,32 @@ class DemoSeeder extends Seeder
             ['Wedding gold', 'gold', null, null, 40, 21, 'Safe'], ['Silver', 'silver', null, null, 250, null, 'Safe'], ['Laptop', 'device', 60000, 40000, null, null, null],
         ] as [$name, $type, $price, $value, $grams, $karat, $location]) {
             $owner->assets()->create(['name' => $name, 'type' => $type, 'currency' => 'EGP', 'purchase_price' => $price, 'current_value' => $value, 'grams' => $grams, 'karat' => $karat, 'location' => $location]);
+        }
+        // Planning: budgets for the busiest categories, two goals, and a zakat day.
+        foreach (['food' => 6000, 'transport' => 1500, 'shopping' => 2500, 'entertainment' => 800, 'health' => 1500] as $key => $limit) {
+            $owner->budgets()->create(['category_id' => $owner->categories()->where('key', $key)->value('id'), 'amount' => $limit]);
+        }
+        $car = $owner->goals()->create(['name' => 'New car', 'target_amount' => 400000, 'currency' => 'EGP', 'target_date' => $today->addMonths(18)->toDateString()]);
+        foreach ([3, 2, 1] as $m) {
+            $car->contributions()->create(['amount' => 15000, 'date' => $today->subMonths($m)->toDateString()]);
+        }
+        $owner->goals()->create(['name' => 'Emergency fund', 'target_amount' => 150000, 'currency' => 'EGP',
+            'account_id' => $owner->accounts()->where('type', 'savings')->value('id')]);
+        $owner->update(['zakat_date' => $today->addDays(40)->toDateString()]);
+        // Installments and a gameya.
+        $wallet = $owner->accounts()->where('type', 'debit_card')->value('id');
+        $phone = $owner->installmentPlans()->create(['name' => 'iPhone', 'provider' => 'valU', 'currency' => 'EGP', 'installment_amount' => 3200, 'count' => 12,
+            'first_due_date' => $today->subMonths(4)->toDateString(), 'account_id' => $wallet, 'category_id' => $owner->categories()->where('key', 'shopping')->value('id')]);
+        $owner->installmentPlans()->create(['name' => 'Washing machine', 'provider' => 'B.TECH', 'currency' => 'EGP', 'installment_amount' => 1450, 'count' => 10,
+            'first_due_date' => $today->subMonths(1)->addDays(3)->toDateString(), 'down_payment' => 3000, 'account_id' => $wallet]);
+        $gameya = $owner->gameyas()->create(['name' => 'Office gameya', 'organizer' => 'Mona', 'members' => 10, 'my_turn' => 6, 'amount' => 2000,
+            'currency' => 'EGP', 'start_date' => $today->subMonths(3)->startOfMonth()->toDateString(), 'account_id' => $wallet]);
+        $service2 = app(InstallmentService::class);
+        for ($n = 1; $n <= 4; $n++) {
+            $service2->payInstallment($phone, ['date' => $phone->dueOf($n)->min($today)->toDateString()]);
+        }
+        for ($r = 1; $r <= 3; $r++) {
+            $service2->gameyaMove($gameya, 'contribution', ['date' => $gameya->roundDate($r)->toDateString()]);
         }
     }
 }

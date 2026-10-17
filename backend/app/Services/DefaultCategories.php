@@ -18,11 +18,25 @@ class DefaultCategories
         'entertainment' => ['expense', 'film', '#8a5a44', 'Entertainment'],
         'family' => ['expense', 'family', '#6b8f71', 'Family'],
         'work' => ['expense', 'work', '#555555', 'Work'],
+        'zakat' => ['expense', 'gift', '#2f7d4a', 'Zakat & charity'],
+        'fees' => ['expense', 'bill', '#7a6a55', 'Fees'],
         'other' => ['expense', 'tag', '#6b6a5c', 'Other'],
         'salary' => ['income', 'wallet', '#2e5e3e', 'Salary'],
         'freelance' => ['income', 'work', '#1e3a5f', 'Freelance'],
         'other_income' => ['income', 'tag', '#6b6a5c', 'Other income'],
     ];
+
+    /** Find (or create, for owners seeded before it existed) a default category by key. */
+    public static function ensure(User $owner, string $key): int
+    {
+        $id = $owner->categories()->where('key', $key)->value('id');
+        if ($id) {
+            return $id;
+        }
+        [$type, $icon, $color, $name] = self::DEFAULTS[$key];
+
+        return $owner->categories()->create(['key' => $key, 'name' => $name, 'type' => CategoryType::from($type), 'icon' => $icon, 'color' => $color, 'sort' => 99])->id;
+    }
 
     public static function seedFor(User $user): void
     {

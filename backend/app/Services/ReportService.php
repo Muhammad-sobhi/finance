@@ -38,12 +38,15 @@ class ReportService
 
     private User $owner;
 
+    private ?array $live = null;
+
     public function __construct(private readonly NetWorth $netWorth) {}
 
     public function build(User $user, string $period, string $value, ?CarbonImmutable $today = null): array
     {
         $today ??= CarbonImmutable::today();
         $this->owner = $user->dataOwner();
+        $this->live = null;
         $this->fx = CurrencyConverter::for($this->owner);
 
         [$start, $end] = $this->range($period, $value);
@@ -98,7 +101,7 @@ class ReportService
         return Transaction::ownedBy($this->owner)->cashflow()
             ->where('type', '!=', TransactionType::Transfer->value)
             ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
-            ->get(['type', 'amount', 'currency', 'date', 'category_id']);
+            ->get(['user_id', 'type', 'amount', 'currency', 'date', 'category_id']);
     }
 
     /** @return array{income: float, expense: float, savings: float, savings_rate: float|null} */
@@ -155,13 +158,13 @@ class ReportService
     private function netWorthAt(CarbonImmutable $date, CarbonImmutable $today): ?float
     {
         if ($date->format('Y-m') === $today->format('Y-m')) {
-            return $this->netWorth->compute($this->owner)['net_worth'];
+            return $this->liveNetWorth()['net_worth'];
         }
         if ($date->gt($today)) {
             return null;
         }
         $value = NetWorthSnapshot::ownedBy($this->owner)->where('month', '<=', $date->startOfMonth()->toDateString())
-            ->orderByDesc('month')->value('net_worth');
+            ->orderByDesc('month')->first()?->net_worth;
 
         return $value !== null ? (float) $value : null;
     }
@@ -174,11 +177,17 @@ class ReportService
         // Make the current month live even before tonight's snapshot.
         if ($end->gte($today->startOfMonth())) {
             $points = $points->reject(fn ($p) => $p['month'] === $today->format('Y-m'))
-                ->push(['month' => $today->format('Y-m'), 'net_worth' => $this->netWorth->compute($this->owner)['net_worth']])
+                ->push(['month' => $today->format('Y-m'), 'net_worth' => $this->liveNetWorth()['net_worth']])
                 ->take(-12)->values();
         }
 
         return $points->all();
+    }
+
+    /** Today's net worth, computed once per report (it reads every account, debt, asset…). */
+    private function liveNetWorth(): array
+    {
+        return $this->live ??= $this->netWorth->compute($this->owner);
     }
 
     private function pct(float $now, float $before): ?float
@@ -224,19 +233,28 @@ class ReportService
             }
         }
 
+        // The running month: warn early when the forecast ends below zero.
+        if ($period === 'month' && $start->isSameMonth($today)) {
+            $f = app(ForecastService::class)->month($this->owner, $today);
+            if ($f['projected_savings'] < 0 && $f['days_left'] > 0) {
+                $add('forecast_negative', 'warn', ['gap' => round(-$f['projected_savings']), 'currency' => $base]);
+            }
+        }
+
         $subs = Subscription::ownedBy($this->owner)->where('is_active', true)->get()
             ->sum(fn (Subscription $s) => $this->fx->toBase($s->monthlyCost(), $s->currency));
         if ($monthlyIncome > 0 && $subs / $monthlyIncome * 100 > self::SUBSCRIPTION_SHARE) {
             $add('subscriptions_high', 'info', ['pct' => round($subs / $monthlyIncome * 100)]);
         }
 
-        $nw = $this->netWorth->compute($this->owner);
+        $nw = $this->liveNetWorth();
         $avgSpend = $this->totals($today->startOfMonth()->subMonthsNoOverflow(3), $today->startOfMonth()->subDay())['expense'] / 3;
         if ($avgSpend > 0 && $nw['liquid'] > $avgSpend * self::IDLE_CASH_MONTHS) {
             $add('idle_cash', 'info', ['months' => (int) floor($nw['liquid'] / $avgSpend)]);
         }
 
-        Account::ownedBy($this->owner)->where('type', AccountType::CreditCard)->where('is_active', true)->where('credit_limit', '>', 0)->get()
+        Account::ownedBy($this->owner)->where('type', AccountType::CreditCard)->where('is_active', true)->get()
+            ->filter(fn (Account $a) => (float) $a->credit_limit > 0)
             ->each(function (Account $a) use ($add) {
                 $used = max(0, -(float) $a->balance) / (float) $a->credit_limit * 100;
                 if ($used > self::CARD_UTILIZATION) {
@@ -245,7 +263,7 @@ class ReportService
             });
 
         Debt::ownedBy($this->owner)->where('status', DebtStatus::Open)->whereNotNull('due_date')
-            ->where('due_date', '<', $today->toDateString())->withSum('payments', 'amount')->get()
+            ->where('due_date', '<', $today->toDateString())->with('payments')->get()
             ->each(fn (Debt $d) => $add(
                 $d->direction === DebtDirection::IOwe ? 'debt_overdue' : 'collect_debt',
                 $d->direction === DebtDirection::IOwe ? 'danger' : 'info',

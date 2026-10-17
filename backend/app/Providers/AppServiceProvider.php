@@ -5,7 +5,13 @@ namespace App\Providers;
 use App\Models\Bill;
 use App\Models\Debt;
 use App\Models\DebtPayment;
+use App\Models\GameyaPayment;
+use App\Models\IncomeSource;
+use App\Models\InstallmentPayment;
+use App\Models\ProjectPayment;
 use App\Models\Subscription;
+use App\Models\ZakatPayment;
+use App\Services\DataVault;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
@@ -17,7 +23,8 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        // One per process so each owner's key is unwrapped once.
+        $this->app->singleton(DataVault::class);
     }
 
     public function boot(): void
@@ -30,6 +37,11 @@ class AppServiceProvider extends ServiceProvider
             'debt_payment' => DebtPayment::class,
             'bill' => Bill::class,
             'subscription' => Subscription::class,
+            'income_source' => IncomeSource::class,
+            'project_payment' => ProjectPayment::class,
+            'zakat_payment' => ZakatPayment::class,
+            'installment_payment' => InstallmentPayment::class,
+            'gameya_payment' => GameyaPayment::class,
         ]);
 
         // Brute-force protection: per email+IP, plus a looser per-IP ceiling.
@@ -38,7 +50,20 @@ class AppServiceProvider extends ServiceProvider
             Limit::perMinute(20)->by($request->ip()),
         ]);
 
+        // Password / 2FA settings changes: generous for typos, too slow for guessing.
+        RateLimiter::for('account-security', fn (Request $request) => Limit::perMinute(10)->by('acct|'.($request->user()?->id ?: $request->ip())));
+
+        // Second login step: 5 tries/min per IP (a 6-digit code must not be guessable).
+        RateLimiter::for('two-factor', fn (Request $request) => Limit::perMinute(5)->by('2fa|'.$request->ip()));
+
         // Heir requests: few per hour per IP and per email (and the response never reveals a match).
+        // Reset emails: a few per hour per address and per IP, so nobody can flood an inbox.
+        RateLimiter::for('password-reset', fn (Request $request) => [
+            Limit::perHour(5)->by('email|'.strtolower((string) $request->input('email'))),
+            Limit::perHour(20)->by('ip|'.$request->ip()),
+            Limit::perMinute(5)->by('min|'.$request->ip()),
+        ]);
+
         RateLimiter::for('heir-request', fn (Request $request) => [
             Limit::perHour(5)->by('ip|'.$request->ip()),
             Limit::perHour(3)->by('email|'.strtolower((string) $request->input('email'))),

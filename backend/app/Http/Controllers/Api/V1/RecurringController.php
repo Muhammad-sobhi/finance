@@ -6,19 +6,21 @@ use App\Enums\Cycle;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\TransactionResource;
 use App\Models\Bill;
+use App\Models\IncomeSource;
 use App\Models\Subscription;
 use App\Services\CurrencyConverter;
 use App\Services\RecurringService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
-/** Shared CRUD + "mark paid" for bills and subscriptions. */
+/** Shared CRUD + "mark paid" / "received" for bills, subscriptions and recurring income. */
 abstract class RecurringController extends Controller
 {
-    /** @return class-string<Bill|Subscription> */
+    /** @return class-string<Bill|Subscription|IncomeSource> */
     abstract protected function model(): string;
 
     /** Extra validation rules for the concrete type. */
@@ -26,12 +28,14 @@ abstract class RecurringController extends Controller
 
     public function __construct(protected readonly RecurringService $service) {}
 
-    protected function query(Request $request)
+    /** Active first, then by due date and name (names are encrypted, so sorted here). */
+    protected function items(Request $request): Collection
     {
-        $class = $this->model();
-
-        return $class::ownedBy($request->user())
-            ->orderByDesc('is_active')->orderBy($class::DUE_COLUMN)->orderBy('name');
+        return $this->model()::ownedBy($request->user())->get()->sortBy([
+            fn (Model $a, Model $b) => $b->is_active <=> $a->is_active,
+            fn (Model $a, Model $b) => $a->dueDate() <=> $b->dueDate(),
+            fn (Model $a, Model $b) => strnatcasecmp($a->name, $b->name),
+        ])->values();
     }
 
     protected function rules(Request $request, bool $create): array
@@ -41,7 +45,7 @@ abstract class RecurringController extends Controller
 
         return [
             'name' => [$req, 'string', 'max:120'],
-            'category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('user_id', $owner)->where('type', 'expense')],
+            'category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('user_id', $owner)->where('type', $this->categoryType())],
             'amount' => [$req, 'numeric', 'gt:0', 'max:9999999999999'],
             'currency' => [$req, 'string', 'size:3', 'alpha'],
             'cycle' => [$req, Rule::enum(Cycle::class)],
@@ -115,10 +119,19 @@ abstract class RecurringController extends Controller
 
     protected function relation(): string
     {
-        return $this->model() === Bill::class ? 'bills' : 'subscriptions';
+        return match ($this->model()) {
+            Bill::class => 'bills',
+            Subscription::class => 'subscriptions',
+            IncomeSource::class => 'incomeSources',
+        };
     }
 
-    protected function present(Bill|Subscription $i): array
+    protected function categoryType(): string
+    {
+        return $this->model()::TX_TYPE;
+    }
+
+    protected function present(Bill|Subscription|IncomeSource $i): array
     {
         $due = $i->dueDate();
 

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { currency, date, money, select, text } from '../components/fields'
+import { currency, date, money, select, text, zakatable } from '../components/fields'
 import { Icon } from '../components/Icon'
 import { ListHead, ModeToggle, useListMode } from '../components/ListHead'
 import { DeleteButton, FormModal } from '../components/Modal'
@@ -73,7 +73,7 @@ function AssetForm({ asset, onClose }: { asset: Asset | null; onClose: () => voi
   const form = useForm({
     name: asset?.name ?? '', type: asset?.type ?? 'gold', currency: asset?.currency ?? 'EGP', purchase_price: s(asset?.purchase_price),
     purchase_date: asset?.purchase_date ?? '', current_value: s(asset?.current_value), grams: s(asset?.grams), karat: s(asset?.karat ?? 21),
-    location: asset?.location ?? '', notes: asset?.notes ?? '',
+    location: asset?.location ?? '', notes: asset?.notes ?? '', zakatable: (asset?.zakatable ?? null) as boolean | null,
   }, onClose)
   const f = form.f
   const metal = f.type === 'gold' || f.type === 'silver'
@@ -81,7 +81,7 @@ function AssetForm({ asset, onClose }: { asset: Asset | null; onClose: () => voi
     const body = {
       name: f.name, type: f.type, currency: f.currency, purchase_price: num(f.purchase_price), purchase_date: orNull(f.purchase_date),
       current_value: metal ? null : num(f.current_value), grams: metal ? num(f.grams) : null, karat: f.type === 'gold' ? num(f.karat) : null,
-      location: orNull(f.location), notes: orNull(f.notes),
+      location: orNull(f.location), notes: orNull(f.notes), ...(f.zakatable !== null ? { zakatable: f.zakatable } : {}),
     }
     return asset ? patch(`/assets/${asset.id}`, body) : post('/assets', body)
   })
@@ -98,6 +98,7 @@ function AssetForm({ asset, onClose }: { asset: Asset | null; onClose: () => voi
         money(form, 'purchase_price', t('purchasePrice')),
         date(form, 'purchase_date', t('purchaseDate')),
         text(form, 'location', t('location'), { maxLength: 255 }),
+        zakatable(form, t('zakatable'), t('zakatableHint'), ['gold', 'silver', 'jewelry', 'foreign_cash'].includes(f.type)),
         text(form, 'notes', t('notes'), { full: true, maxLength: 2000 }),
       ]} />
   )

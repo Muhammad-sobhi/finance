@@ -88,4 +88,16 @@ class AuthTest extends TestCase
         $this->postJson('/api/v1/auth/login', ['email' => 'heir@example.com', 'password' => 'heir-pass'])
             ->assertOk()->assertJsonPath('user.read_only', true);
     }
+
+    public function test_phone_bottom_bar_is_saved_per_user(): void
+    {
+        Sanctum::actingAs($u = User::factory()->create());
+        $this->getJson('/api/v1/auth/me')->assertJsonPath('phone_nav', ['/', '/accounts', '/transactions', '/bills']);
+        $this->patchJson('/api/v1/auth/me', ['phone_nav' => ['/transactions', '/', '/planning', '/debts']])
+            ->assertOk()->assertJsonPath('phone_nav.2', '/planning');
+        $this->patchJson('/api/v1/auth/me', ['phone_nav' => ['/', '/', '/planning', '/debts']])->assertJsonValidationErrors('phone_nav.1');
+        $this->patchJson('/api/v1/auth/me', ['phone_nav' => ['/', '/admin', '/planning', '/debts']])->assertJsonValidationErrors('phone_nav.1');
+        $this->patchJson('/api/v1/auth/me', ['phone_nav' => ['/', '/planning']])->assertJsonValidationErrors('phone_nav');
+        $this->patchJson('/api/v1/auth/me', ['phone_nav' => null])->assertJsonPath('phone_nav.1', '/accounts');
+    }
 }

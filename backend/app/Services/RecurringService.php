@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Account;
 use App\Models\Bill;
+use App\Models\IncomeSource;
 use App\Models\Subscription;
 use App\Models\Transaction;
 use Carbon\CarbonImmutable;
@@ -15,15 +16,16 @@ class RecurringService
     public function __construct(private readonly TransactionService $tx) {}
 
     /**
-     * "Mark paid": record an expense from the pay-from account and roll the due date.
+     * "Mark paid" (bills, subscriptions) or "received" (income sources): record the
+     * transaction on the account and roll the due date to the next cycle.
      *
      * @param  array{account_id?: int|null, amount?: float|null, date?: string|null}  $data
      */
-    public function pay(Bill|Subscription $item, array $data = []): Transaction
+    public function pay(Bill|Subscription|IncomeSource $item, array $data = []): Transaction
     {
         $accountId = $data['account_id'] ?? $item->account_id;
         if (! $accountId) {
-            throw ValidationException::withMessages(['account_id' => 'Choose the account to pay from.']);
+            throw ValidationException::withMessages(['account_id' => 'Choose the account.']);
         }
 
         return DB::transaction(function () use ($item, $data, $accountId) {
@@ -32,7 +34,7 @@ class RecurringService
             $date = $data['date'] ?? CarbonImmutable::today()->toDateString();
 
             $tx = $this->tx->create($item->user, [
-                'type' => 'expense',
+                'type' => $item::TX_TYPE, // expense for bills/subscriptions, income for income sources
                 'account_id' => $account->id,
                 'category_id' => $item->category_id,
                 'amount' => CurrencyConverter::for($item->user)->convert($amount, $item->currency, $account->currency),
@@ -55,10 +57,10 @@ class RecurringService
     {
         $today = CarbonImmutable::today();
         $paid = 0;
-        foreach ([Bill::class, Subscription::class] as $class) {
+        foreach ([Bill::class, Subscription::class, IncomeSource::class] as $class) {
             $class::query()->where('is_active', true)->where('auto_pay', true)->whereNotNull('account_id')
                 ->where($class::DUE_COLUMN, '<=', $today->toDateString())
-                ->each(function (Bill|Subscription $item) use ($today, &$paid) {
+                ->each(function (Bill|Subscription|IncomeSource $item) use ($today, &$paid) {
                     for ($guard = 0; $guard < 24 && $item->is_active && $item->dueDate()->lte($today); $guard++) {
                         $this->pay($item, ['date' => $item->dueDate()->toDateString()]);
                         $paid++;

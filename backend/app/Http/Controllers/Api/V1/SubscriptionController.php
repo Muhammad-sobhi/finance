@@ -28,7 +28,7 @@ class SubscriptionController extends RecurringController
     public function index(Request $request): JsonResponse
     {
         $fx = $this->base($request);
-        $items = $this->query($request)->get();
+        $items = $this->items($request);
         $totals = ['personal' => 0.0, 'work' => 0.0];
         foreach ($items->where('is_active', true) as $s) {
             $totals[$s->scope->value] += $fx->toBase($s->monthlyCost(), $s->currency);

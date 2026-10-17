@@ -23,7 +23,7 @@ class DebtController extends Controller
     {
         $request->validate(['status' => ['nullable', Rule::enum(DebtStatus::class)], 'direction' => ['nullable', Rule::enum(DebtDirection::class)]]);
         $fx = CurrencyConverter::for($request->user());
-        $debts = Debt::ownedBy($request->user())->withSum('payments', 'amount')
+        $debts = Debt::ownedBy($request->user())->with('payments')
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->input('status')))
             ->when($request->filled('direction'), fn ($q) => $q->where('direction', $request->input('direction')))
             ->orderByRaw("case when status = 'open' then 0 else 1 end")

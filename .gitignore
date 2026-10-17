@@ -1,5 +1,5 @@
 node_modules/
-vendor/
+/backend/vendor/
 .env
 .DS_Store
 dist/

@@ -4,18 +4,23 @@ namespace App\Models;
 
 use App\Enums\AssetType;
 use App\Models\Concerns\BelongsToOwner;
+use App\Models\Concerns\EncryptedForOwner;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Asset extends Model
 {
-    use BelongsToOwner, HasFactory;
+    use BelongsToOwner, EncryptedForOwner, HasFactory;
 
-    protected $fillable = ['name', 'type', 'currency', 'purchase_price', 'purchase_date', 'current_value', 'grams', 'karat', 'location', 'notes'];
+    /** Stored encrypted with the owner's data key (see EncryptedForOwner). */
+    public const ENCRYPTED = ['name', 'purchase_price', 'current_value', 'grams', 'location', 'notes'];
+
+    protected $fillable = ['name', 'type', 'currency', 'purchase_price', 'purchase_date', 'current_value', 'grams', 'karat', 'location', 'notes', 'zakatable'];
 
     protected function casts(): array
     {
         return [
+            'zakatable' => 'boolean',
             'type' => AssetType::class,
             'purchase_price' => 'decimal:2',
             'purchase_date' => 'date:Y-m-d',
@@ -23,6 +28,12 @@ class Asset extends Model
             'grams' => 'decimal:3',
             'karat' => 'integer',
         ];
+    }
+
+    /** Zakat counts money-like holdings by default; a home, land, car or device only when marked (e.g. held for trade). */
+    public function isZakatable(): bool
+    {
+        return $this->zakatable ?? in_array($this->type, [AssetType::Gold, AssetType::Silver, AssetType::Jewelry, AssetType::ForeignCash], true);
     }
 
     /**

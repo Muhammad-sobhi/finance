@@ -37,6 +37,7 @@ class TransactionRequest extends FormRequest
             if (! $this->hasAny(['amount', 'account_id', 'to_account_id'])) {
                 $current['to_amount'] = $tx->to_amount !== null ? (float) $tx->to_amount : null;
             }
+            $current['fee'] = $tx->fee !== null ? (float) $tx->fee : null;
             $this->replace(array_merge($current, $this->all()));
         }
         if (! $this->filled('date')) {
@@ -69,6 +70,7 @@ class TransactionRequest extends FormRequest
             ],
             'amount' => ['required', 'numeric', 'gt:0', 'max:9999999999999'],
             'to_amount' => ['nullable', 'numeric', 'gt:0', 'max:9999999999999'],
+            'fee' => ['nullable', 'numeric', 'min:0', 'max:9999999999999'],
             'date' => ['required', 'date_format:Y-m-d'],
             'note' => ['nullable', 'string', 'max:500'],
         ];

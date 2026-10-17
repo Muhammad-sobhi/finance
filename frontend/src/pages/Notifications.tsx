@@ -11,15 +11,18 @@ import { post } from '../lib/api'
 import { daysUntil } from '../lib/dates'
 import { useSession } from '../lib/session'
 
+/** Notices that need attention get the strong tag. */
+const NOTICE_LATE = new Set(['new_sign_in', 'password_reset', 'budget_over'])
+
 interface Note {
   id: string
   read_at: string | null
   created_at: string
   data: {
-    type?: 'heir'; kind: string; path: string
+    type?: 'heir' | 'info'; kind: string; path: string
     // due alerts
     name: string; stage: 'before' | 'due' | 'overdue'; days: number; amount: number; currency: string; due_date: string
-    // heir-system messages carry their text in both languages
+    // heir-system messages and one-off notices (budget, new sign-in…) carry their text in both languages
     title?: { ar: string; en: string } | string; text?: { ar: string; en: string }
   }
 }
@@ -54,7 +57,7 @@ export function Notifications() {
         container={(c) => <div className="rows note-list">{c}</div>}
         renderItem={(n) => (
           <button type="button" key={n.id} className={`li-btn note${n.read_at ? '' : ' unread'}`} onClick={() => open(n)}>
-            {n.data.type === 'heir' && typeof n.data.title === 'object' ? (
+            {typeof n.data.title === 'object' ? (
               <span className="note-main">
                 <b>{n.data.title[i.lang]}</b>
                 <span>{n.data.text?.[i.lang]}</span>
@@ -62,11 +65,13 @@ export function Notifications() {
             ) : (
               <span className="note-main">
                 <b>{t(`stage_${n.data.stage}`)}</b>
-                <span>{dueSubject(i, n.data.kind, n.data.name)} — <span className="num">{num(n.data.amount)}</span> {n.data.currency}</span>
+                <span>{dueSubject(i, n.data.kind, n.data.name)}{n.data.currency && <> — <span className="num">{num(n.data.amount)}</span> {n.data.currency}</>}</span>
               </span>
             )}
             <span className="note-side">
-              {n.data.type === 'heir' ? <span className="tag late">{t('heir')}</span> : <DueTag days={daysUntil(n.data.due_date)} />}
+              {n.data.type === 'heir' ? <span className="tag late">{t('heir')}</span>
+                : n.data.type === 'info' ? <span className={`tag${NOTICE_LATE.has(n.data.kind) ? ' late' : ' quiet'}`}>{t(`notice_${n.data.kind}`)}</span>
+                : <DueTag days={daysUntil(n.data.due_date)} />}
               <small className="muted">{date(n.created_at.slice(0, 10), { day: 'numeric', month: 'short' })}</small>
             </span>
           </button>

@@ -12,6 +12,9 @@ export interface User {
   list_mode: ListMode
   base_currency: string
   last_activity_at: string | null
+  two_factor: boolean
+  is_admin?: boolean
+  phone_nav?: string[]
 }
 
 export const ACCOUNT_TYPES = [
@@ -60,9 +63,12 @@ export interface Transaction {
   amount: number
   currency: string
   to_amount: number | null
+  fee?: number | null
   base_amount?: number
   date: string
   note: string | null
+  source_type?: string | null
+  has_receipt?: boolean
 }
 
 export interface TxMonth {
@@ -94,6 +100,20 @@ export interface Dashboard {
   balances: { id: number; name: string; type: AccountType; currency: string; balance: number; base_balance: number }[]
   spending: { month: string; expense: number; income: number }[]
   upcoming: Upcoming[]
+  forecast: Forecast
+}
+
+export interface Forecast {
+  month: string
+  days_left: number
+  spent: number
+  daily_rate: number
+  scheduled: number
+  projected_spend: number
+  income: number
+  expected_income: number
+  projected_income: number
+  projected_savings: number
 }
 
 export type Cycle = 'once' | 'weekly' | 'monthly' | 'quarterly' | 'yearly'
@@ -160,6 +180,7 @@ export interface Investment {
   notes: string | null
   profit: number
   roi: number | null
+  zakatable: boolean
   values?: { id: number; date: string; value: number }[]
 }
 
@@ -180,6 +201,7 @@ export interface Asset {
   value_currency: string
   base_value: number
   auto_valued: boolean
+  zakatable: boolean
 }
 
 export interface Settings {
@@ -189,6 +211,8 @@ export interface Settings {
   alert_days: number
   email_alerts: boolean
   auto_fetch_rates: boolean
+  auto_metal_prices: boolean
+  metal_prices_updated_at: string | null
   rates: { id: number; currency: string; rate: number; auto_update: boolean; updated_at: string | null }[]
 }
 
@@ -197,6 +221,8 @@ export interface Listed<T, M = Record<string, never>> { data: T[]; meta: M }
 export interface Report {
   period: 'month' | 'year'
   value: string
+  from: string
+  to: string
   base_currency: string
   totals: { income: number; expense: number; savings: number; savings_rate: number | null }
   previous: { income: number; expense: number; savings: number; savings_rate: number | null }
@@ -206,4 +232,175 @@ export interface Report {
   series: { month: string; income: number; expense: number }[]
   net_worth_trend: { month: string; net_worth: number }[]
   advice: { code: string; level: 'danger' | 'warn' | 'info'; text: { ar: string; en: string } }[]
+}
+
+export interface IncomeSource extends RecurringBase { next_date: string; monthly: number }
+
+export interface Project {
+  id: number
+  client: string
+  name: string
+  amount: number
+  currency: string
+  start_date: string | null
+  due_date: string | null
+  status: 'active' | 'done' | 'cancelled'
+  category_id: number | null
+  remind_days: number | null
+  notes: string | null
+  received: number
+  outstanding: number
+  days: number | null
+  payments?: { id: number; amount: number; date: string; account_id: number | null; note: string | null }[]
+}
+
+export interface IncomeSummary {
+  month: string
+  base_currency: string
+  received: { recurring: number; projects: number; other: number; total: number }
+  expected: number
+  outstanding: number
+  series: { month: string; recurring: number; projects: number; other: number }[]
+}
+
+export interface Budget {
+  id: number
+  category_id: number
+  amount: number
+  spent: number
+  remaining: number
+  pct: number
+  status: 'ok' | 'near' | 'over'
+  projected: number | null
+  per_day_left: number | null
+}
+
+export interface Goal {
+  id: number
+  name: string
+  target_amount: number
+  currency: string
+  target_date: string | null
+  account_id: number | null
+  notes: string | null
+  saved: number
+  remaining: number
+  pct: number
+  achieved: boolean
+  months_left: number | null
+  monthly_needed: number | null
+  on_track: boolean | null
+  contributions?: { id: number; amount: number; date: string; note: string | null }[]
+}
+
+export interface Zakat {
+  base_currency: string
+  settings: { nisab: 'gold' | 'silver'; calendar: 'hijri' | 'gregorian'; date: string | null; deduct_debts: boolean }
+  parts: { cash: number; metals: number; other_assets: number; investments: number; owed_to_me: number; i_owe: number; installments: number; overdrawn: number }
+  gross: number
+  deductions: number
+  net: number
+  nisab: number
+  price_missing: boolean
+  reached: boolean
+  rate: number
+  due: number
+  days_left: number | null
+  payments: { id: number; amount: number; date: string; zakatable_wealth: number; account_id: number | null; note: string | null }[]
+}
+
+export interface InstallmentPlan {
+  id: number
+  name: string
+  provider: string | null
+  currency: string
+  installment_amount: number
+  count: number
+  cycle: 'weekly' | 'monthly' | 'quarterly'
+  first_due_date: string
+  down_payment: number | null
+  account_id: number | null
+  category_id: number | null
+  remind_days: number | null
+  notes: string | null
+  paid_count: number
+  remaining: number
+  total: number
+  next_due: string | null
+  days: number | null
+  last_due: string
+  done: boolean
+  payments?: { id: number; number: number; amount: number; date: string; account_id: number | null }[]
+}
+
+export interface GameyaSlot {
+  id: number
+  turn: number
+  is_me: boolean
+  name: string | null
+  phone: string | null
+  email: string | null
+  notes: string | null
+  link: 'none' | 'invited' | 'linked'
+  payout_date: string | null
+  payout_amount: number | null
+  turn_date: string
+  payments: { id: number | null; round: number; date: string; amount: number; confirmed: boolean }[]
+}
+
+export interface SharedGameya {
+  gameya: string
+  manager: string
+  amount: number
+  currency: string
+  cycle: string
+  members: number
+  start_date: string
+  end_date: string
+  turns: { member_id: number; turn: number; payout: number; payout_date: string; received: boolean; received_date: string | null }[]
+  paid: { turn: number; round: number; date: string; amount: number; confirmed: boolean }[]
+  paid_count: number
+  rounds_total: number
+  next: { member_id: number; round: number; date: string; days: number } | null
+}
+
+export interface SharedGameyas {
+  invites: { id: number; gameya: string; manager: string; turn: number; amount: number; currency: string }[]
+  data: SharedGameya[]
+}
+
+export interface Gameya {
+  id: number
+  name: string
+  organizer: string | null
+  role: 'member' | 'manager'
+  members: number
+  my_turn: number | null
+  amount: number
+  currency: string
+  start_date: string
+  cycle: 'weekly' | 'monthly'
+  account_id: number | null
+  remind_days: number | null
+  notes: string | null
+  payout: number
+  paid_rounds: number
+  received: boolean
+  position: number
+  next_round: number | null
+  next_date: string | null
+  days: number | null
+  payout_date: string | null
+  payout_days: number | null
+  end_date: string
+  done: boolean
+  payments?: { id: number; kind: 'contribution' | 'payout'; round: number; amount: number; date: string; account_id: number | null }[]
+  // When I manage it:
+  current_round?: number
+  current_date?: string
+  paid_this_round?: number
+  claims?: number
+  linked?: number
+  round_dates?: string[]
+  slots?: GameyaSlot[]
 }

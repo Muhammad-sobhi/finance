@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
+import { LineChart } from '../components/Charts'
 import { DetailModal, Facts } from '../components/DetailModal'
-import { currency, date, money, select, text } from '../components/fields'
+import { currency, date, money, select, text, zakatable } from '../components/fields'
 import { Icon } from '../components/Icon'
 import { ListHead, ModeToggle, useListMode } from '../components/ListHead'
 import { DeleteButton, FormModal } from '../components/Modal'
@@ -86,10 +87,6 @@ function InvestmentDetail({ id, onClose, onEdit }: { id: number; onClose: () => 
   const [adding, setAdding] = useState(false)
   const values = useMemo(() => [...(v?.values ?? [])].reverse(), [v])
   const chart = (v?.values ?? []).slice(-12)
-  // Scale from just below the lowest value so growth is visible, not a wall of equal bars.
-  const max = Math.max(1, ...chart.map((p) => p.value))
-  const lo = Math.min(...chart.map((p) => p.value)) * 0.9
-  const h = (v: number) => (max - lo > 0 ? 10 + ((v - lo) / (max - lo)) * 80 : 90)
 
   return (
     <DetailModal title={v?.name ?? t('loading')} onClose={onClose}
@@ -110,13 +107,12 @@ function InvestmentDetail({ id, onClose, onEdit }: { id: number; onClose: () => 
             [t('returnRate'), v.annual_return === null ? '—' : <span className="num">{n(v.annual_return, 2)}%</span>],
             [t('maturityDate'), v.maturity_date ? fmtDate(v.maturity_date) : '—'],
           ]} />
-          <div className="chart mini-chart" role="img" aria-label={t('valueHistory')}>
-            {chart.map((p) => (
-              <div className="col" key={p.id} title={`${fmtDate(p.date)}: ${n(p.value)}`}>
-                <div className="bar" style={{ height: `${h(p.value)}%` }} />
-                <div className="m">{dict.months[monthIndex(p.date.slice(0, 7))]}</div>
-              </div>
-            ))}
+          <div className="mini-chart">
+            <LineChart
+              points={chart.map((p) => ({ label: dict.months[monthIndex(p.date.slice(0, 7))], value: p.value, title: fmtDate(p.date) }))}
+              format={(x) => `${n(x)} ${v.currency}`}
+              ariaLabel={`${t('valueHistory')}: ${chart.map((p) => n(p.value)).join(', ')}`}
+            />
           </div>
           <Paged items={values} resetKey={String(id)}
             container={(c) => <div className="rows">{c}</div>}
@@ -161,6 +157,7 @@ function InvestmentForm({ inv, onClose }: { inv: Investment | null; onClose: () 
     current_value: s(inv?.current_value), currency: inv?.currency ?? 'EGP', quantity: s(inv?.quantity), unit: inv?.unit ?? '',
     start_date: inv?.start_date ?? isoDate(), maturity_date: inv?.maturity_date ?? '', annual_return: s(inv?.annual_return),
     payout_cycle: inv?.payout_cycle ?? '', remind_days: s(inv?.remind_days), notes: inv?.notes ?? '',
+    zakatable: (inv?.zakatable ?? null) as boolean | null,
   }, onClose)
   const f = form.f
   const submit = () => form.run(() => {
@@ -169,6 +166,7 @@ function InvestmentForm({ inv, onClose }: { inv: Investment | null; onClose: () 
       ...(f.current_value !== '' ? { current_value: num(f.current_value) } : {}), currency: f.currency,
       quantity: num(f.quantity), unit: orNull(f.unit), start_date: orNull(f.start_date), maturity_date: orNull(f.maturity_date),
       annual_return: num(f.annual_return), payout_cycle: orNull(f.payout_cycle), remind_days: num(f.remind_days), notes: orNull(f.notes),
+      ...(f.zakatable !== null ? { zakatable: f.zakatable } : {}),
     }
     return inv ? patch(`/investments/${inv.id}`, body) : post('/investments', body)
   })
@@ -189,6 +187,7 @@ function InvestmentForm({ inv, onClose }: { inv: Investment | null; onClose: () 
         money(form, 'annual_return', t('returnRate')),
         select(form, 'payout_cycle', t('payout'), [['monthly', t('monthly')], ['quarterly', t('quarterly')], ['yearly', t('yearly')], ['end', i.e('end')]], { empty: '—' }),
         text(form, 'remind_days', t('remindDays'), { inputMode: 'numeric', num: true, placeholder: t('defaultHint') }),
+        zakatable(form, t('zakatable'), t('zakatableHint'), f.type !== 'real_estate'),
         text(form, 'notes', t('notes'), { full: true, maxLength: 2000 }),
       ]} />
   )

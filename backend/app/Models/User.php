@@ -3,17 +3,21 @@
 namespace App\Models;
 
 use App\Enums\UserRole;
+use App\Notifications\ResetPasswordMail;
+use App\Services\DataVault;
 use App\Services\DefaultCategories;
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use NotificationChannels\WebPush\HasPushSubscriptions;
 
-class User extends Authenticatable
+class User extends Authenticatable implements HasLocalePreference
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, HasPushSubscriptions, Notifiable;
@@ -22,14 +26,23 @@ class User extends Authenticatable
 
     public const LOCALES = ['ar', 'en'];
 
+    /** Pages that can sit on the phone's bottom bar (the "More" button is always there). */
+    public const PHONE_NAV = ['/', '/accounts', '/transactions', '/bills', '/income', '/categories', '/planning', '/debts',
+        '/subscriptions', '/investments', '/assets', '/reports', '/vault', '/heir', '/settings'];
+
+    public const PHONE_NAV_DEFAULT = ['/', '/accounts', '/transactions', '/bills'];
+
     protected $fillable = [
         'name', 'email', 'password', 'role', 'owner_id',
-        'locale', 'theme', 'list_mode', 'base_currency', 'last_activity_at',
-        'gold_price_24k', 'silver_price', 'alert_days', 'email_alerts', 'auto_fetch_rates',
+        'locale', 'theme', 'list_mode', 'phone_nav', 'base_currency', 'last_activity_at',
+        'gold_price_24k', 'silver_price', 'alert_days', 'email_alerts', 'auto_fetch_rates', 'auto_metal_prices',
         'heir_enabled', 'heir_inactivity_days', 'heir_grace_days',
+        'zakat_nisab', 'zakat_calendar', 'zakat_date', 'zakat_deduct_debts',
     ];
 
-    protected $hidden = ['password', 'remember_token'];
+    // is_admin / invited_at / invited_by are set explicitly (forceFill), never mass-assigned.
+
+    protected $hidden = ['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes', 'data_key'];
 
     protected $attributes = [
         'role' => 'owner',
@@ -42,13 +55,19 @@ class User extends Authenticatable
         'alert_days' => 3,
         'email_alerts' => true,
         'auto_fetch_rates' => false,
+        'auto_metal_prices' => false,
         'heir_enabled' => false,
         'heir_inactivity_days' => 60,
         'heir_grace_days' => 14,
+        'zakat_nisab' => 'gold',
+        'zakat_calendar' => 'hijri',
+        'zakat_deduct_debts' => true,
     ];
 
     protected static function booted(): void
     {
+        // Every user gets their own data key, wrapped by the master key (see DataVault).
+        static::creating(fn (User $user) => $user->data_key ??= app(DataVault::class)->newWrappedKey());
         static::created(function (User $user) {
             if ($user->isOwner()) {
                 DefaultCategories::seedFor($user);
@@ -67,14 +86,46 @@ class User extends Authenticatable
             'alert_days' => 'integer',
             'email_alerts' => 'boolean',
             'auto_fetch_rates' => 'boolean',
+            'auto_metal_prices' => 'boolean',
+            'metal_prices_updated_at' => 'datetime',
             'heir_enabled' => 'boolean',
             'heir_inactivity_days' => 'integer',
             'heir_grace_days' => 'integer',
             'heir_warning_started_at' => 'datetime',
             'heir_last_reminder_at' => 'datetime',
+            'two_factor_confirmed_at' => 'datetime',
+            'zakat_date' => 'date:Y-m-d',
+            'zakat_deduct_debts' => 'boolean',
+            'is_admin' => 'boolean',
+            'phone_nav' => 'array',
+            'invited_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
         ];
+    }
+
+    /** In-app notifications are stored encrypted with this user's key. */
+    public function notifications(): MorphMany
+    {
+        return $this->morphMany(SealedNotification::class, 'notifiable')->latest();
+    }
+
+    /** Laravel's password broker calls this; we send our own bilingual mail pointing at the SPA. */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new ResetPasswordMail($token));
+    }
+
+    /** Emails are written in the user's own language (Arabic by default). */
+    public function preferredLocale(): string
+    {
+        return $this->locale ?: 'ar';
+    }
+
+    /** Invited but hasn't set a password yet. */
+    public function invitePending(): bool
+    {
+        return $this->invited_at !== null && $this->email_verified_at === null;
     }
 
     public function isOwner(): bool
@@ -134,6 +185,16 @@ class User extends Authenticatable
         return $this->hasMany(Subscription::class);
     }
 
+    public function incomeSources(): HasMany
+    {
+        return $this->hasMany(IncomeSource::class);
+    }
+
+    public function projects(): HasMany
+    {
+        return $this->hasMany(Project::class);
+    }
+
     public function investments(): HasMany
     {
         return $this->hasMany(Investment::class);
@@ -162,6 +223,31 @@ class User extends Authenticatable
     public function heirAccessActive(): bool
     {
         return $this->heir_access_activated_at !== null;
+    }
+
+    public function budgets(): HasMany
+    {
+        return $this->hasMany(Budget::class);
+    }
+
+    public function goals(): HasMany
+    {
+        return $this->hasMany(Goal::class);
+    }
+
+    public function installmentPlans(): HasMany
+    {
+        return $this->hasMany(InstallmentPlan::class);
+    }
+
+    public function gameyas(): HasMany
+    {
+        return $this->hasMany(Gameya::class);
+    }
+
+    public function zakatPayments(): HasMany
+    {
+        return $this->hasMany(ZakatPayment::class);
     }
 
     public function snapshots(): HasMany

@@ -20,6 +20,6 @@ class BillController extends RecurringController
 
     public function index(Request $request): JsonResponse
     {
-        return response()->json(['data' => $this->query($request)->get()->map(fn (Bill $b) => $this->present($b))]);
+        return response()->json(['data' => $this->items($request)->map(fn (Bill $b) => $this->present($b))]);
     }
 }
