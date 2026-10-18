@@ -108,12 +108,12 @@ class ReportTest extends TestCase
     public function test_advice_rules(): void
     {
         // Overspending this month; food spiking vs a 3-month average.
-        $this->tx('income', 1000, '2026-10-01');
-        $this->tx('expense', 3000, '2026-10-02', 'food');
         foreach (['2026-07-05', '2026-08-05', '2026-09-05'] as $d) {
             $this->tx('income', 10000, $d);
             $this->tx('expense', 1000, $d, 'food');
         }
+        $this->tx('income', 1000, '2026-10-01');
+        $this->tx('expense', 3000, '2026-10-02', 'food');   // paid from the earlier months' savings
         $this->owner->subscriptions()->create(['name' => 'Gym', 'amount' => 500, 'currency' => 'EGP', 'renew_date' => '2026-11-01', 'cycle' => 'monthly', 'scope' => 'personal']);
         Account::factory()->for($this->owner)->create(['type' => 'credit_card', 'balance' => -5000, 'credit_limit' => 10000, 'name' => 'Visa']);
         $this->owner->debts()->create(['person' => 'Omar', 'direction' => 'i_owe', 'amount' => 700, 'currency' => 'EGP', 'date' => '2026-09-01', 'due_date' => '2026-10-01']);
