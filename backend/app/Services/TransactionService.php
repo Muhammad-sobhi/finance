@@ -22,7 +22,7 @@ class TransactionService
 {
     private bool $checkFunds = true;
 
-    /** Run without the funds check (importing history, where balances are set afterwards). */
+    /** Run without the funds check (importing a statement: history that already happened). */
     public function withoutFundsCheck(callable $fn): mixed
     {
         $previous = $this->checkFunds;
