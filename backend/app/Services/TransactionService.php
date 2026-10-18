@@ -20,20 +20,6 @@ use Illuminate\Support\Facades\DB;
  */
 class TransactionService
 {
-    private bool $checkFunds = true;
-
-    /** Run without the funds check (importing a statement: history that already happened). */
-    public function withoutFundsCheck(callable $fn): mixed
-    {
-        $previous = $this->checkFunds;
-        $this->checkFunds = false;
-        try {
-            return $fn();
-        } finally {
-            $this->checkFunds = $previous;
-        }
-    }
-
     public function create(User $owner, array $data): Transaction
     {
         return DB::transaction(function () use ($owner, $data) {
@@ -136,10 +122,6 @@ class TransactionService
      */
     private function available(array $ids): array
     {
-        if (! $this->checkFunds) {
-            return [];
-        }
-
         return Account::whereIn('id', array_unique(array_filter($ids)))->orderBy('id')->lockForUpdate()->get()
             ->filter(fn (Account $a) => $a->type !== AccountType::CreditCard || $a->credit_limit !== null)
             ->mapWithKeys(fn (Account $a) => [$a->id => $this->spendable($a)])

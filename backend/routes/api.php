@@ -78,7 +78,6 @@ Route::prefix('v1')->group(function () {
         Route::delete('transactions/{transaction}/receipt', [TransactionController::class, 'destroyReceipt'])->name('transactions.receipt.destroy');
         Route::get('export/transactions', [DataController::class, 'exportTransactions'])->name('export.transactions');
         Route::post('backup', [DataController::class, 'backup'])->middleware('throttle:account-security')->name('backup');
-        Route::post('import/transactions', [DataController::class, 'import'])->middleware('throttle:30,1')->name('import.transactions');
 
         Route::apiResource('debts', DebtController::class);
         Route::post('debts/{debt}/payments', [DebtController::class, 'addPayment'])->name('debts.payments.store');

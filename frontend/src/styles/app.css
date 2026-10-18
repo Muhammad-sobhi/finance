@@ -157,7 +157,6 @@ td.acts { width: 1%; }
 .data-card .hint { font-size: 12px; margin: 0; }
 .receipt-ctl { display: flex; gap: 8px; flex-wrap: wrap; }
 .receipt-img { flex: 1; min-height: 0; width: 100%; object-fit: contain; }
-.import-sum { margin: 0; padding-inline-start: 18px; display: flex; flex-direction: column; gap: 2px; }
 p.hint { margin: 0; font-size: 13px; }
 .setting-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: var(--row-line); font-size: 14px; }
 .setting-row label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
