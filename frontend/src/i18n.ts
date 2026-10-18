@@ -31,6 +31,11 @@ const ar = {
   lockEnter: 'أدخل رمز القفل', lockOpen: 'فتح', lockBio: 'افتح بالبصمة أو الوجه', lockWrong: 'رمز خاطئ — باقي {n} محاولات قبل تسجيل الخروج',
   lockTriesLeft: 'باقي {n} محاولات', lockForgot: 'نسيت الرمز؟',
   lockForgotConfirm: 'سيتم تسجيل خروجك من هذا الجهاز وإلغاء القفل. ادخل بعدها بكلمة المرور. متابعة؟',
+  // funds
+  fundsTitle: 'الرصيد غير كافٍ', fundsText: 'في «{account}» {available} فقط — ناقص {short} لإتمام هذا الدفع. اشحن الحساب أو اختر حسابًا آخر.',
+  fundsField: 'الرصيد غير كافٍ — ناقص {n}', topUpFrom: 'اشحن من', topUpDeposit: 'إيداع جديد (فلوس دخلت الحساب)',
+  topUpAndPay: 'اشحن وادفع', chooseOtherAccount: 'اختر حسابًا آخر', topUp: 'شحن رصيد',
+  fundsSourceShort: '«{account}» لا يكفي أيضًا — ناقص {n}',
   // offline
   offlineNote: 'أنت غير متصل بالإنترنت. أي معاملة جديدة تضيفها تُحفظ على جهازك وتُرفع تلقائيًا عند عودة الاتصال.',
   waitingN: '{n} في الانتظار', sendingN: 'جارٍ رفع {n} معاملة محفوظة على جهازك…', syncedN: 'تم رفع {n} معاملة محفوظة',
@@ -140,16 +145,13 @@ const ar = {
   signInActivity: 'نشاط الدخول', activityHint: 'آخر عمليات الدخول والمحاولات الفاشلة. لو رأيت جهازًا لا تعرفه غيّر كلمة المرور.', failedAttempt: 'محاولة فاشلة',
   via_password: 'كلمة المرور', via_authenticator: 'رمز التطبيق', via_recovery_code: 'كود احتياطي', via_trusted_device: 'جهاز موثوق',
   // data tools
-  dataTab: 'البيانات', securityTab: 'الأمان', dataTools: 'بياناتك', exportCsv: 'تصدير CSV', importBank: 'استيراد كشف بنك', backupNow: 'نسخة احتياطية مشفّرة',
+  dataTab: 'البيانات', securityTab: 'الأمان', dataTools: 'بياناتك', exportCsv: 'تصدير CSV', backupNow: 'نسخة احتياطية مشفّرة',
   backupHint: 'النسخة ملف مشفّر بعبارة مرور تختارها؛ لا نحتفظ بها. احفظ الملف وعبارة المرور في مكانين مختلفين.',
   passMismatch: 'العبارتان غير متطابقتين', backupSaved: 'تم تنزيل النسخة', passphrase: 'عبارة المرور', passphraseHint: '١٠ أحرف على الأقل',
   confirmPassphrase: 'تأكيد عبارة المرور', important: 'مهم', passphraseWarn: 'إذا نسيت عبارة المرور لا يمكن فتح النسخة أبدًا.',
-  csvEmpty: 'الملف فارغ أو غير مقروء', chooseCsv: 'اختر ملف CSV', required: 'مطلوب', noValidRows: 'لا توجد صفوف صالحة بهذا الترتيب',
-  csvFile: 'ملف الكشف (CSV)', importInto: 'إلى حساب', importHint: 'صدّر كشف الحساب من تطبيق البنك بصيغة CSV. نتجاهل المعاملات المسجلة من قبل.',
-  dateFormat: 'صيغة التاريخ', amountColumns: 'أعمدة المبلغ', signedAmount: 'عمود واحد: السالب مصروف', invertedAmount: 'عمود واحد: الموجب مصروف',
-  debitCredit: 'عمودان: مدين / دائن', debitCol: 'عمود المدين (خصم)', creditCol: 'عمود الدائن (إيداع)', description: 'الوصف',
-  preview: 'معاينة', rowsReady: '{n} صف جاهز · {bad} غير مقروء', importNew: '{n} معاملة جديدة', importDupes: '{n} مسجلة من قبل (ستُتجاهل)',
-  importCats: '{n} صُنّفت تلقائيًا من سجلك', importNow: 'استيراد', importedN: 'تم استيراد {n} معاملة',
+  required: 'مطلوب',
+
+
   receipt: 'الإيصال', viewReceipt: 'عرض الإيصال', removeReceipt: 'حذف الإيصال', printReport: 'طباعة / PDF',
   autoMetals: 'تحديث سعر الذهب والفضة تلقائيًا (السعر العالمي)', updateNow: 'حدّث الآن', needUsdRate: 'أضف سعر الدولار في جدول العملات أولًا', metalsDown: 'خدمة الأسعار لا ترد الآن. حاول لاحقًا.',
   forecastLine: 'متوقع آخر الشهر: مصروف {spend} · {save}', forecastSave: 'ادخار {n}', forecastShort: 'عجز {n}',
@@ -236,6 +238,11 @@ const en: typeof ar = {
   lockForgotConfirm: "You'll be signed out on this device and the lock removed. Then sign in with your password. Continue?",
   offlineNote: "You're offline. New transactions you add are kept on this device and sent automatically when you're back online.",
   waitingN: '{n} waiting', sendingN: 'Sending {n} transaction(s) saved on this device…', syncedN: '{n} saved transaction(s) sent',
+  // funds
+  fundsTitle: 'Not enough money', fundsText: '“{account}” has only {available} — {short} short for this payment. Top it up or choose another account.',
+  fundsField: 'Not enough money — {n} short', topUpFrom: 'Top up from', topUpDeposit: 'New deposit (money came in)',
+  topUpAndPay: 'Top up and pay', chooseOtherAccount: 'Choose another account', topUp: 'Top-up',
+  fundsSourceShort: '“{account}” is short too — {n} missing',
   savedOffline: "Saved on this device — it will be sent when you're back online", needsConnection: 'This needs an internet connection',
   notSavedN: '{n} transaction(s) not saved — view', notSavedTitle: 'Transactions not saved',
   notSavedHint: 'The server refused them when they were sent (e.g. the account was deleted). Try again, or discard and add them again.', retry: 'Try again', discard: 'Discard',
@@ -333,16 +340,13 @@ const en: typeof ar = {
   signInActivity: 'Sign-in activity', activityHint: "Recent sign-ins and failed attempts. If you see a device you don't know, change your password.", failedAttempt: 'Failed attempt',
   via_password: 'Password', via_authenticator: 'App code', via_recovery_code: 'Recovery code', via_trusted_device: 'Trusted device',
   // data tools
-  dataTab: 'Data', securityTab: 'Security', dataTools: 'Your data', exportCsv: 'Export CSV', importBank: 'Import bank statement', backupNow: 'Encrypted backup',
+  dataTab: 'Data', securityTab: 'Security', dataTools: 'Your data', exportCsv: 'Export CSV', backupNow: 'Encrypted backup',
   backupHint: 'The backup is a file sealed with a passphrase you choose; we never keep it. Store the file and the passphrase in different places.',
   passMismatch: "Passphrases don't match", backupSaved: 'Backup downloaded', passphrase: 'Passphrase', passphraseHint: 'At least 10 characters',
   confirmPassphrase: 'Confirm passphrase', important: 'Important', passphraseWarn: 'If you forget the passphrase the backup can never be opened.',
-  csvEmpty: 'The file is empty or unreadable', chooseCsv: 'Choose a CSV file', required: 'Required', noValidRows: 'No readable rows with these settings',
-  csvFile: 'Statement file (CSV)', importInto: 'Into account', importHint: "Export the statement from your bank's app as CSV. Rows already recorded are skipped.",
-  dateFormat: 'Date format', amountColumns: 'Amount columns', signedAmount: 'One column: negative = expense', invertedAmount: 'One column: positive = expense',
-  debitCredit: 'Two columns: debit / credit', debitCol: 'Debit column (out)', creditCol: 'Credit column (in)', description: 'Description',
-  preview: 'Preview', rowsReady: '{n} rows ready · {bad} unreadable', importNew: '{n} new transactions', importDupes: '{n} already recorded (skipped)',
-  importCats: '{n} categorized from your history', importNow: 'Import', importedN: 'Imported {n} transactions',
+  required: 'Required',
+
+
   receipt: 'Receipt', viewReceipt: 'View receipt', removeReceipt: 'Remove receipt', printReport: 'Print / PDF',
   autoMetals: 'Auto-update gold & silver (global price)', updateNow: 'Update now', needUsdRate: 'Add a USD exchange rate first', metalsDown: 'The price service is not answering. Try later.',
   forecastLine: 'Month-end forecast: spend {spend} · {save}', forecastSave: 'save {n}', forecastShort: 'short {n}',

@@ -51,36 +51,6 @@ class DataTest extends TestCase
         $this->assertStringContainsString('التاريخ,النوع', $this->get('/api/v1/export/transactions')->streamedContent());
     }
 
-    public function test_bank_import_dedupes_and_learns_categories(): void
-    {
-        // History: "Carrefour" was filed under shopping.
-        $this->postJson('/api/v1/transactions', ['type' => 'expense', 'account_id' => $this->wallet->id, 'category_id' => $this->cat('shopping'), 'amount' => 300, 'date' => '2026-10-02', 'note' => 'Carrefour']);
-        $rows = [
-            ['date' => '2026-10-02', 'amount' => -300, 'note' => 'Carrefour'],     // already recorded
-            ['date' => '2026-10-05', 'amount' => -45, 'note' => 'CARREFOUR'],      // learned: shopping
-            ['date' => '2026-10-05', 'amount' => -45, 'note' => 'CARREFOUR'],      // a second identical one is real
-            ['date' => '2026-10-06', 'amount' => 15000, 'note' => 'Salary Oct', 'category_id' => $this->cat('salary')],
-            ['date' => '2026-10-07', 'amount' => -20, 'note' => 'Fee', 'category_id' => $this->cat('salary')], // wrong type → dropped
-        ];
-        $this->postJson('/api/v1/import/transactions', ['account_id' => $this->wallet->id, 'rows' => $rows, 'dry_run' => true])
-            ->assertOk()->assertJson(['rows' => 5, 'new' => 4, 'duplicates' => 1, 'categorized' => 3])->assertJsonMissingPath('imported');
-        $this->assertSame(9700.0, (float) $this->wallet->fresh()->balance);
-
-        $this->postJson('/api/v1/import/transactions', ['account_id' => $this->wallet->id, 'rows' => $rows])->assertJson(['imported' => 4]);
-        $this->assertSame(9700.0 - 90 + 15000 - 20, (float) $this->wallet->fresh()->balance);
-        // Compared in PHP: MySQL's default collation would also match "Carrefour".
-        $this->assertSame(2, $this->owner->transactions()->get()->where('note', 'CARREFOUR')->where('category_id', $this->cat('shopping'))->count());
-        $this->assertNull($this->owner->transactions()->where('note', 'Fee')->value('category_id'));
-
-        // Importing the same file again adds nothing.
-        $this->postJson('/api/v1/import/transactions', ['account_id' => $this->wallet->id, 'rows' => $rows])->assertJson(['new' => 0, 'duplicates' => 5]);
-
-        $other = Account::factory()->create();
-        $this->postJson('/api/v1/import/transactions', ['account_id' => $other->id, 'rows' => $rows])->assertJsonValidationErrors('account_id');
-        $this->postJson('/api/v1/import/transactions', ['account_id' => $this->wallet->id, 'rows' => [['date' => '2027-01-01', 'amount' => 0]]])
-            ->assertJsonValidationErrors(['rows.0.date', 'rows.0.amount']);
-    }
-
     public function test_receipts_are_private_and_follow_the_transaction(): void
     {
         Storage::fake('local');
@@ -169,11 +139,10 @@ class DataTest extends TestCase
         $this->assertNull($new->heirs()->first()->login_user_id);
     }
 
-    public function test_heir_cannot_back_up_or_import(): void
+    public function test_heir_cannot_back_up(): void
     {
         Sanctum::actingAs(User::factory()->heirOf($this->owner)->create());
         $this->postJson('/api/v1/backup', ['current_password' => 'x', 'passphrase' => 'xxxxxxxxxxxx'])->assertForbidden();
-        $this->postJson('/api/v1/import/transactions', ['account_id' => $this->wallet->id, 'rows' => [['date' => '2026-10-01', 'amount' => 1]]])->assertForbidden();
         $this->get('/api/v1/export/transactions')->assertOk();
     }
 }

@@ -16,7 +16,7 @@ Arabic-first (RTL) with English, four themes, and a strict no-scroll layout. See
 | + | Planning: monthly budgets per category (80% / 100% alerts), savings goals, zakat calculator with reminder | ✅ |
 | + | Debts hub: installment plans (taqseet) and gameyas next to personal debts | ✅ |
 | + | Smart: month-end forecast, unusual-expense alerts, optional daily gold/silver spot prices | ✅ |
-| + | Data: CSV export, printable report, encrypted backup + restore, bank statement import, receipt photos | ✅ |
+| + | Data: CSV export, printable report, encrypted backup + restore, receipt photos | ✅ |
 | + | App lock per device: PIN, plus the phone's fingerprint or face unlock (WebAuthn); works offline | ✅ |
 | + | Offline: the app opens without a connection; new transactions wait on the device and are sent when it's back (each saved once) | ✅ |
 | + | Operations: nightly encrypted off-server backup, health URL for uptime monitors, watchdog emails, Sentry error reports | ✅ |
@@ -95,7 +95,6 @@ The check fails if `document.documentElement.scrollHeight > innerHeight` or any 
 - **Forecast** — spent so far + everyday spending at this month's pace (the 3-month pace during the first week) for the days left + bills, subscriptions and installments still due this month, against income received and still expected. Shown on the dashboard; reports warn when it ends negative.
 - **Unusual expense** — a hand-entered expense more than 3× its category's 90-day median (with at least 5 past expenses) sends a notice.
 - **Backup** — *Settings → Your data → Encrypted backup* (password re-check) downloads the whole ledger as gzip'd JSON sealed with AES-256-GCM under a PBKDF2-SHA256 key (210k iterations) from a passphrase you choose; the server never keeps it. Restore with `php artisan finance:restore <file> <owner-email>` into a new, empty owner (ids are remapped and encrypted columns re-encrypted with that server's `APP_KEY`). Receipt files aren't included — back up `storage/app/private/receipts` with the server backup.
-- **Bank import** — the browser reads the CSV (`, ; tab`, quotes), guesses the date / description / amount (or debit + credit) columns in English or Arabic, and you confirm. The server skips rows already recorded in that account (same date, direction, amount and description — counted, so two identical coffees stay two), files each description under the category it had before, shows a dry run, then imports through the ledger.
 - **App on the phone (PWA)** — over HTTPS the browser offers to install it (*More → Install app*, or *Settings → Your data*; on iPhone: Share → *Add to Home Screen*). The home-screen icon has an *Add expense* shortcut that opens quick-add directly. Offline, the service worker shows a small offline page; no financial data is cached on the device.
 
 ## API (v1)
@@ -117,7 +116,6 @@ All under `/api/v1`, JSON, `Authorization: Bearer <token>` unless marked public.
 | — | transfers | optional `fee` (sending account currency) — booked as its own expense in *Fees*, kept in step with the transfer |
 | POST/GET/DELETE | `/transactions/{id}/receipt` | receipt photo / PDF (≤ 5 MB, private disk, owner + heirs can view) |
 | GET | `/export/transactions?from&to` | CSV (UTF-8 BOM, headers in the user's language) |
-| POST | `/import/transactions` | `{account_id, rows: [{date, amount (− = expense), note, category_id?}], dry_run?}` → `{rows, new, duplicates, categorized, imported?}` |
 | POST | `/backup` | `{current_password, passphrase}` → encrypted backup file |
 | GET | `/auth/activity` | last 50 sign-ins and failed attempts |
 | GET/PATCH/DELETE | `/budgets?month=YYYY-MM` | spent, remaining, pct, status ok/near/over, projected, per day left |

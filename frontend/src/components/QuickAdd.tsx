@@ -9,6 +9,7 @@ import { catName } from '../lib/labels'
 import { useSession } from '../lib/session'
 import type { Account, Category } from '../lib/types'
 import { FitChips } from './Chips'
+import { shortfallOf, useFunds } from './FundsPrompt'
 import { Icon } from './Icon'
 
 /**
@@ -19,6 +20,7 @@ export function QuickAdd({ onClose, onDetails }: { onClose: () => void; onDetail
   const i = useI18n()
   const { t } = i
   const { refresh, toast, user } = useSession()
+  const funds = useFunds()
   const [type, setType] = useState<'expense' | 'income'>('expense')
   // Kept on this device too, so the sheet works offline.
   const cats = useApi<Category[]>(`/categories?type=${type}`, { offline: keepCategories })
@@ -64,12 +66,17 @@ export function QuickAdd({ onClose, onDetails }: { onClose: () => void; onDetail
     }
     try {
       if (!navigator.onLine) { queue(); return }
-      await post('/transactions', { ...body, client_id: clientId })
+      await funds(() => post('/transactions', { ...body, client_id: clientId }))
       toast(t('saved'))
       refresh()
       onClose()
     } catch (err) {
+      const short = shortfallOf(err)
       if (isNetworkError(err)) queue()
+      else if (short) {
+        setError(t('fundsField', { n: i.money(short.shortfall, short.currency) }))
+        document.getElementById('quick-account')?.focus()
+      }
       else setError(err instanceof ApiError ? Object.values(err.fieldErrors)[0] ?? t('error') : t('error'))
     } finally {
       setBusy(false)
@@ -97,7 +104,7 @@ export function QuickAdd({ onClose, onDetails }: { onClose: () => void; onDetail
           <FitChips chips={chips} value={categoryId} onChange={setCategoryId} label={t('category')} />
           <div className="field">
             <label htmlFor="quick-account">{t('account')}</label>
-            <select id="quick-account" className="inp" value={accountId ?? ''} onChange={(e) => setAccountId(Number(e.target.value))}>
+            <select id="quick-account" className="inp" value={accountId ?? ''} onChange={(e) => { setAccountId(Number(e.target.value)); setError(null) }}>
               {accounts.data?.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
           </div>

@@ -34,4 +34,8 @@ return [
         'title' => 'A member recorded a payment: :gameya',
         'body' => ':member says they paid round :round of “:gameya”. Check it and confirm.',
     ],
+    'autopay_short' => [
+        'title' => 'Auto-pay skipped: :item',
+        'body' => 'Couldn\'t pay :item (:amount :item_currency) from :account — only :available :currency there, :shortfall short. Top it up or pay it from another account; it will be tried again tomorrow.',
+    ],
 ];

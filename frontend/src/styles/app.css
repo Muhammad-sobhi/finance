@@ -157,7 +157,6 @@ td.acts { width: 1%; }
 .data-card .hint { font-size: 12px; margin: 0; }
 .receipt-ctl { display: flex; gap: 8px; flex-wrap: wrap; }
 .receipt-img { flex: 1; min-height: 0; width: 100%; object-fit: contain; }
-.import-sum { margin: 0; padding-inline-start: 18px; display: flex; flex-direction: column; gap: 2px; }
 p.hint { margin: 0; font-size: 13px; }
 .setting-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: var(--row-line); font-size: 14px; }
 .setting-row label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -402,3 +401,8 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 .lock-h svg { width: 32px; height: 32px; color: var(--accent); }
 .lock .code-inp { text-align: center; letter-spacing: 8px; font-size: 22px; }
 .lock .btn svg { width: 18px; height: 18px; }
+
+/* Not-enough-money prompt (FundsPrompt): opens over the form that tried to pay. */
+.funds-modal { width: min(520px, 100%); }
+.funds-text, .funds-modal .err.full { grid-column: 1 / -1; margin: 0; }
+.funds-text { line-height: 1.6; }

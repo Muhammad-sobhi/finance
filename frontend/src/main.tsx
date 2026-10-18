@@ -12,6 +12,7 @@ import '@fontsource/ibm-plex-mono/500.css'
 import './styles/theme.css'
 import './styles/app.css'
 import App from './App'
+import { FundsProvider } from './components/FundsPrompt'
 import { listenForInstall } from './lib/install'
 import { registerServiceWorker } from './lib/push'
 import { SessionProvider } from './lib/session'
@@ -28,7 +29,9 @@ listenForInstall()
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <SessionProvider>
-      <App />
+      <FundsProvider>
+        <App />
+      </FundsProvider>
     </SessionProvider>
   </StrictMode>,
 )
