@@ -34,4 +34,8 @@ return [
         'title' => 'عضو سجّل دفعة: :gameya',
         'body' => ':member قال إنه دفع قسط الدورة :round في جمعية «:gameya». راجعها وأكّدها.',
     ],
+    'autopay_short' => [
+        'title' => 'لم يتم الدفع التلقائي: :item',
+        'body' => 'تعذّر دفع :item (:amount :item_currency) من :account — المتاح :available :currency فقط، والناقص :shortfall. اشحن الحساب أو ادفعها من حساب آخر؛ ستُعاد المحاولة غدًا.',
+    ],
 ];

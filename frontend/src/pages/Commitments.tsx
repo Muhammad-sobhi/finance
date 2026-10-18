@@ -13,6 +13,7 @@ import { ApiError, del, patch, post } from '../lib/api'
 import { isoDate } from '../lib/dates'
 import { catName } from '../lib/labels'
 import { useSession } from '../lib/session'
+import { useFunds } from '../components/FundsPrompt'
 import type { Account, Category, Gameya, InstallmentPlan, Listed, SharedGameyas } from '../lib/types'
 import { ManagedSlots, SharedList } from './GameyaManaged'
 
@@ -28,7 +29,8 @@ function Steps({ done, of }: { done: number; of: number }) {
 function useAction() {
   const { t } = useI18n()
   const { refresh, toast } = useSession()
-  return (fn: () => Promise<unknown>) => fn().then(() => { toast(t('saved')); refresh() }).catch((err) => {
+  const funds = useFunds()
+  return (fn: () => Promise<unknown>) => funds(fn).then(() => { toast(t('saved')); refresh() }).catch((err) => {
     const first = err instanceof ApiError && err.data.errors ? Object.values(err.data.errors)[0]?.[0] : null
     toast(first ?? t('error'))
   })

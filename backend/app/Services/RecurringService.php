@@ -2,12 +2,15 @@
 
 namespace App\Services;
 
+use App\Exceptions\InsufficientFunds;
 use App\Models\Account;
 use App\Models\Bill;
 use App\Models\IncomeSource;
 use App\Models\Subscription;
 use App\Models\Transaction;
+use App\Notifications\InfoAlert;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -52,7 +55,11 @@ class RecurringService
         });
     }
 
-    /** Pay every active auto-pay item that is due (catching up missed cycles). Returns count paid. */
+    /**
+     * Pay every active auto-pay item that is due (catching up missed cycles). Returns count paid.
+     * An item whose account is short stays unpaid (tried again tomorrow) and the owner is told,
+     * once per due date.
+     */
     public function runAutoPay(): int
     {
         $today = CarbonImmutable::today();
@@ -62,12 +69,30 @@ class RecurringService
                 ->where($class::DUE_COLUMN, '<=', $today->toDateString())
                 ->each(function (Bill|Subscription|IncomeSource $item) use ($today, &$paid) {
                     for ($guard = 0; $guard < 24 && $item->is_active && $item->dueDate()->lte($today); $guard++) {
-                        $this->pay($item, ['date' => $item->dueDate()->toDateString()]);
+                        try {
+                            $this->pay($item, ['date' => $item->dueDate()->toDateString()]);
+                        } catch (InsufficientFunds $e) {
+                            $this->reportShort($item, $e);
+                            break;
+                        }
                         $paid++;
                     }
                 });
         }
 
         return $paid;
+    }
+
+    private function reportShort(Bill|Subscription|IncomeSource $item, InsufficientFunds $e): void
+    {
+        $due = $item->dueDate()->toDateString();
+        if (! Cache::add("autopay-short:{$item->getMorphClass()}:{$item->id}:{$due}", true, now()->addDays(40))) {
+            return;
+        }
+        $item->user->notify(new InfoAlert('autopay_short', [
+            'item' => $item->name, 'account' => $e->account->name, 'currency' => $e->account->currency,
+            'amount' => (float) $item->amount, 'item_currency' => $item->currency,
+            'available' => $e->available, 'shortfall' => $e->shortfall,
+        ], $item instanceof Subscription ? '/subscriptions' : '/bills'));
     }
 }

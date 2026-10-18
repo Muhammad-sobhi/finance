@@ -125,12 +125,13 @@ class DataController extends Controller
         $summary = ['rows' => $rows->count(), 'new' => $fresh->count(), 'duplicates' => $rows->count() - $fresh->count(),
             'categorized' => $fresh->whereNotNull('category_id')->count()];
         if (! ($data['dry_run'] ?? false) && $fresh->isNotEmpty()) {
-            DB::transaction(function () use ($fresh, $service, $user, $accountId) {
+            // A statement is history that already happened: no funds check, its rows may run in any order.
+            DB::transaction(fn () => $service->withoutFundsCheck(function () use ($fresh, $service, $user, $accountId) {
                 foreach ($fresh as $r) {
                     $service->create($user, ['type' => $r['type']->value, 'account_id' => $accountId, 'amount' => $r['amount'],
                         'date' => $r['date'], 'note' => $r['note'], 'category_id' => $r['category_id']]);
                 }
-            });
+            }));
             $budgets->watch($user);
             $summary['imported'] = $fresh->count();
         }

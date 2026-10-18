@@ -31,6 +31,11 @@ const ar = {
   lockEnter: 'أدخل رمز القفل', lockOpen: 'فتح', lockBio: 'افتح بالبصمة أو الوجه', lockWrong: 'رمز خاطئ — باقي {n} محاولات قبل تسجيل الخروج',
   lockTriesLeft: 'باقي {n} محاولات', lockForgot: 'نسيت الرمز؟',
   lockForgotConfirm: 'سيتم تسجيل خروجك من هذا الجهاز وإلغاء القفل. ادخل بعدها بكلمة المرور. متابعة؟',
+  // funds
+  fundsTitle: 'الرصيد غير كافٍ', fundsText: 'في «{account}» {available} فقط — ناقص {short} لإتمام هذا الدفع. اشحن الحساب أو اختر حسابًا آخر.',
+  fundsField: 'الرصيد غير كافٍ — ناقص {n}', topUpFrom: 'اشحن من', topUpDeposit: 'إيداع جديد (فلوس دخلت الحساب)',
+  topUpAndPay: 'اشحن وادفع', chooseOtherAccount: 'اختر حسابًا آخر', topUp: 'شحن رصيد',
+  fundsSourceShort: '«{account}» لا يكفي أيضًا — ناقص {n}',
   // offline
   offlineNote: 'أنت غير متصل بالإنترنت. أي معاملة جديدة تضيفها تُحفظ على جهازك وتُرفع تلقائيًا عند عودة الاتصال.',
   waitingN: '{n} في الانتظار', sendingN: 'جارٍ رفع {n} معاملة محفوظة على جهازك…', syncedN: 'تم رفع {n} معاملة محفوظة',
@@ -236,6 +241,11 @@ const en: typeof ar = {
   lockForgotConfirm: "You'll be signed out on this device and the lock removed. Then sign in with your password. Continue?",
   offlineNote: "You're offline. New transactions you add are kept on this device and sent automatically when you're back online.",
   waitingN: '{n} waiting', sendingN: 'Sending {n} transaction(s) saved on this device…', syncedN: '{n} saved transaction(s) sent',
+  // funds
+  fundsTitle: 'Not enough money', fundsText: '“{account}” has only {available} — {short} short for this payment. Top it up or choose another account.',
+  fundsField: 'Not enough money — {n} short', topUpFrom: 'Top up from', topUpDeposit: 'New deposit (money came in)',
+  topUpAndPay: 'Top up and pay', chooseOtherAccount: 'Choose another account', topUp: 'Top-up',
+  fundsSourceShort: '“{account}” is short too — {n} missing',
   savedOffline: "Saved on this device — it will be sent when you're back online", needsConnection: 'This needs an internet connection',
   notSavedN: '{n} transaction(s) not saved — view', notSavedTitle: 'Transactions not saved',
   notSavedHint: 'The server refused them when they were sent (e.g. the account was deleted). Try again, or discard and add them again.', retry: 'Try again', discard: 'Discard',

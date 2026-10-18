@@ -10,12 +10,14 @@ import { catName } from '../lib/labels'
 import { useSession } from '../lib/session'
 import type { Account, Category, Transaction, TxType } from '../lib/types'
 import { DetailModal } from './DetailModal'
+import { shortfallOf, useFunds } from './FundsPrompt'
 import { DeleteButton, FormModal, type Field } from './Modal'
 
 export function TransactionForm({ tx, onClose }: { tx?: Transaction | null; onClose: () => void }) {
   const i = useI18n()
   const { t } = i
   const { refresh, toast, readOnly, user } = useSession()
+  const funds = useFunds()
   // New entries work offline too, so these lists are kept on this device.
   const accounts = useApi<Account[]>('/accounts', { offline: keepAccounts })
   const cats = useApi<Category[]>('/categories', { offline: keepCategories })
@@ -77,7 +79,7 @@ export function TransactionForm({ tx, onClose }: { tx?: Transaction | null; onCl
   const run = async (fn: () => Promise<unknown>, offline?: () => void) => {
     setBusy(true)
     try {
-      await fn()
+      await funds(fn)
       toast(t('saved'))
       refresh()
       onClose()
@@ -85,6 +87,9 @@ export function TransactionForm({ tx, onClose }: { tx?: Transaction | null; onCl
       if (isNetworkError(err)) {
         if (offline) offline()
         else toast(t('needsConnection'))
+      } else if (shortfallOf(err)) {
+        const short = shortfallOf(err)!
+        setErrors({ account_id: t('fundsField', { n: i.money(short.shortfall, short.currency) }) })
       } else if (err instanceof ApiError && err.data.code === 'managed_by_debt') toast(t('managedByDebt'))
       else if (err instanceof ApiError && err.data.code === 'managed_by_project') toast(t('managedByProject'))
       else if (err instanceof ApiError && err.data.code === 'managed_by_zakat') toast(t('managedByZakat'))

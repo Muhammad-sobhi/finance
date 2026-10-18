@@ -402,3 +402,8 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 .lock-h svg { width: 32px; height: 32px; color: var(--accent); }
 .lock .code-inp { text-align: center; letter-spacing: 8px; font-size: 22px; }
 .lock .btn svg { width: 18px; height: 18px; }
+
+/* Not-enough-money prompt (FundsPrompt): opens over the form that tried to pay. */
+.funds-modal { width: min(520px, 100%); }
+.funds-text, .funds-modal .err.full { grid-column: 1 / -1; margin: 0; }
+.funds-text { line-height: 1.6; }
