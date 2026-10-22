@@ -68,7 +68,7 @@ const ar = {
   // settings / auth
   baseCurrency: 'العملة الأساسية', rates: 'أسعار الصرف', rate: 'السعر مقابل الأساسية', goldPrice: 'سعر جرام الذهب عيار ٢٤', silverPrice: 'سعر جرام الفضة',
   alertDays: 'التنبيه قبل الموعد (أيام)', pushOn: 'تفعيل إشعارات المتصفح', pushOk: 'الإشعارات مفعلة', pushNo: 'المتصفح لا يدعم الإشعارات',
-  emailAlerts: 'تنبيهات البريد', login: 'دخول', password: 'كلمة المرور', wrongLogin: 'بيانات الدخول غير صحيحة', markAllRead: 'تحديد الكل كمقروء',
+  emailAlerts: 'تنبيهات البريد', login: 'دخول', password: 'كلمة المرور', showPassword: 'إظهار كلمة المرور', hidePassword: 'إخفاء كلمة المرور', wrongLogin: 'بيانات الدخول غير صحيحة', markAllRead: 'تحديد الكل كمقروء',
   fetchRates: 'تحديث الأسعار تلقائيًا', theme: 'المظهر', language: 'اللغة', color: 'اللون',
   // app shell / forms (added for the build)
   soon: 'هذا القسم يأتي في المرحلة التالية من البناء', thisMonth: 'هذا الشهر', filters: 'تصفية', all: 'الكل',
@@ -264,7 +264,7 @@ const en: typeof ar = {
   pendingRequests: 'Pending requests', cancelRequest: 'Cancel request',
   baseCurrency: 'Base currency', rates: 'Exchange rates', rate: 'Rate vs base', goldPrice: 'Gold price / gram (24k)', silverPrice: 'Silver price / gram',
   alertDays: 'Alert before due (days)', pushOn: 'Enable browser notifications', pushOk: 'Notifications enabled', pushNo: 'Browser does not support notifications',
-  emailAlerts: 'Email alerts', login: 'Log in', password: 'Password', wrongLogin: 'Wrong email or password', markAllRead: 'Mark all read',
+  emailAlerts: 'Email alerts', login: 'Log in', password: 'Password', showPassword: 'Show password', hidePassword: 'Hide password', wrongLogin: 'Wrong email or password', markAllRead: 'Mark all read',
   fetchRates: 'Auto-update rates', theme: 'Theme', language: 'Language', color: 'Color',
   soon: 'This section arrives in the next build step', thisMonth: 'this month', filters: 'Filters', all: 'All',
   allAccounts: 'All accounts', allCategories: 'All categories', allTypes: 'All types', clear: 'Clear', icon: 'Icon',

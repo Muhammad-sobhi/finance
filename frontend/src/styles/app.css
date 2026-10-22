@@ -144,6 +144,10 @@ tr.day:hover { background: none; }
 .btn.sm { padding: 4px 10px; font-size: 12px; }
 .icon-btn.sm { width: 28px; height: 28px; }
 .icon-btn.sm svg { width: 14px; height: 14px; }
+/* Password with a show/hide toggle inside the field, on the right (the text is always LTR). */
+.pw-field { position: relative; display: flex; }
+.pw-field .inp { flex: 1; min-width: 0; padding-right: 40px; }
+.pw-field .pw-toggle { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); }
 .ic .acts { display: flex; justify-content: flex-end; gap: 6px; }
 td.acts { width: 1%; }
 .mini-chart { height: 130px; flex: none; display: flex; flex-direction: column; }

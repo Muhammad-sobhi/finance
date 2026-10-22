@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { PasswordInput } from '../components/PasswordInput'
 import { useI18n } from '../i18n'
 import { ApiError } from '../lib/api'
 import { useSession } from '../lib/session'
@@ -74,7 +75,7 @@ export function Login() {
             </div>
             <div className="field">
               <label htmlFor="login-password">{t('password')}</label>
-              <input id="login-password" className="inp" type="password" autoComplete="current-password" dir="ltr" required value={password} onChange={(e) => setPassword(e.target.value)} />
+              <PasswordInput id="login-password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
             {error && <span className="err" role="alert">{error}</span>}
             <button type="submit" className="btn" disabled={busy}>{t('login')}</button>
