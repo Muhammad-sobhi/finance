@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Models\Account;
 use App\Models\Debt;
 use App\Models\User;
+use App\Services\DebtService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -49,6 +51,22 @@ class DebtTest extends TestCase
         $this->postJson("/api/v1/debts/{$id}/payments", ['amount' => 500])->assertJsonPath('debt.status', 'settled');
 
         $this->getJson("/api/v1/debts/{$id}")->assertJsonCount(3, 'payments');
+    }
+
+    public function test_payment_rechecks_whats_left_inside_the_transaction(): void
+    {
+        $id = $this->postJson('/api/v1/debts', ['person' => 'Sara', 'direction' => 'owed_to_me', 'amount' => 2000, 'currency' => 'EGP'])->json('id');
+        // A second request validated against the old remaining amount, before the first one saved.
+        $stale = Debt::with('payments')->find($id);
+        $this->postJson("/api/v1/debts/{$id}/payments", ['amount' => 1500])->assertCreated();
+
+        try {
+            app(DebtService::class)->addPayment($stale, ['amount' => 1000, 'date' => '2026-10-10']);
+            $this->fail('Overpayment was accepted.');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('amount', $e->errors());
+        }
+        $this->assertSame(1, Debt::find($id)->payments()->count());
     }
 
     public function test_borrowing_and_paying_back(): void

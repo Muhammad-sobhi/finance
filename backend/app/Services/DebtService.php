@@ -10,6 +10,7 @@ use App\Models\DebtPayment;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Debts can move real money: lending/borrowing (optional account on the debt) and each
@@ -54,6 +55,12 @@ class DebtService
     public function addPayment(Debt $debt, array $data): DebtPayment
     {
         return DB::transaction(function () use ($debt, $data) {
+            // Re-check what's left under a row lock: two payments sent at once must not overpay.
+            Debt::whereKey($debt->id)->lockForUpdate()->first();
+            $debt->unsetRelation('payments');
+            if ((float) $data['amount'] > $debt->remaining() + 0.001) {
+                throw ValidationException::withMessages(['amount' => __('validation.max.numeric', ['attribute' => 'amount', 'max' => $debt->remaining()])]);
+            }
             $payment = $debt->payments()->create($data);
             if ($payment->account_id) {
                 // Repayment flows opposite to the loan: owed to me → money comes in.
