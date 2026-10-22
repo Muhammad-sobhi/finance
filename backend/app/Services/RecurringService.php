@@ -22,7 +22,10 @@ class RecurringService
      * "Mark paid" (bills, subscriptions) or "received" (income sources): record the
      * transaction on the account and roll the due date to the next cycle.
      *
-     * @param  array{account_id?: int|null, amount?: float|null, date?: string|null}  $data
+     * When `due_date` is given it must still be the item's due date (checked under a row lock),
+     * so two requests for the same cycle can't both pay it.
+     *
+     * @param  array{account_id?: int|null, amount?: float|null, date?: string|null, due_date?: string|null}  $data
      */
     public function pay(Bill|Subscription|IncomeSource $item, array $data = []): Transaction
     {
@@ -32,6 +35,12 @@ class RecurringService
         }
 
         return DB::transaction(function () use ($item, $data, $accountId) {
+            // Serialize payments of the same item and work on its current state.
+            $locked = $item->newQuery()->whereKey($item->getKey())->lockForUpdate()->firstOrFail();
+            $item->setRawAttributes($locked->getAttributes(), true);
+            if (! empty($data['due_date']) && $item->dueDate()->toDateString() !== $data['due_date']) {
+                abort(response()->json(['message' => 'This cycle is already paid.', 'code' => 'already_paid'], 409));
+            }
             $account = Account::findOrFail($accountId);
             $amount = (float) ($data['amount'] ?? $item->amount);
             $date = $data['date'] ?? CarbonImmutable::today()->toDateString();

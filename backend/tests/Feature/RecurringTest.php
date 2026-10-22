@@ -47,6 +47,19 @@ class RecurringTest extends TestCase
         $this->assertDatabaseCount('transactions', 1); // history stays
     }
 
+    public function test_paying_the_same_cycle_twice_is_refused(): void
+    {
+        $bill = Bill::forceCreate(['user_id' => $this->owner->id, 'name' => 'Water', 'amount' => 200, 'currency' => 'EGP', 'due_date' => '2026-10-17', 'cycle' => 'monthly', 'account_id' => $this->bank->id]);
+
+        // A double tap / second tab sends the same due date again: only the first one pays.
+        $this->postJson("/api/v1/bills/{$bill->id}/pay", ['due_date' => '2026-10-17'])->assertOk()->assertJsonPath('item.due_date', '2026-11-17');
+        $this->postJson("/api/v1/bills/{$bill->id}/pay", ['due_date' => '2026-10-17'])->assertStatus(409)->assertJsonPath('code', 'already_paid');
+
+        $this->assertDatabaseCount('transactions', 1);
+        $this->assertSame(4800.0, (float) $this->bank->fresh()->balance);
+        $this->assertSame('2026-11-17', $bill->fresh()->due_date->toDateString());
+    }
+
     public function test_cycles_roll_correctly_and_once_deactivates(): void
     {
         foreach ([['weekly', '2026-10-22'], ['quarterly', '2027-01-15'], ['yearly', '2027-10-15']] as [$cycle, $next]) {

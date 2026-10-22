@@ -105,7 +105,7 @@ function PayForm({ kind, item, accounts, onClose }: { kind: Kind; item: Item; ac
   const { t } = useI18n()
   const form = useForm({ account_id: item.account_id ? String(item.account_id) : String(accounts[0]?.id ?? ''), amount: String(item.amount), date: isoDate() }, onClose)
   const k = KIND[kind]
-  const submit = () => form.run(() => post(`/${kind}/${item.id}/${k.payPath}`, { account_id: num(form.f.account_id), amount: num(form.f.amount), date: form.f.date }))
+  const submit = () => form.run(() => post(`/${kind}/${item.id}/${k.payPath}`, { account_id: num(form.f.account_id), amount: num(form.f.amount), date: form.f.date, due_date: dueOf(item) }), { already_paid: t('alreadyPaid') })
   return (
     <FormModal title={`${t(k.pay)} — ${item.name}`} submitLabel={t(k.pay)} errors={form.errors} busy={form.busy} onClose={onClose} onSubmit={submit} fields={[
       select(form, 'account_id', t(k.account), accounts.filter((a) => a.is_active).map((a) => [a.id, `${a.name} · ${a.currency}`]), { full: true }),
