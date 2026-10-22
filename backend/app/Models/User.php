@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Notifications\ResetPasswordMail;
 use App\Services\DataVault;
 use App\Services\DefaultCategories;
+use App\Services\PushEndpoints;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Collection;
 use Laravel\Sanctum\HasApiTokens;
 use NotificationChannels\WebPush\HasPushSubscriptions;
 
@@ -108,6 +110,12 @@ class User extends Authenticatable implements HasLocalePreference
     public function notifications(): MorphMany
     {
         return $this->morphMany(SealedNotification::class, 'notifiable')->latest();
+    }
+
+    /** Push only to real push services, even for a subscription saved before that was checked (SSRF). */
+    public function routeNotificationForWebPush(): Collection
+    {
+        return $this->pushSubscriptions->filter(fn ($sub) => PushEndpoints::allowed((string) $sub->endpoint))->values();
     }
 
     /** Laravel's password broker calls this; we send our own bilingual mail pointing at the SPA. */

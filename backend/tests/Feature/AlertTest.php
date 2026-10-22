@@ -96,7 +96,7 @@ class AlertTest extends TestCase
         Notification::assertSentTo($this->owner, DueAlert::class, fn ($n, $channels) => $channels === ['database']);
 
         $this->owner->update(['email_alerts' => true]);
-        $this->owner->updatePushSubscription('https://push.example.com/abc', 'key', 'auth');
+        $this->owner->updatePushSubscription('https://fcm.googleapis.com/fcm/send/abc', 'key', 'auth');
         $this->bill(['name' => 'Gas', 'due_date' => '2026-10-19']);
         $this->scan('2026-10-17');
         Notification::assertSentTo($this->owner, DueAlert::class, fn ($n, $channels) => $channels === ['database', 'mail', WebPushChannel::class]);
@@ -139,6 +139,18 @@ class AlertTest extends TestCase
         $sub = ['endpoint' => 'https://fcm.googleapis.com/fcm/send/xyz', 'keys' => ['p256dh' => 'p', 'auth' => 'a']];
         $this->postJson('/api/v1/push/subscribe', $sub)->assertCreated();
         $this->postJson('/api/v1/push/subscribe', ['endpoint' => 'http://insecure.example.com', 'keys' => ['p256dh' => 'p', 'auth' => 'a']])->assertJsonValidationErrors('endpoint');
+        // The server POSTs to the endpoint, so only real push services are accepted (no SSRF).
+        foreach (['https://169.254.169.254/latest/meta-data', 'https://localhost/x', 'https://fcm.googleapis.com.evil.com/x',
+            'https://evilpush.services.mozilla.com.attacker.io/x', 'https://fcm.googleapis.com:8443/x'] as $bad) {
+            $this->postJson('/api/v1/push/subscribe', ['endpoint' => $bad, 'keys' => ['p256dh' => 'p', 'auth' => 'a']])->assertJsonValidationErrors('endpoint');
+        }
+        $this->postJson('/api/v1/push/subscribe', ['endpoint' => 'https://updates.push.services.mozilla.com/wpush/v2/abc', 'keys' => ['p256dh' => 'p', 'auth' => 'a']])->assertCreated();
+        $this->owner->deletePushSubscription('https://updates.push.services.mozilla.com/wpush/v2/abc');
+
+        // One saved before the check existed is never pushed to.
+        $this->owner->updatePushSubscription('https://10.0.0.5/internal', 'k', 'a');
+        $this->assertSame(['https://fcm.googleapis.com/fcm/send/xyz'], $this->owner->fresh()->routeNotificationForWebPush()->pluck('endpoint')->all());
+        $this->owner->deletePushSubscription('https://10.0.0.5/internal');
         $this->assertSame(1, $this->owner->pushSubscriptions()->count());
         $this->postJson('/api/v1/push/unsubscribe', ['endpoint' => $sub['endpoint']])->assertOk();
         $this->assertSame(0, $this->owner->pushSubscriptions()->count());
