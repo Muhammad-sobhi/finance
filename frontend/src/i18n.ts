@@ -49,7 +49,7 @@ const ar = {
   owed_to_me: 'لي عنده', i_owe: 'عليّ له', addPayment: 'تسجيل دفعة', payments: 'الدفعات', open: 'مفتوح', settled: 'مسدد',
   // recurring
   monthly: 'شهري', quarterly: 'ربع سنوي', yearly: 'سنوي', weekly: 'أسبوعي', once: 'مرة واحدة',
-  personal: 'شخصي', work: 'عمل', markPaid: 'تم الدفع', fromAccount: 'الدفع من حساب', monthlyCost: 'التكلفة الشهرية',
+  personal: 'شخصي', work: 'عمل', markPaid: 'تم الدفع', alreadyPaid: 'تم دفع هذه الدورة بالفعل.', fromAccount: 'الدفع من حساب', monthlyCost: 'التكلفة الشهرية',
   // investments
   invested: 'المبلغ المستثمر', currentValue: 'القيمة الحالية', quantity: 'الكمية', unit: 'الوحدة', platform: 'المنصة / الجهة',
   maturityDate: 'تاريخ الاستحقاق', returnRate: 'العائد السنوي ٪', payout: 'صرف العائد', profit: 'الربح', roi: 'العائد',
@@ -250,7 +250,7 @@ const en: typeof ar = {
   monthTotal: 'Month total', dayTotal: 'Day total', prevMonth: 'Previous month', nextMonth: 'Next month',
   owed_to_me: 'They owe me', i_owe: 'I owe them', addPayment: 'Add payment', payments: 'Payments', open: 'Open', settled: 'Settled',
   monthly: 'Monthly', quarterly: 'Quarterly', yearly: 'Yearly', weekly: 'Weekly', once: 'Once',
-  personal: 'Personal', work: 'Work', markPaid: 'Mark paid', fromAccount: 'Pay from account', monthlyCost: 'Monthly cost',
+  personal: 'Personal', work: 'Work', markPaid: 'Mark paid', alreadyPaid: 'This cycle is already paid.', fromAccount: 'Pay from account', monthlyCost: 'Monthly cost',
   invested: 'Invested', currentValue: 'Current value', quantity: 'Quantity', unit: 'Unit', platform: 'Platform / issuer',
   maturityDate: 'Maturity date', returnRate: 'Annual return %', payout: 'Payout', profit: 'Profit', roi: 'Return',
   karat: 'Karat', purchasePrice: 'Purchase price', purchaseDate: 'Purchase date', location: 'Location', valuation: 'Valuation',

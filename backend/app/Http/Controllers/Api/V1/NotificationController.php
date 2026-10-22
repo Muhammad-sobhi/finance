@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Services\PushEndpoints;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
@@ -48,7 +49,11 @@ class NotificationController extends Controller
     public function subscribe(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'endpoint' => ['required', 'url', 'starts_with:https://', 'max:2000'],
+            'endpoint' => ['required', 'url', 'starts_with:https://', 'max:2000', function ($attr, $value, $fail) {
+                if (! PushEndpoints::allowed((string) $value)) {
+                    $fail(__('validation.url', ['attribute' => 'endpoint']));
+                }
+            }],
             'keys.p256dh' => ['required', 'string', 'max:255'],
             'keys.auth' => ['required', 'string', 'max:255'],
             'contentEncoding' => ['nullable', 'in:aesgcm,aes128gcm'],

@@ -105,6 +105,8 @@ abstract class RecurringController extends Controller
             'account_id' => ['nullable', 'integer', Rule::exists('accounts', 'id')->where('user_id', $request->user()->id)],
             'amount' => ['nullable', 'numeric', 'gt:0', 'max:9999999999999'],
             'date' => ['nullable', 'date_format:Y-m-d'],
+            // The due date the user saw: a double tap (or a second tab) must not pay the next cycle too.
+            'due_date' => ['nullable', 'date_format:Y-m-d'],
         ]);
         abort_unless($item->is_active, 422, 'This item is no longer active.');
         $tx = $this->service->pay($item, $data);
