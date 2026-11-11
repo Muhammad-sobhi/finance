@@ -32,6 +32,7 @@ class Debt extends Model
         ];
     }
 
+    /** Every later movement on the debt: repayments and further advances. */
     public function payments(): HasMany
     {
         return $this->hasMany(DebtPayment::class)->orderByDesc('date')->orderByDesc('id');
@@ -50,11 +51,17 @@ class Debt extends Model
 
     public function paid(): float
     {
-        return round($this->payments->sum(fn (DebtPayment $p) => (float) $p->amount), 2);
+        return round($this->payments->reject->isAdvance()->sum(fn (DebtPayment $p) => (float) $p->amount), 2);
+    }
+
+    /** The original amount plus everything lent/borrowed since. */
+    public function total(): float
+    {
+        return round((float) $this->amount + $this->payments->filter->isAdvance()->sum(fn (DebtPayment $p) => (float) $p->amount), 2);
     }
 
     public function remaining(): float
     {
-        return max(0, round((float) $this->amount - $this->paid(), 2));
+        return max(0, round($this->total() - $this->paid(), 2));
     }
 }

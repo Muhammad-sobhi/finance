@@ -52,19 +52,21 @@ class DebtService
         });
     }
 
+    /** A repayment, or (kind = advance) more money lent/borrowed on the same debt. */
     public function addPayment(Debt $debt, array $data): DebtPayment
     {
         return DB::transaction(function () use ($debt, $data) {
             // Re-check what's left under a row lock: two payments sent at once must not overpay.
             Debt::whereKey($debt->id)->lockForUpdate()->first();
             $debt->unsetRelation('payments');
-            if ((float) $data['amount'] > $debt->remaining() + 0.001) {
+            $advance = ($data['kind'] ?? DebtPayment::PAYMENT) === DebtPayment::ADVANCE;
+            if (! $advance && (float) $data['amount'] > $debt->remaining() + 0.001) {
                 throw ValidationException::withMessages(['amount' => __('validation.max.numeric', ['attribute' => 'amount', 'max' => $debt->remaining()])]);
             }
             $payment = $debt->payments()->create($data);
             if ($payment->account_id) {
-                // Repayment flows opposite to the loan: owed to me → money comes in.
-                $type = $debt->direction === DebtDirection::OwedToMe ? 'income' : 'expense';
+                // An advance flows like the loan itself (owed to me → money goes out); a repayment flows back.
+                $type = ($debt->direction === DebtDirection::OwedToMe) === $advance ? 'expense' : 'income';
                 $this->tx->create($debt->user, $this->txData($debt, $payment->account_id, $type, (float) $payment->amount, $payment->date->format('Y-m-d'), $payment->note) + [
                     'source_type' => $payment->getMorphClass(), 'source_id' => $payment->id,
                 ]);
@@ -78,10 +80,18 @@ class DebtService
     public function deletePayment(DebtPayment $payment, bool $refresh = true): void
     {
         DB::transaction(function () use ($payment, $refresh) {
+            $debt = $payment->debt;
+            if ($refresh && $payment->isAdvance()) {
+                Debt::whereKey($debt->id)->lockForUpdate()->first();
+                $debt->unsetRelation('payments');
+                // Without this advance the repayments already recorded would exceed the debt.
+                if ($debt->total() - (float) $payment->amount < $debt->paid() - 0.001) {
+                    throw ValidationException::withMessages(['amount' => 'Payments already recorded exceed the debt without this amount.']);
+                }
+            }
             if ($payment->transaction) {
                 $this->tx->delete($payment->transaction);
             }
-            $debt = $payment->debt;
             $payment->delete();
             if ($refresh) {
                 $this->refreshStatus($debt);

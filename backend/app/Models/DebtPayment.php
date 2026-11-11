@@ -14,14 +14,27 @@ class DebtPayment extends Model
 
     public const PARENT = [Debt::class, 'debt_id'];
 
+    /** Money paid back. */
+    public const PAYMENT = 'payment';
+
+    /** More money lent/borrowed on top of the debt's original amount. */
+    public const ADVANCE = 'advance';
+
     /** Stored encrypted with the owner's data key (see EncryptedForOwner). */
     public const ENCRYPTED = ['amount', 'note'];
 
-    protected $fillable = ['amount', 'date', 'account_id', 'note'];
+    protected $fillable = ['kind', 'amount', 'date', 'account_id', 'note'];
+
+    protected $attributes = ['kind' => self::PAYMENT];
 
     protected function casts(): array
     {
         return ['amount' => 'decimal:2', 'date' => 'date:Y-m-d'];
+    }
+
+    public function isAdvance(): bool
+    {
+        return $this->kind === self::ADVANCE;
     }
 
     public function debt(): BelongsTo

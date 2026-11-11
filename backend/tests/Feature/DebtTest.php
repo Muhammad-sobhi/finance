@@ -87,6 +87,45 @@ class DebtTest extends TestCase
         $this->assertDatabaseCount('transactions', 0);
     }
 
+    public function test_lending_more_on_the_same_debt(): void
+    {
+        $id = $this->postJson('/api/v1/debts', ['person' => 'Hesham', 'direction' => 'owed_to_me', 'amount' => 10000, 'currency' => 'EGP', 'date' => '2026-10-01'])->json('id');
+        $this->postJson("/api/v1/debts/{$id}/payments", ['amount' => 2000, 'date' => '2026-10-10', 'account_id' => $this->bank->id])->assertCreated();
+        $this->assertSame(12000.0, $this->bal());
+
+        // He borrows again: money leaves the account and the debt grows.
+        $aid = $this->postJson("/api/v1/debts/{$id}/payments", ['kind' => 'advance', 'amount' => 500, 'date' => '2026-10-20', 'account_id' => $this->bank->id])
+            ->assertCreated()->assertJsonPath('debt.amount', 10000)->assertJsonPath('debt.total', 10500)
+            ->assertJsonPath('debt.paid', 2000)->assertJsonPath('debt.remaining', 8500)->json('id');
+        $this->assertSame(11500.0, $this->bal());
+        $this->getJson("/api/v1/debts/{$id}")->assertJsonPath('payments.0.kind', 'advance')->assertJsonPath('payments.0.date', '2026-10-20')
+            ->assertJsonPath('payments.1.kind', 'payment');
+        $this->getJson('/api/v1/debts')->assertJsonPath('meta.totals.owed_to_me', 8500);
+
+        // Paid in full, then lent again: the settled debt reopens.
+        $this->postJson("/api/v1/debts/{$id}/payments", ['amount' => 8500])->assertJsonPath('debt.status', 'settled');
+        $again = $this->postJson("/api/v1/debts/{$id}/payments", ['kind' => 'advance', 'amount' => 300])
+            ->assertJsonPath('debt.status', 'open')->assertJsonPath('debt.remaining', 300)->json('id');
+
+        // The first advance is already repaid, so it can't be removed; the unpaid one can.
+        $this->deleteJson("/api/v1/debts/{$id}/payments/{$aid}")->assertJsonValidationErrors('amount');
+        $this->assertSame(11500.0, $this->bal());
+        $this->patchJson("/api/v1/debts/{$id}", ['amount' => 9000])->assertJsonValidationErrors('amount');
+        $this->deleteJson("/api/v1/debts/{$id}/payments/{$again}")->assertOk()->assertJsonPath('status', 'settled')->assertJsonPath('total', 10500);
+    }
+
+    public function test_borrowing_more_and_deleting_it(): void
+    {
+        $id = $this->postJson('/api/v1/debts', ['person' => 'Omar', 'direction' => 'i_owe', 'amount' => 1000, 'currency' => 'EGP'])->json('id');
+        $aid = $this->postJson("/api/v1/debts/{$id}/payments", ['kind' => 'advance', 'amount' => 400, 'account_id' => $this->bank->id])
+            ->assertCreated()->assertJsonPath('debt.remaining', 1400)->json('id');
+        $this->assertSame(10400.0, $this->bal());
+        $this->postJson("/api/v1/debts/{$id}/payments", ['kind' => 'gift', 'amount' => 1])->assertJsonValidationErrors('kind');
+
+        $this->deleteJson("/api/v1/debts/{$id}/payments/{$aid}")->assertOk()->assertJsonPath('remaining', 1000);
+        $this->assertSame(10000.0, $this->bal());
+    }
+
     public function test_editing_the_debt_resyncs_its_transaction(): void
     {
         $id = $this->postJson('/api/v1/debts', ['person' => 'Sara', 'direction' => 'owed_to_me', 'amount' => 1000, 'currency' => 'EGP', 'account_id' => $this->bank->id])->json('id');

@@ -132,9 +132,11 @@ export interface Debt {
   status: 'open' | 'settled'
   account_id: number | null
   remind_days: number | null
+  /** Original amount plus later advances. */
+  total: number
   paid: number
   remaining: number
-  payments?: { id: number; amount: number; date: string; account_id: number | null; note: string | null }[]
+  payments?: { id: number; kind: 'payment' | 'advance'; amount: number; date: string; account_id: number | null; note: string | null }[]
 }
 
 interface RecurringBase {

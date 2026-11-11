@@ -52,7 +52,7 @@ class DebtController extends Controller
 
         return response()->json($this->present($debt) + [
             'payments' => $debt->payments->map(fn (DebtPayment $p) => [
-                'id' => $p->id, 'amount' => (float) $p->amount, 'date' => $p->date->format('Y-m-d'),
+                'id' => $p->id, 'kind' => $p->kind, 'amount' => (float) $p->amount, 'date' => $p->date->format('Y-m-d'),
                 'account_id' => $p->account_id, 'note' => $p->note,
             ]),
         ]);
@@ -62,7 +62,7 @@ class DebtController extends Controller
     {
         Gate::authorize('update', $debt);
         $data = $this->validated($request, false);
-        if (isset($data['amount']) && (float) $data['amount'] < $debt->paid()) {
+        if (isset($data['amount']) && (float) $data['amount'] + $debt->total() - (float) $debt->amount < $debt->paid()) {
             return response()->json(['message' => 'Amount is below what was already paid.', 'errors' => ['amount' => ['Amount is below what was already paid.']]], 422);
         }
 
@@ -80,8 +80,11 @@ class DebtController extends Controller
     public function addPayment(Request $request, Debt $debt): JsonResponse
     {
         Gate::authorize('update', $debt);
+        $advance = $request->input('kind') === DebtPayment::ADVANCE;
         $data = $request->validate([
-            'amount' => ['required', 'numeric', 'gt:0', 'max:'.($debt->remaining() + 0.001)],
+            'kind' => ['sometimes', Rule::in([DebtPayment::PAYMENT, DebtPayment::ADVANCE])],
+            // A repayment can't exceed what's left; a new advance only has to fit the column.
+            'amount' => ['required', 'numeric', 'gt:0', 'max:'.($advance ? 9999999999999 : $debt->remaining() + 0.001)],
             'date' => ['nullable', 'date_format:Y-m-d'],
             'account_id' => ['nullable', 'integer', Rule::exists('accounts', 'id')->where('user_id', $request->user()->id)],
             'note' => ['nullable', 'string', 'max:500'],
@@ -134,7 +137,7 @@ class DebtController extends Controller
             'amount' => (float) $d->amount, 'currency' => $d->currency, 'date' => $d->date->format('Y-m-d'),
             'due_date' => $d->due_date?->format('Y-m-d'), 'notes' => $d->notes, 'status' => $d->status->value,
             'account_id' => $d->account_id, 'remind_days' => $d->remind_days,
-            'paid' => $d->paid(), 'remaining' => $d->remaining(),
+            'total' => $d->total(), 'paid' => $d->paid(), 'remaining' => $d->remaining(),
         ];
     }
 }
