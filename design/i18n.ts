@@ -25,7 +25,7 @@ const ar = {
   expense: 'مصروف', income: 'دخل', transfer: 'تحويل', quickExpense: 'مصروف سريع', addExpense: 'سجّل مصروف',
   monthTotal: 'إجمالي الشهر', dayTotal: 'إجمالي اليوم', prevMonth: 'الشهر السابق', nextMonth: 'الشهر التالي',
   // debts
-  owed_to_me: 'لي عنده', i_owe: 'عليّ له', addPayment: 'تسجيل دفعة', payments: 'الدفعات', open: 'مفتوح', settled: 'مسدد',
+  owed_to_me: 'لي عنده', i_owe: 'عليّ له', addPayment: 'تسجيل دفعة', payments: 'الدفعات', addAdvance: 'إضافة مبلغ', movements: 'الحركات', advance: 'سلفة', repayment: 'سداد', totalLent: 'إجمالي الدين', advanceRepaid: 'لا يمكن حذف مبلغ تم سداده — احذف الدفعات أولاً', open: 'مفتوح', settled: 'مسدد',
   // recurring
   monthly: 'شهري', quarterly: 'ربع سنوي', yearly: 'سنوي', weekly: 'أسبوعي', once: 'مرة واحدة',
   personal: 'شخصي', work: 'عمل', markPaid: 'تم الدفع', fromAccount: 'الدفع من حساب', monthlyCost: 'التكلفة الشهرية',
@@ -79,7 +79,7 @@ const en: typeof ar = {
   saved: 'Saved', error: 'Something went wrong', readOnly: 'Read-only — heir access', search: 'Search',
   expense: 'Expense', income: 'Income', transfer: 'Transfer', quickExpense: 'Quick expense', addExpense: 'Log expense',
   monthTotal: 'Month total', dayTotal: 'Day total', prevMonth: 'Previous month', nextMonth: 'Next month',
-  owed_to_me: 'They owe me', i_owe: 'I owe them', addPayment: 'Add payment', payments: 'Payments', open: 'Open', settled: 'Settled',
+  owed_to_me: 'They owe me', i_owe: 'I owe them', addPayment: 'Add payment', payments: 'Payments', addAdvance: 'Add amount', movements: 'Movements', advance: 'Advance', repayment: 'Repayment', totalLent: 'Total debt', advanceRepaid: 'This amount is already repaid — remove the payments first', open: 'Open', settled: 'Settled',
   monthly: 'Monthly', quarterly: 'Quarterly', yearly: 'Yearly', weekly: 'Weekly', once: 'Once',
   personal: 'Personal', work: 'Work', markPaid: 'Mark paid', fromAccount: 'Pay from account', monthlyCost: 'Monthly cost',
   invested: 'Invested', currentValue: 'Current value', quantity: 'Quantity', unit: 'Unit', platform: 'Platform / issuer',

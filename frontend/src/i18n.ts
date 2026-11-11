@@ -46,7 +46,7 @@ const ar = {
   expense: 'مصروف', income: 'دخل', transfer: 'تحويل', quickExpense: 'مصروف سريع', addExpense: 'سجّل مصروف',
   monthTotal: 'إجمالي الشهر', dayTotal: 'إجمالي اليوم', prevMonth: 'الشهر السابق', nextMonth: 'الشهر التالي',
   // debts
-  owed_to_me: 'لي عنده', i_owe: 'عليّ له', addPayment: 'تسجيل دفعة', payments: 'الدفعات', open: 'مفتوح', settled: 'مسدد',
+  owed_to_me: 'لي عنده', i_owe: 'عليّ له', addPayment: 'تسجيل دفعة', payments: 'الدفعات', addAdvance: 'إضافة مبلغ', movements: 'الحركات', advance: 'سلفة', repayment: 'سداد', totalLent: 'إجمالي الدين', advanceRepaid: 'لا يمكن حذف مبلغ تم سداده — احذف الدفعات أولاً', open: 'مفتوح', settled: 'مسدد',
   // recurring
   monthly: 'شهري', quarterly: 'ربع سنوي', yearly: 'سنوي', weekly: 'أسبوعي', once: 'مرة واحدة',
   personal: 'شخصي', work: 'عمل', markPaid: 'تم الدفع', alreadyPaid: 'تم دفع هذه الدورة بالفعل.', fromAccount: 'الدفع من حساب', monthlyCost: 'التكلفة الشهرية',
@@ -248,7 +248,7 @@ const en: typeof ar = {
   notSavedHint: 'The server refused them when they were sent (e.g. the account was deleted). Try again, or discard and add them again.', retry: 'Try again', discard: 'Discard',
   expense: 'Expense', income: 'Income', transfer: 'Transfer', quickExpense: 'Quick expense', addExpense: 'Log expense',
   monthTotal: 'Month total', dayTotal: 'Day total', prevMonth: 'Previous month', nextMonth: 'Next month',
-  owed_to_me: 'They owe me', i_owe: 'I owe them', addPayment: 'Add payment', payments: 'Payments', open: 'Open', settled: 'Settled',
+  owed_to_me: 'They owe me', i_owe: 'I owe them', addPayment: 'Add payment', payments: 'Payments', addAdvance: 'Add amount', movements: 'Movements', advance: 'Advance', repayment: 'Repayment', totalLent: 'Total debt', advanceRepaid: 'This amount is already repaid — remove the payments first', open: 'Open', settled: 'Settled',
   monthly: 'Monthly', quarterly: 'Quarterly', yearly: 'Yearly', weekly: 'Weekly', once: 'Once',
   personal: 'Personal', work: 'Work', markPaid: 'Mark paid', alreadyPaid: 'This cycle is already paid.', fromAccount: 'Pay from account', monthlyCost: 'Monthly cost',
   invested: 'Invested', currentValue: 'Current value', quantity: 'Quantity', unit: 'Unit', platform: 'Platform / issuer',
